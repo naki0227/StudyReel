@@ -6,7 +6,20 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		F90ED7AF2EF446EC007B0D25 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F90ED7AE2EF446EC007B0D25 /* WidgetKit.framework */; };
+		F90ED7B12EF446EC007B0D25 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F90ED7B02EF446EC007B0D25 /* SwiftUI.framework */; };
+		F90ED7BC2EF446EE007B0D25 /* StudyReelWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F90ED7AC2EF446EC007B0D25 /* StudyReelWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		F90ED7BA2EF446EE007B0D25 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F97914B92E87A826007079BF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F90ED7AB2EF446EC007B0D25;
+			remoteInfo = StudyReelWidgetExtension;
+		};
 		F97914CF2E87A828007079BF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = F97914B92E87A826007079BF /* Project object */;
@@ -23,13 +36,38 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		F90ED7BD2EF446EE007B0D25 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				F90ED7BC2EF446EE007B0D25 /* StudyReelWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		F90ED7AC2EF446EC007B0D25 /* StudyReelWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = StudyReelWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		F90ED7AE2EF446EC007B0D25 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		F90ED7B02EF446EC007B0D25 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		F90ED7C32EF4473D007B0D25 /* StudyReelWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StudyReelWidgetExtension.entitlements; sourceTree = "<group>"; };
 		F97914C12E87A826007079BF /* StudyTimerAndVideo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StudyTimerAndVideo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F97914CE2E87A828007079BF /* StudyTimerAndVideoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StudyTimerAndVideoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F97914D82E87A828007079BF /* StudyTimerAndVideoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StudyTimerAndVideoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F90ED7C12EF446EE007B0D25 /* Exceptions for "StudyReelWidget" folder in "StudyReelWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = F90ED7AB2EF446EC007B0D25 /* StudyReelWidgetExtension */;
+		};
 		F97914EC2E87C74A007079BF /* Exceptions for "StudyTimerAndVideo" folder in "StudyTimerAndVideo" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -40,6 +78,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		F90ED7B22EF446EC007B0D25 /* StudyReelWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F90ED7C12EF446EE007B0D25 /* Exceptions for "StudyReelWidget" folder in "StudyReelWidgetExtension" target */,
+			);
+			path = StudyReelWidget;
+			sourceTree = "<group>";
+		};
 		F97914C32E87A826007079BF /* StudyTimerAndVideo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -58,9 +104,28 @@
 			path = StudyTimerAndVideoUITests;
 			sourceTree = "<group>";
 		};
+		F9C16A692EEB07F100D59B12 /* en.lproj */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = en.lproj;
+			sourceTree = "<group>";
+		};
+		F9C16A6D2EEB07FC00D59B12 /* ja.lproj */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ja.lproj;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		F90ED7A92EF446EC007B0D25 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F90ED7B12EF446EC007B0D25 /* SwiftUI.framework in Frameworks */,
+				F90ED7AF2EF446EC007B0D25 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F97914BE2E87A826007079BF /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -85,13 +150,27 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		F90ED7AD2EF446EC007B0D25 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F90ED7AE2EF446EC007B0D25 /* WidgetKit.framework */,
+				F90ED7B02EF446EC007B0D25 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		F97914B82E87A826007079BF = {
 			isa = PBXGroup;
 			children = (
+				F90ED7C32EF4473D007B0D25 /* StudyReelWidgetExtension.entitlements */,
 				F97914C32E87A826007079BF /* StudyTimerAndVideo */,
 				F97914D12E87A828007079BF /* StudyTimerAndVideoTests */,
 				F97914DB2E87A828007079BF /* StudyTimerAndVideoUITests */,
+				F90ED7B22EF446EC007B0D25 /* StudyReelWidget */,
+				F90ED7AD2EF446EC007B0D25 /* Frameworks */,
 				F97914C22E87A826007079BF /* Products */,
+				F9C16A692EEB07F100D59B12 /* en.lproj */,
+				F9C16A6D2EEB07FC00D59B12 /* ja.lproj */,
 			);
 			sourceTree = "<group>";
 		};
@@ -101,6 +180,7 @@
 				F97914C12E87A826007079BF /* StudyTimerAndVideo.app */,
 				F97914CE2E87A828007079BF /* StudyTimerAndVideoTests.xctest */,
 				F97914D82E87A828007079BF /* StudyTimerAndVideoUITests.xctest */,
+				F90ED7AC2EF446EC007B0D25 /* StudyReelWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,6 +188,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		F90ED7AB2EF446EC007B0D25 /* StudyReelWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F90ED7C02EF446EE007B0D25 /* Build configuration list for PBXNativeTarget "StudyReelWidgetExtension" */;
+			buildPhases = (
+				F90ED7A82EF446EC007B0D25 /* Sources */,
+				F90ED7A92EF446EC007B0D25 /* Frameworks */,
+				F90ED7AA2EF446EC007B0D25 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F90ED7B22EF446EC007B0D25 /* StudyReelWidget */,
+			);
+			name = StudyReelWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = StudyReelWidgetExtension;
+			productReference = F90ED7AC2EF446EC007B0D25 /* StudyReelWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		F97914C02E87A826007079BF /* StudyTimerAndVideo */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = F97914E22E87A828007079BF /* Build configuration list for PBXNativeTarget "StudyTimerAndVideo" */;
@@ -115,13 +217,17 @@
 				F97914BD2E87A826007079BF /* Sources */,
 				F97914BE2E87A826007079BF /* Frameworks */,
 				F97914BF2E87A826007079BF /* Resources */,
+				F90ED7BD2EF446EE007B0D25 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				F90ED7BB2EF446EE007B0D25 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				F97914C32E87A826007079BF /* StudyTimerAndVideo */,
+				F9C16A692EEB07F100D59B12 /* en.lproj */,
+				F9C16A6D2EEB07FC00D59B12 /* ja.lproj */,
 			);
 			name = StudyTimerAndVideo;
 			packageProductDependencies = (
@@ -186,6 +292,9 @@
 				LastSwiftUpdateCheck = 1640;
 				LastUpgradeCheck = 1640;
 				TargetAttributes = {
+					F90ED7AB2EF446EC007B0D25 = {
+						CreatedOnToolsVersion = 16.4;
+					};
 					F97914C02E87A826007079BF = {
 						CreatedOnToolsVersion = 16.4;
 					};
@@ -205,6 +314,7 @@
 			knownRegions = (
 				en,
 				Base,
+				ja,
 			);
 			mainGroup = F97914B82E87A826007079BF;
 			minimizedProjectReferenceProxies = 1;
@@ -216,11 +326,19 @@
 				F97914C02E87A826007079BF /* StudyTimerAndVideo */,
 				F97914CD2E87A828007079BF /* StudyTimerAndVideoTests */,
 				F97914D72E87A828007079BF /* StudyTimerAndVideoUITests */,
+				F90ED7AB2EF446EC007B0D25 /* StudyReelWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		F90ED7AA2EF446EC007B0D25 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F97914BF2E87A826007079BF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -245,6 +363,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		F90ED7A82EF446EC007B0D25 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F97914BD2E87A826007079BF /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -269,6 +394,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		F90ED7BB2EF446EE007B0D25 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F90ED7AB2EF446EC007B0D25 /* StudyReelWidgetExtension */;
+			targetProxy = F90ED7BA2EF446EE007B0D25 /* PBXContainerItemProxy */;
+		};
 		F97914D02E87A828007079BF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = F97914C02E87A826007079BF /* StudyTimerAndVideo */;
@@ -282,6 +412,62 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		F90ED7BE2EF446EE007B0D25 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = StudyReelWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X97ZJZ42VZ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = StudyReelWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = StudyReelWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ni.StudyTimerAndVideo.StudyReelWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F90ED7BF2EF446EE007B0D25 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = StudyReelWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X97ZJZ42VZ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = StudyReelWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = StudyReelWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ni.StudyTimerAndVideo.StudyReelWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		F97914E02E87A828007079BF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -406,8 +592,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = StudyTimerAndVideo/StudyTimerAndVideo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 202;
 				DEVELOPMENT_TEAM = X97ZJZ42VZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -438,8 +625,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = StudyTimerAndVideo/StudyTimerAndVideo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 202;
 				DEVELOPMENT_TEAM = X97ZJZ42VZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -470,7 +658,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 201;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				MARKETING_VERSION = 1.0;
@@ -488,7 +676,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 201;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				MARKETING_VERSION = 1.0;
@@ -505,7 +693,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 201;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ni.StudyTimerAndVideoUITests;
@@ -521,7 +709,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 201;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ni.StudyTimerAndVideoUITests;
@@ -536,6 +724,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		F90ED7C02EF446EE007B0D25 /* Build configuration list for PBXNativeTarget "StudyReelWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F90ED7BE2EF446EE007B0D25 /* Debug */,
+				F90ED7BF2EF446EE007B0D25 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		F97914BC2E87A826007079BF /* Build configuration list for PBXProject "StudyTimerAndVideo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

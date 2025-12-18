@@ -1,0 +1,7 @@
+/* English localization for Info.plist permission strings */
+
+/* Camera Usage Description */
+"NSCameraUsageDescription" = "StudyReel uses the camera to record your study sessions as time-lapse videos. For example, when you start a study timer, you can record yourself studying and create a time-lapse video to review your focus and progress later. All recordings are stored only on your device.";
+
+/* Photo Library Add Usage Description */
+"NSPhotoLibraryAddUsageDescription" = "StudyReel saves your study session time-lapse videos to your Photo Library. For example, after completing a study session, you can save the time-lapse video to share on social media or keep as a record of your learning journey. Videos are only saved when you choose to export them.";

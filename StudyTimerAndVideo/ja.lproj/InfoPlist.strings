@@ -1,0 +1,7 @@
+/* Japanese localization for Info.plist permission strings */
+
+/* Camera Usage Description */
+"NSCameraUsageDescription" = "StudyReelは、学習セッションをタイムラプス動画として記録するためにカメラを使用します。例えば、学習タイマーを開始する際に、勉強している様子を撮影してタイムラプス動画を作成し、後で集中度や進捗を振り返ることができます。すべての録画はお使いの端末にのみ保存されます。";
+
+/* Photo Library Add Usage Description */
+"NSPhotoLibraryAddUsageDescription" = "StudyReelは、学習セッションのタイムラプス動画を「写真」ライブラリに保存します。例えば、学習セッション終了後、タイムラプス動画を保存してSNSでシェアしたり、学習の記録として残すことができます。動画はエクスポートを選択した場合のみ保存されます。";

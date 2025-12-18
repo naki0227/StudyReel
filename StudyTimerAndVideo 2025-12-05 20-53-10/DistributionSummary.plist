@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>StudyTimerAndVideo.ipa</key>
+	<array>
+		<dict>
+			<key>architectures</key>
+			<array>
+				<string>arm64</string>
+			</array>
+			<key>buildNumber</key>
+			<string>2</string>
+			<key>certificate</key>
+			<dict>
+				<key>SHA1</key>
+				<string>90AD92A6A679B521C7ED3F8FC73FA680CF9BBEF6</string>
+				<key>dateExpires</key>
+				<string>2026/12/03</string>
+				<key>type</key>
+				<string>Cloud Managed Apple Distribution</string>
+			</dict>
+			<key>entitlements</key>
+			<dict>
+				<key>application-identifier</key>
+				<string>X97ZJZ42VZ.com.ni.StudyTimerAndVideo</string>
+				<key>beta-reports-active</key>
+				<true/>
+				<key>com.apple.developer.team-identifier</key>
+				<string>X97ZJZ42VZ</string>
+				<key>get-task-allow</key>
+				<false/>
+			</dict>
+			<key>name</key>
+			<string>StudyTimerAndVideo.app</string>
+			<key>profile</key>
+			<dict>
+				<key>UUID</key>
+				<string>d9c64570-b808-4421-8b2d-6a06c33bd835</string>
+				<key>dateExpires</key>
+				<string>2026/12/03</string>
+				<key>name</key>
+				<string>iOS Team Store Provisioning Profile: com.ni.StudyTimerAndVideo</string>
+			</dict>
+			<key>symbols</key>
+			<true/>
+			<key>team</key>
+			<dict>
+				<key>id</key>
+				<string>X97ZJZ42VZ</string>
+				<key>name</key>
+				<string>Ibuki Nagase</string>
+			</dict>
+			<key>versionNumber</key>
+			<string>1.0</string>
+		</dict>
+	</array>
+</dict>
+</plist>

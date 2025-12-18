@@ -27,14 +27,33 @@ class StudyLogManager: ObservableObject {
         sessions.map { $0.duration }.reduce(0, +)
     }
     
+    private let appGroupKey = "group.com.ni.StudyTimerAndVideo"
+    
     private func save() {
         if let encoded = try? JSONEncoder().encode(sessions) {
-            UserDefaults.standard.set(encoded, forKey: key)
+            // Save to App Group UserDefaults
+            if let userDefaults = UserDefaults(suiteName: appGroupKey) {
+                userDefaults.set(encoded, forKey: key)
+                
+                // Save simplified data for Widget (Total Today)
+                let todayTotal = totalTime(for: .day)
+                userDefaults.set(todayTotal, forKey: "widget_today_total")
+                
+                // Reload Widget Timeline
+                // Note: Requires importing WidgetKit, but doing it safely via KVO or Notification might be better if WidgetKit isn't linked.
+                // For now, we just save the data. The widget will refresh based on its timeline or next app open.
+            } else {
+                // Fallback to standard if App Group fails (though it shouldn't)
+                UserDefaults.standard.set(encoded, forKey: key)
+            }
         }
     }
     
     private func load() {
-        if let data = UserDefaults.standard.data(forKey: key),
+        // Try loading from App Group first
+        let userDefaults = UserDefaults(suiteName: appGroupKey) ?? UserDefaults.standard
+        
+        if let data = userDefaults.data(forKey: key),
            let decoded = try? JSONDecoder().decode([LegacyStudySession].self, from: data) {
             sessions = decoded
         }

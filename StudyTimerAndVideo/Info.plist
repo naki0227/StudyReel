@@ -3,10 +3,14 @@
 <plist version="1.0">
 <dict>
 	<key>NSCameraUsageDescription</key>
-	<string>勉強中の様子をタイムラプス撮影するためにカメラを使用します。</string>
+	<string>StudyReel uses the camera to record your study sessions as time-lapse videos. For example, when you start a study timer, you can record yourself studying and create a time-lapse video to review your focus and progress later. All recordings are stored only on your device.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>撮影したタイムラプス動画を保存するために写真ライブラリを使用します。</string>
+	<string>StudyReel saves your study session time-lapse videos to your Photo Library. For example, after completing a study session, you can save the time-lapse video to share on social media or keep as a record of your learning journey. Videos are only saved when you choose to export them.</string>
 	<key>CFBundleDisplayName</key>
 	<string>StudyReel</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>202</string>
 </dict>
 </plist>
