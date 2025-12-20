@@ -124,40 +124,42 @@ struct ContentView: View {
     }
     
     var actionButtons: some View {
-        HStack(spacing: 20) {
-            if isRecording {
-                Button(action: {
-                    togglePause()
-                }) {
-                    Image(systemName: isPaused ? "play.fill" : "pause.fill")
-                        .font(.title)
-                        .padding()
-                        .background(Color.orange)
-                        .foregroundColor(.white)
-                        .clipShape(Circle())
+        VStack {
+            HStack(spacing: 20) {
+                if isRecording {
+                    Button(action: {
+                        togglePause()
+                    }) {
+                        Image(systemName: isPaused ? "play.fill" : "pause.fill")
+                            .font(.title)
+                            .padding()
+                            .background(Color.orange)
+                            .foregroundColor(.white)
+                            .clipShape(Circle())
+                    }
                 }
+                
+                Button(isRecording ? "終了して保存" : "計測開始") {
+                    if isRecording {
+                        stopAndSave()
+                    } else {
+                        startRecording()
+                    }
+                }
+                .padding()
+                .frame(width: 200)
+                .background(isRecording ? Color.red : Color.green)
+                .foregroundColor(.white)
+                .cornerRadius(12)
             }
             
-            Button(isRecording ? "終了して保存" : "計測開始") {
-                if isRecording {
-                    stopAndSave()
-                } else {
-                    startRecording()
-                }
+            // Toggle for recording
+            if !isRecording {
+                Toggle("タイムラプスを記録する", isOn: $enableRecording)
+                    .padding(.horizontal)
+                    .frame(width: 300)
+                    .foregroundColor(.white)
             }
-            .padding()
-            .frame(width: 200)
-            .background(isRecording ? Color.red : Color.green)
-            .foregroundColor(.white)
-            .cornerRadius(12)
-        }
-        
-        // Toggle for recording
-        if !isRecording {
-            Toggle("タイムラプスを記録する", isOn: $enableRecording)
-                .padding(.horizontal)
-                .frame(width: 300)
-                .foregroundColor(.white)
         }
     }
     
