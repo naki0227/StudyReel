@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 // MARK: - メインUI
 struct ContentView: View {
@@ -13,6 +14,7 @@ struct ContentView: View {
     @State private var showSaveAlert = false
     @State private var showSubjectPicker = false
     @State private var selectedSubject: String = ""
+    @State private var enableRecording = true
     
     @State private var showSaveSheet = false
     @State private var pendingDuration = 0
@@ -94,6 +96,7 @@ struct ContentView: View {
     
     var backButton: some View {
         Button(action: {
+            UIApplication.shared.isIdleTimerDisabled = false
             timerModel.stop()
             stopwatchModel.stop()
             recorder.stopCapturing()
@@ -135,7 +138,7 @@ struct ContentView: View {
                 }
             }
             
-            Button(isRecording ? "終了して保存" : "録画開始") {
+            Button(isRecording ? "終了して保存" : "計測開始") {
                 if isRecording {
                     stopAndSave()
                 } else {
@@ -148,6 +151,14 @@ struct ContentView: View {
             .foregroundColor(.white)
             .cornerRadius(12)
         }
+        
+        // Toggle for recording
+        if !isRecording {
+            Toggle("タイムラプスを記録する", isOn: $enableRecording)
+                .padding(.horizontal)
+                .frame(width: 300)
+                .foregroundColor(.white)
+        }
     }
     
     private func startRecording() {
@@ -159,9 +170,12 @@ struct ContentView: View {
             stopwatchModel.start()
         }
         
-        recorder.startCapturing(interval: 5)
+        if enableRecording {
+            recorder.startCapturing(interval: 5)
+        }
         isRecording = true
         isPaused = false
+        UIApplication.shared.isIdleTimerDisabled = true
     }
     
     private func togglePause() {
@@ -187,15 +201,21 @@ struct ContentView: View {
     }
     
     private func stopAndSave() {
-        recorder.stopCapturing()
-        recorder.exportToVideo { url in
-            if let url = url {
-                UISaveVideoAtPathToSavedPhotosAlbum(url.path, nil, nil, nil)
+        if enableRecording {
+            recorder.stopCapturing()
+            recorder.exportToVideo { url in
+                if let url = url {
+                    UISaveVideoAtPathToSavedPhotosAlbum(url.path, nil, nil, nil)
+                }
+                DispatchQueue.main.async {
+                    showSaveAlert = true
+                }
             }
-            DispatchQueue.main.async {
-                showSaveAlert = true
-            }
+        } else {
+            // Directly show save sheet if no recording
+             showSaveSheet = true
         }
+
         timerModel.stop()
         stopwatchModel.stop()
         
@@ -208,6 +228,7 @@ struct ContentView: View {
         
         isRecording = false
         isPaused = false
+        UIApplication.shared.isIdleTimerDisabled = false
         
         // Show save sheet after alert (or concurrently? Alert is for video save, Sheet is for session save)
         // Let's show alert first, then sheet? Or just show sheet and say "Video saved" in it?
