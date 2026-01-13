@@ -1,42 +1,44 @@
 # StudyReel - Focus & Record 📹
 
 <p align="center">
-  <b>「学習の瞬間を記録し、モチベーションを可視化する」</b><br>
+  <b>"Record the moment of learning, visualize motivation."</b><br>
   Interactive Study Timer App with Native iOS 17+ Widgets
 </p>
 
 ---
 
-## 📖 概要 (Overview)
+[🇯🇵 Japanese (日本語)](README.ja.md)
 
-**StudyReel** は、単なる学習タイマーではありません。「学習した証（あかし）」を残すことで継続的なモチベーションを生み出す、ネイティブiOSアプリケーションです。
+## 📖 Overview
 
-学習時間を記録するだけでなく、**SwfitData** による堅牢なデータ管理、**統計グラフ** による成長の可視化、そして **iOS 17 Interactive Widgets** による「ホーム画面から0秒で開始できる」スムーズな体験を提供します。
+**StudyReel** is not just a study timer. It is a native iOS application that generates continuous motivation by leaving "Proof of Learning".
 
-## ✨ 主な機能 (Key Features)
+It provides not only recording of study time but also robust data management with **SwiftData**, visualization of growth with **Statistical Graphs**, and a smooth experience of "Starting from the Home Screen in 0 seconds" with **iOS 17 Interactive Widgets**.
+
+## ✨ Key Features
 
 ### 1. ⏱️ Focus Timer & Recorder
-* **概要:** シンプルで集中を妨げないタイマー。
-* **特徴:** カメラプレビュー機能を統合しており、自分の勉強風景をタイムラプスのように記録できます。
-* **Update:** ユーザーフィードバックにより、**「録画なしモード」** や **「画面自動ロックの無効化（勉強中）」** を実装済み。勉強中のストレスを極限まで減らします。
+*   **Overview:** A simple timer that does not disturb concentration.
+*   **Feature:** Integrated camera preview function allows you to record your study scene like a time-lapse.
+*   **Update:** Implemented **"No Recording Mode"** and **"Disable Auto-Lock (during study)"** based on user feedback to minimize stress during study.
 
 ### 2. 📊 Visual Stats & Calendar
-* **概要:** 「どれだけ頑張ったか」を一目で確認できる分析機能。
-* **技術:** `SwiftCharts` を活用した美しいトレンドグラフと、ヒートマップ形式のカレンダー表示で、日々の積み重ねを可視化します。
+*   **Overview:** Analytics feature to check "how hard you worked" at a glance.
+*   **Technology:** Visualizes daily accumulation with beautiful trend graphs using `SwiftCharts` and heatmap-style calendar display.
 
 ### 3. 🏷️ Smart Tagging & Goals
-* **概要:** 科目やプロジェクトごとの細やかな管理。
-* **機能:** タグによる学習内容の分類機能と、日次/週次の目標設定機能（Goal Setting）により、計画的な学習をサポートします。
+*   **Overview:** Detailed management by subject or project.
+*   **Feature:** Supports planned learning with content classification by tags and daily/weekly goal setting functions.
 
 ### 4. 📱 Interactive Pomodoro Widget (New!)
-* **概要:** iOS 17+ の最新機能を活用したホーム画面ウィジェット。
-* **技術:** `WidgetKit` + `AppIntent`。アプリを開くことなく、ホーム画面上のボタンをタップするだけで25分ポモドーロタイマーを開始/停止できます。
+*   **Overview:** Home screen widget utilizing the latest features of iOS 17+.
+*   **Technology:** `WidgetKit` + `AppIntent`. Start/Stop a 25-minute Pomodoro timer just by tapping a button on the home screen without opening the app.
 
 ---
 
-## 🛠 技術スタック (Tech Stack)
+## 🛠 Tech Stack
 
-最新のAppleプラットフォーム技術を積極的に採用しています。
+Actively adopting the latest Apple platform technologies.
 
 | Category | Technology | Usage |
 | :--- | :--- | :--- |
@@ -50,7 +52,7 @@
 
 ---
 
-## 🏗️ アーキテクチャ (Architecture)
+## 🏗️ Architecture
 
 ```mermaid
 graph TD
@@ -80,7 +82,7 @@ graph TD
 
 ---
 
-## 🚀 セットアップ (Getting Started)
+## 🚀 Getting Started
 
 ### Prerequisites
 *   Xcode 15.0+
@@ -94,11 +96,11 @@ graph TD
 
 ---
 
-## 👨‍💻 開発者 (Developer)
+## 👨‍💻 Developer
 **Enludus**
 
 Focus: Native iOS & Flutter Development
-Contact: <https://enludus.vercel.app>
+Contact: https://enludus.vercel.app
 
 <p align="center"> 
     © 2025 StudyReel Project. All rights reserved. 
