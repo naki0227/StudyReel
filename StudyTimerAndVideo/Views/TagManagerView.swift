@@ -12,9 +12,9 @@ struct TagManagerView: View {
     var body: some View {
         NavigationView {
             List {
-                Section(header: Text("新しいタグを追加")) {
+                Section(header: Text(L10n.string("新しいタグを追加"))) {
                     HStack {
-                        TextField("タグ名", text: $newTagName)
+                        TextField(L10n.string("タグ名"), text: $newTagName)
                         ColorPicker("", selection: $selectedColor)
                             .labelsHidden()
                         Button(action: addTag) {
@@ -25,7 +25,7 @@ struct TagManagerView: View {
                     }
                 }
                 
-                Section(header: Text("既存のタグ")) {
+                Section(header: Text(L10n.string("既存のタグ"))) {
                     ForEach(tags) { tag in
                         HStack {
                             Circle()
@@ -37,10 +37,10 @@ struct TagManagerView: View {
                     .onDelete(perform: deleteTags)
                 }
             }
-            .navigationTitle("タグ管理")
+            .navigationTitle(L10n.string("タグ管理"))
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完了") {
+                    Button(L10n.string("完了")) {
                         dismiss()
                     }
                 }

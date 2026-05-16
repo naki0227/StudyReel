@@ -1,5 +1,7 @@
 import SwiftUI
 import SwiftData
+import UIKit
+import WidgetKit
 
 // MARK: - タイトル画面
 struct StartView: View {
@@ -12,6 +14,7 @@ struct StartView: View {
     @State private var showGoalSetting = false
     @State private var showCalendar = false
     @State private var showSettings = false
+    @State private var showPaywall = false
     
     // タイマー設定値(時・分・秒)
     @State private var hours = 0
@@ -22,8 +25,10 @@ struct StartView: View {
     
     @StateObject var subjectManager = SubjectManager()
     @StateObject var permissionManager = PermissionManager()
+    @StateObject private var draftStore = CurrentSessionDraftStore()
     
     @State private var showPermissionAlert = false
+    @State private var sessionBootstrap: SessionBootstrap?
     
     var today: Date {
         Calendar.current.startOfDay(for: Date())
@@ -138,12 +143,22 @@ struct StartView: View {
                 }
             }
             .fullScreenCover(isPresented: $showTimerView) {
-                ContentView(
-                    subjectManager: subjectManager,
-                    totalSeconds: hours * 3600 + minutes * 60 + seconds,
-                    onFinish: {showTimerView = false },
-                    mode: selectedMode
-                )
+                Group {
+                    if let sessionBootstrap {
+                        ContentView(
+                            subjectManager: subjectManager,
+                            totalSeconds: sessionBootstrap.totalSeconds,
+                            onFinish: {
+                                showTimerView = false
+                                self.sessionBootstrap = nil
+                            },
+                            mode: sessionBootstrap.mode,
+                            bootstrap: sessionBootstrap
+                        )
+                    } else {
+                        EmptyView()
+                    }
+                }
             }
             .sheet(isPresented: $showStatsView) {
                 StudyStatsView(
@@ -159,11 +174,14 @@ struct StartView: View {
             .sheet(isPresented: $showSettings) {
                 SettingsView()
             }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
+            }
             .alert(isPresented: $showPermissionAlert) {
                 Alert(
-                    title: Text("権限が必要です"),
-                    message: Text("カメラと写真へのアクセスを許可してください。"),
-                    primaryButton: .default(Text("設定を開く"), action: {
+                    title: Text(L10n.string("権限が必要です")),
+                    message: Text(L10n.string("カメラと写真へのアクセスを許可してください。")),
+                    primaryButton: .default(Text(L10n.string("設定を開く")), action: {
                         permissionManager.openSettings()
                     }),
                     secondaryButton: .cancel()
@@ -171,6 +189,14 @@ struct StartView: View {
             }
             .onAppear {
                 permissionManager.checkPermissions()
+                consumePendingSessionDraftIfNeeded()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                permissionManager.checkPermissions()
+                consumePendingSessionDraftIfNeeded()
+            }
+            .onOpenURL { url in
+                handleIncomingURL(url)
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
@@ -194,7 +220,7 @@ struct StartView: View {
                     .animation(.linear, value: progress)
                 
                 VStack {
-                    Text("今日の目標")
+                    Text(L10n.string("今日の目標"))
                         .font(.caption)
                         .foregroundColor(.white.opacity(0.8))
                     Text("\(formatTime(todayStudyTime)) / \(formatTime(todayGoal?.targetDuration ?? 0))")
@@ -213,13 +239,13 @@ struct StartView: View {
     
     var modePicker: some View {
         HStack {
-            Button("タイマー") { selectedMode = .timer }
+            Button(L10n.string("タイマー")) { selectedMode = .timer }
                 .padding()
                 .background(selectedMode == .timer ? Color.white : Color.gray.opacity(0.5))
                 .foregroundColor(.blue)
                 .cornerRadius(8)
             
-            Button("ストップウォッチ") { selectedMode = .stopwatch}
+            Button(L10n.string("ストップウォッチ")) { selectedMode = .stopwatch}
                 .padding()
                 .background(selectedMode == .stopwatch ? Color.white : Color.gray.opacity(0.5))
                 .foregroundColor(.blue)
@@ -229,20 +255,26 @@ struct StartView: View {
     
     var timerPicker: some View {
         HStack {
-            Picker("Hours", selection: $hours) {
-                ForEach(0..<13) { Text("\($0) 時") }
+            Picker(L10n.string("時間"), selection: $hours) {
+                ForEach(0..<13) { value in
+                    Text(L10n.format("%d時間", value)).tag(value)
+                }
             }
             .frame(width: 80)
             .clipped()
                 
-            Picker("Minutes", selection: $minutes) {
-                ForEach(0..<60) { Text("\($0) 分") }
+            Picker(L10n.string("分"), selection: $minutes) {
+                ForEach(0..<60) { value in
+                    Text(L10n.format("%d分", value)).tag(value)
+                }
             }
             .frame(width: 80)
             .clipped()
             
-            Picker("Seconds", selection: $seconds) {
-                ForEach(0..<60) { Text("\($0) 秒") }
+            Picker(L10n.string("秒"), selection: $seconds) {
+                ForEach(0..<60) { value in
+                    Text(L10n.format("%d秒", value)).tag(value)
+                }
             }
             .frame(width: 80)
             .clipped()
@@ -256,6 +288,14 @@ struct StartView: View {
     var startButton: some View {
         Button(action: {
             if permissionManager.cameraPermissionGranted && permissionManager.photoLibraryPermissionGranted {
+                sessionBootstrap = SessionBootstrap(
+                    totalSeconds: hours * 3600 + minutes * 60 + seconds,
+                    mode: selectedMode,
+                    startedAt: nil,
+                    autoStart: false,
+                    initialRecordingEnabled: true,
+                    source: .app
+                )
                 showTimerView = true
             } else {
                 permissionManager.checkPermissions()
@@ -264,7 +304,7 @@ struct StartView: View {
                 }
             }
         }) {
-            Text("スタート")
+            Text(L10n.string("スタート"))
                 .font(.title2)
                 .padding()
                 .frame(width: 200)
@@ -281,7 +321,7 @@ struct StartView: View {
             VStack {
                 Image(systemName: "chart.bar.xaxis")
                     .font(.title)
-                Text("統計")
+                Text(L10n.string("統計"))
                     .font(.caption)
             }
             .frame(width: 100, height: 80)
@@ -298,7 +338,7 @@ struct StartView: View {
             VStack {
                 Image(systemName: "calendar")
                     .font(.title)
-                Text("カレンダー")
+                Text(L10n.string("カレンダー"))
                     .font(.caption)
             }
             .frame(width: 100, height: 80)
@@ -312,5 +352,61 @@ struct StartView: View {
         let h = seconds / 3600
         let m = (seconds % 3600) / 60
         return String(format: "%d:%02d", h, m)
+    }
+
+    private func consumePendingSessionDraftIfNeeded() {
+        guard !showTimerView, let draft = draftStore.consumePendingDraft() else { return }
+
+        let canRecordTimelapse = permissionManager.cameraPermissionGranted && permissionManager.photoLibraryPermissionGranted
+        sessionBootstrap = SessionBootstrap(
+            totalSeconds: draft.plannedDurationSeconds,
+            mode: draft.resolvedMode,
+            startedAt: draft.startedAt,
+            autoStart: true,
+            initialRecordingEnabled: draft.shouldRecordTimelapse && canRecordTimelapse,
+            source: draft.source
+        )
+        showTimerView = true
+    }
+
+    private func handleIncomingURL(_ url: URL) {
+        guard url.scheme == "studyreel" else { return }
+
+        if url.host == "start" {
+            consumePendingSessionDraftIfNeeded()
+            if showTimerView { return }
+
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            let modeValue = components?.queryItems?.first(where: { $0.name == "mode" })?.value ?? "timer"
+            let minutesValue = Int(components?.queryItems?.first(where: { $0.name == "minutes" })?.value ?? "")
+            let shouldRecord = (components?.queryItems?.first(where: { $0.name == "record" })?.value ?? "1") != "0"
+
+            let mode: Mode = modeValue == "stopwatch" ? .stopwatch : .timer
+            let totalSeconds = max(0, (minutesValue ?? 25) * 60)
+            syncWidgetTimerState(mode: mode, totalSeconds: totalSeconds)
+
+            sessionBootstrap = SessionBootstrap(
+                totalSeconds: mode == .timer ? totalSeconds : 0,
+                mode: mode,
+                startedAt: Date(),
+                autoStart: true,
+                initialRecordingEnabled: shouldRecord,
+                source: .widget
+            )
+            showTimerView = true
+        } else if url.host == "paywall" {
+            showPaywall = true
+        }
+    }
+
+    private func syncWidgetTimerState(mode: Mode, totalSeconds: Int) {
+        let userDefaults = UserDefaults(suiteName: CurrentSessionDraftStore.appGroupKey) ?? .standard
+        if mode == .timer, totalSeconds > 0 {
+            let endDate = Date().addingTimeInterval(TimeInterval(totalSeconds))
+            userDefaults.set(endDate.timeIntervalSince1970, forKey: "pomodoro_timer_end_timestamp")
+        } else {
+            userDefaults.removeObject(forKey: "pomodoro_timer_end_timestamp")
+        }
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }

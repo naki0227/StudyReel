@@ -10,7 +10,7 @@ struct CalendarView: View {
     
     var calendar: Calendar {
         var cal = Calendar.current
-        cal.locale = Locale(identifier: "ja_JP")
+        cal.locale = .autoupdatingCurrent
         return cal
     }
     
@@ -55,7 +55,7 @@ struct CalendarView: View {
                                 sessionList
                             } else {
                                 Spacer()
-                                Text("日付を選択してください")
+                                Text(L10n.string("日付を選択してください"))
                                     .foregroundColor(.gray)
                                 Spacer()
                             }
@@ -74,17 +74,17 @@ struct CalendarView: View {
                             sessionList
                         } else {
                             Spacer()
-                            Text("日付を選択してください")
+                            Text(L10n.string("日付を選択してください"))
                                 .foregroundColor(.gray)
                             Spacer()
                         }
                     }
                 }
             }
-            .navigationTitle("カレンダー")
+            .navigationTitle(L10n.string("カレンダー"))
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("閉じる") {
+                    Button(L10n.string("閉じる")) {
                         dismiss()
                     }
                 }
@@ -173,7 +173,7 @@ struct CalendarView: View {
     var sessionList: some View {
         Group {
             if sessionsForSelectedDate.isEmpty {
-                Text("学習記録はありません")
+                Text(L10n.string("学習記録はありません"))
                     .foregroundColor(.gray)
                     .padding()
                 Spacer()
@@ -218,7 +218,8 @@ struct CalendarView: View {
     
     private var monthFormatter: DateFormatter {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy年 M月"
+        formatter.locale = .autoupdatingCurrent
+        formatter.setLocalizedDateFormatFromTemplate("yMMMM")
         return formatter
     }
     
@@ -231,7 +232,7 @@ struct CalendarView: View {
     private func formatTime(_ seconds: Int) -> String {
         let h = seconds / 3600
         let m = (seconds % 3600) / 60
-        return String(format: "%d時間%d分", h, m)
+        return L10n.format("%d時間%d分", h, m)
     }
 }
 

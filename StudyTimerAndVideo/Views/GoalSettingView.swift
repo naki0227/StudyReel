@@ -21,19 +21,19 @@ struct GoalSettingView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("今日の目標時間")) {
+                Section(header: Text(L10n.string("今日の目標時間"))) {
                     HStack {
-                        Picker("時間", selection: $hours) {
+                        Picker(L10n.string("時間"), selection: $hours) {
                             ForEach(0..<24) { h in
-                                Text("\(h)時間").tag(h)
+                                Text(L10n.format("%d時間", h)).tag(h)
                             }
                         }
                         .pickerStyle(WheelPickerStyle())
                         .frame(height: 100)
                         
-                        Picker("分", selection: $minutes) {
+                        Picker(L10n.string("分"), selection: $minutes) {
                             ForEach(0..<60) { m in
-                                Text("\(m)分").tag(m)
+                                Text(L10n.format("%d分", m)).tag(m)
                             }
                         }
                         .pickerStyle(WheelPickerStyle())
@@ -41,12 +41,12 @@ struct GoalSettingView: View {
                     }
                 }
                 
-                Button("保存") {
+                Button(L10n.string("保存")) {
                     saveGoal()
                     dismiss()
                 }
             }
-            .navigationTitle("目標設定")
+            .navigationTitle(L10n.string("目標設定"))
             .onAppear {
                 if let goal = currentGoal {
                     hours = goal.targetDuration / 3600

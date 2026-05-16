@@ -16,8 +16,8 @@ class StopwatchViewModel: ObservableObject {
         NotificationCenter.default.removeObserver(self)
     }
     
-    func start() {
-        elapsed = 0
+    func start(from initialElapsed: Int = 0) {
+        elapsed = initialElapsed
         isPaused = false
         startTimer()
     }

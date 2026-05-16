@@ -8,16 +8,18 @@ class StudySession {
     var date: Date
     var duration: Int
     var subject: String
+    var recordedAt: Date?
     
     @Relationship(inverse: \Tag.sessions)
     var tags: [Tag]? = []
     
-    init(id: UUID = UUID(), date: Date = Date(), duration: Int, subject: String, tags: [Tag] = []) {
+    init(id: UUID = UUID(), date: Date = Date(), duration: Int, subject: String, tags: [Tag] = [], recordedAt: Date? = nil) {
         self.id = id
         self.date = date
         self.duration = duration
         self.subject = subject
         self.tags = tags
+        self.recordedAt = recordedAt
     }
 }
 

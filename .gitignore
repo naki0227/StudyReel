@@ -1,0 +1,14 @@
+.DS_Store
+
+# Local work notes
+CURRENT_TASK.md
+PROJECT_CONTEXT.md
+
+# Xcode user-specific files
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Workspace user data
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/

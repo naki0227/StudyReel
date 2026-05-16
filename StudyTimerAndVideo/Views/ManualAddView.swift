@@ -5,42 +5,51 @@ import SwiftData
 struct ManualAddView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
     
     @ObservedObject var subjectManager: SubjectManager
     
     @Query private var tags: [Tag]
     @State private var selectedTags: Set<Tag> = []
     @State private var showTagManager = false
+    @State private var showSubjectManager = false
     
     @State private var selectedSubject = ""
     @State private var hours = 0
     @State private var minutes = 0
     @State private var date = Date()
+    @State private var showValidationAlert = false
+    @State private var validationMessage = ""
     
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("教科")) {
-                    Picker("教科を選択", selection: $selectedSubject) {
+                Section(header: HStack {
+                    Text(L10n.string("教科"))
+                    Spacer()
+                    Button(L10n.string("管理")) { showSubjectManager = true }
+                        .font(.caption)
+                }) {
+                    Picker(L10n.string("教科を選択"), selection: $selectedSubject) {
                         ForEach(subjectManager.subjects, id: \.self) { subject in
                             Text(subject).tag(subject)
                         }
                     }
                 }
                 
-                Section(header: Text("時間")) {
+                Section(header: Text(L10n.string("時間"))) {
                     HStack {
-                        Picker("時間", selection: $hours) {
+                        Picker(L10n.string("時間"), selection: $hours) {
                             ForEach(0..<24) { h in
-                                Text("\(h)時間").tag(h)
+                                Text(L10n.format("%d時間", h)).tag(h)
                             }
                         }
                         .pickerStyle(WheelPickerStyle())
                         .frame(height: 100)
                         
-                        Picker("分", selection: $minutes) {
+                        Picker(L10n.string("分"), selection: $minutes) {
                             ForEach(0..<60) { m in
-                                Text("\(m)分").tag(m)
+                                Text(L10n.format("%d分", m)).tag(m)
                             }
                         }
                         .pickerStyle(WheelPickerStyle())
@@ -49,13 +58,13 @@ struct ManualAddView: View {
                 }
                 
                 Section(header: HStack {
-                    Text("タグ")
+                    Text(L10n.string("タグ"))
                     Spacer()
-                    Button("管理") { showTagManager = true }
+                    Button(L10n.string("管理")) { showTagManager = true }
                         .font(.caption)
                 }) {
                     if tags.isEmpty {
-                        Text("タグがありません")
+                        Text(L10n.string("タグがありません"))
                             .foregroundColor(.gray)
                     } else {
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -91,26 +100,77 @@ struct ManualAddView: View {
                     }
                 }
                 
-                Section(header: Text("日付")) {
-                    DatePicker("日付", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                Section(header: Text(L10n.string("日付"))) {
+                    DatePicker(L10n.string("日付"), selection: $date, displayedComponents: [.date, .hourAndMinute])
                 }
                 
-                Button("保存") {
-                    let totalSeconds = hours * 3600 + minutes * 60
-                    let session = StudySession(date: date, duration: totalSeconds, subject: selectedSubject, tags: Array(selectedTags))
-                    modelContext.insert(session)
-                    dismiss()
+                Button(L10n.string("保存")) {
+                    saveManualSession()
                 }
             }
-            .navigationTitle("手動追加")
+            .navigationTitle(L10n.string("手動追加"))
+            .alert(L10n.string("保存できません"), isPresented: $showValidationAlert) {
+                Button(L10n.string("OK"), role: .cancel) {}
+            } message: {
+                Text(validationMessage)
+            }
             .onAppear {
                 if selectedSubject.isEmpty, let first = subjectManager.subjects.first {
                     selectedSubject = first
                 }
             }
+            .onChange(of: subjectManager.subjects) {
+                let subjects = subjectManager.subjects
+                guard !subjects.isEmpty else {
+                    selectedSubject = ""
+                    return
+                }
+                if !subjects.contains(selectedSubject) {
+                    selectedSubject = subjects[0]
+                }
+            }
             .sheet(isPresented: $showTagManager) {
                 TagManagerView()
             }
+            .sheet(isPresented: $showSubjectManager) {
+                SubjectEditView(subjectManager: subjectManager)
+            }
         }
+    }
+
+    private func saveManualSession() {
+        let totalSeconds = hours * 3600 + minutes * 60
+
+        guard totalSeconds > 0 else {
+            validationMessage = L10n.string("学習時間を1分以上にしてください。")
+            showValidationAlert = true
+            return
+        }
+
+        if let conflict = StudyInsights.overlappingSession(in: sessions, start: date, duration: totalSeconds) {
+            let formatter = DateFormatter()
+            formatter.locale = .autoupdatingCurrent
+            formatter.timeStyle = .short
+
+            let conflictStart = formatter.string(from: conflict.date)
+            let conflictEnd = formatter.string(from: conflict.date.addingTimeInterval(TimeInterval(conflict.duration)))
+            validationMessage = L10n.format("この時間帯は「%@」の記録（%@ - %@）と重なっています。", conflict.subject, conflictStart, conflictEnd)
+            showValidationAlert = true
+            return
+        }
+
+        let session = StudySession(
+            date: date,
+            duration: totalSeconds,
+            subject: selectedSubject,
+            tags: Array(selectedTags),
+            recordedAt: Date()
+        )
+        modelContext.insert(session)
+        let updatedSessions = [session] + sessions
+        Task {
+            await StudyNotificationManager.shared.scheduleQuietReminderIfNeeded(with: updatedSessions)
+        }
+        dismiss()
     }
 }

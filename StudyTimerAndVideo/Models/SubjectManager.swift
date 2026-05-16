@@ -28,7 +28,7 @@ class SubjectManager: ObservableObject {
         if let saved = UserDefaults.standard.array(forKey: key) as? [String] {
             subjects = saved
         } else {
-            subjects = ["数学", "英語", "物理"]
+            subjects = L10n.defaultSubjects
         }
     }
 }

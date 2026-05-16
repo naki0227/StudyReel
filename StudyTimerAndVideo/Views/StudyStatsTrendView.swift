@@ -2,124 +2,164 @@ import SwiftUI
 import Charts
 import SwiftData
 
-//MARK: - 期間ごとの積み上げ棒グラフ
+// MARK: - Trend Chart View
 struct StudyStatsTrendView: View {
-    // Pass sessions directly instead of logManager
     let sessions: [StudySession]
     @ObservedObject var subjectManager: SubjectManager
-    @Environment(\.dismiss) var dismiss
-    
+    @Environment(\.dismiss) private var dismiss
+
     @State private var selectedPeriod: Calendar.Component = .day
     @State private var chartData: [StackedItem] = []
-    
+
     var body: some View {
-        ZStack {
-            Color.black.opacity(0.05).ignoresSafeArea()
-            
-            ScrollView {
-                VStack(spacing: 20) {
-                    HStack {
-                        Button(action: { dismiss() }) {
-                            Image(systemName: "chevron.left")
-                                .font(.title2)
-                                .padding(12)
-                                .background(Color.blue.opacity(0.6))
-                                .clipShape(Circle())
-                                .foregroundColor(.white)
-                        }
-                        
-                        Text("勉強時間の推移")
-                            .font(.title2)
-                            .padding(12)
-                            .background(Color.blue.opacity(0.6))
-                            .clipShape(Circle())
-                            .foregroundColor(.white)
-                        
-                        Spacer()
+        NavigationView {
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.95, green: 0.98, blue: 1.0),
+                        Color(red: 0.90, green: 0.95, blue: 0.98),
+                        Color(red: 0.85, green: 0.91, blue: 0.95)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        introCard
+                        periodPickerCard
+                        chartCard
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    
-                    Picker("期間", selection: $selectedPeriod) {
-                        Text("日").tag(Calendar.Component.day)
-                        Text("週").tag(Calendar.Component.weekOfYear)
-                        Text("月").tag(Calendar.Component.month)
-                        Text("年").tag(Calendar.Component.year)
+                    .padding(20)
+                }
+            }
+            .navigationTitle(L10n.string("勉強時間の推移"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(L10n.string("閉じる")) {
+                        dismiss()
                     }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .padding(.horizontal, 20)
-                    .onChange(of: selectedPeriod) { _ in
-                        updateData()
-                    }
-                    
-                    Chart {
-                        ForEach(chartData) { item in
-                            BarMark(
-                                x: .value("日付", item.dateStr),
-                                y: .value("時間", Double(item.duration) / 60.0)
-                            )
-                            .foregroundStyle(by: .value("教科", item.subject))
-                        }
-                    }
-                    .chartYAxisLabel("時間 (分)")
-                    .frame(height: 300)
-                    .padding(.horizontal, 30) // Add more horizontal padding
-                    .padding(.bottom, 20)
-                    
-                    Spacer(minLength: 40)
                 }
             }
         }
         .onAppear {
             updateData()
         }
-        .onChange(of: sessions.count) { _ in
+        .onChange(of: selectedPeriod) {
+            updateData()
+        }
+        .onChange(of: sessions.count) {
             updateData()
         }
     }
-    
+
+    private var introCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(L10n.string("Study Flow"))
+                .font(.headline)
+                .foregroundColor(.blue)
+
+            Text(L10n.string("どの教科が、いつ積み上がっているか"))
+                .font(.title3.weight(.bold))
+                .foregroundColor(.primary)
+
+            Text(L10n.string("期間を切り替えると、日・週・月・年の流れを見比べられます。"))
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+        .padding(22)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(.white.opacity(0.82))
+        )
+    }
+
+    private var periodPickerCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(L10n.string("期間"))
+                .font(.headline)
+
+            Picker(L10n.string("期間"), selection: $selectedPeriod) {
+                Text(L10n.string("日")).tag(Calendar.Component.day)
+                Text(L10n.string("週")).tag(Calendar.Component.weekOfYear)
+                Text(L10n.string("月")).tag(Calendar.Component.month)
+                Text(L10n.string("年")).tag(Calendar.Component.year)
+            }
+            .pickerStyle(.segmented)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(.white.opacity(0.82))
+        )
+    }
+
+    private var chartCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(L10n.string("教科ごとの積み上げ"))
+                .font(.headline)
+
+            if chartData.isEmpty {
+                Text(L10n.string("まだグラフにできる記録がありません"))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, minHeight: 260, alignment: .center)
+            } else {
+                Chart {
+                    ForEach(chartData) { item in
+                        BarMark(
+                            x: .value(L10n.string("日付"), item.dateStr),
+                            y: .value(L10n.string("時間"), Double(item.duration) / 60.0)
+                        )
+                        .foregroundStyle(by: .value(L10n.string("教科"), item.subject))
+                    }
+                }
+                .chartYAxisLabel(L10n.string("時間 (分)"))
+                .chartLegend(position: .bottom, spacing: 8)
+                .frame(height: 320)
+            }
+        }
+        .padding(22)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(.white.opacity(0.82))
+        )
+    }
+
     struct StackedItem: Identifiable {
         let id = UUID()
         let dateStr: String
         let subject: String
         let duration: Int
     }
-    
+
     private func updateData() {
         let sessions = self.sessions
         let subjects = subjectManager.subjects
         let period = selectedPeriod
-        
-        // Run calculation on background thread to avoid blocking UI
+
         DispatchQueue.global(qos: .userInitiated).async {
-            let items = StudyStatsTrendView.calculateStackedTimeSeries(sessions: sessions, subjects: subjects, period: period)
+            let items = Self.calculateStackedTimeSeries(sessions: sessions, subjects: subjects, period: period)
             DispatchQueue.main.async {
-                self.chartData = items
+                chartData = items
             }
         }
     }
-    
+
     private static func calculateStackedTimeSeries(sessions: [StudySession], subjects: [String], period: Calendar.Component) -> [StackedItem] {
         let calendar = Calendar.current
         let now = Date()
-        var items: [StackedItem] = []
-        
         let range = 0..<7
-        
-        // Reuse DateFormatter
-        let formatter = DateFormatter()
-        switch period {
-        case .day: formatter.dateFormat = "MM/dd"
-        case .weekOfYear: formatter.dateFormat = "MM/dd週"
-        case .month: formatter.dateFormat = "MM月"
-        case .year: formatter.dateFormat = "yyyy年"
-        default: formatter.dateFormat = "MM/dd"
-        }
-        
+        var items: [StackedItem] = []
+
         for i in range.reversed() {
             guard let date = calendar.date(byAdding: period, value: -i, to: now) else { continue }
-            
-            // Filter sessions for the period
+
             let sessionsInPeriod = sessions.filter { session in
                 switch period {
                 case .day:
@@ -130,22 +170,29 @@ struct StudyStatsTrendView: View {
                     return calendar.isDate(session.date, equalTo: date, toGranularity: .month)
                 case .year:
                     return calendar.isDate(session.date, equalTo: date, toGranularity: .year)
-                default: return false
+                default:
+                    return false
                 }
             }
-            
-            // Aggregate by subject
+
             for subject in subjects {
-                let total = sessionsInPeriod.filter { $0.subject == subject }
-                    .map { $0.duration }
+                let total = sessionsInPeriod
+                    .filter { $0.subject == subject }
+                    .map(\.duration)
                     .reduce(0, +)
-                
+
                 if total > 0 {
-                    let dateStr = formatter.string(from: date)
-                    items.append(StackedItem(dateStr: dateStr, subject: subject, duration: total))
+                    items.append(
+                        StackedItem(
+                            dateStr: L10n.chartDateLabel(for: period, date: date),
+                            subject: subject,
+                            duration: total
+                        )
+                    )
                 }
             }
         }
+
         return items
     }
 }

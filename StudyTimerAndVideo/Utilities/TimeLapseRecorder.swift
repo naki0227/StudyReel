@@ -3,9 +3,12 @@ import AVFoundation
 
 //MARK: - タイムラプス録画クラス
 class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
+    @Published private(set) var canCaptureVideo = false
+
     private let session = AVCaptureSession()
     private let output = AVCaptureVideoDataOutput()
     private var timer: Timer?
+    private weak var previewLayer: AVCaptureVideoPreviewLayer?
     
     // Thread-safe storage
     private let dataQueue = DispatchQueue(label: "com.studyTimer.dataQueue")
@@ -26,7 +29,12 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
         // 内カメラ入力
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front),
               let input = try? AVCaptureDeviceInput(device: device),
-              session.canAddInput(input) else { return }
+              session.canAddInput(input) else {
+            DispatchQueue.main.async {
+                self.canCaptureVideo = false
+            }
+            return
+        }
         session.addInput(input)
         
         // 出力
@@ -37,22 +45,36 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
             output.alwaysDiscardsLateVideoFrames = true // Drop frames if processing is slow
             session.addOutput(output)
         }
-        
-        if let connection = output.connection(with: .video), connection.isVideoOrientationSupported {
-            connection.videoOrientation = .landscapeRight
+
+        DispatchQueue.main.async {
+            self.canCaptureVideo = true
         }
+        
+        updateOrientation(isLandscape: true)
     }
     
     func startSession(previewLayer: AVCaptureVideoPreviewLayer) {
+        guard canCaptureVideo else { return }
+        self.previewLayer = previewLayer
         previewLayer.session = session
-        previewLayer.videoGravity = .resizeAspect
-        if let connection = previewLayer.connection, connection.isVideoOrientationSupported {
-            connection.videoOrientation = .landscapeRight
-        }
+        previewLayer.videoGravity = .resizeAspectFill
+        updateOrientation(isLandscape: true)
         if !session.isRunning {
             DispatchQueue.global(qos: .userInitiated).async {
                 self.session.startRunning()
             }
+        }
+    }
+
+    func updateOrientation(isLandscape: Bool) {
+        let orientation: AVCaptureVideoOrientation = isLandscape ? .landscapeRight : .portrait
+
+        if let connection = output.connection(with: .video), connection.isVideoOrientationSupported {
+            connection.videoOrientation = orientation
+        }
+
+        if let connection = previewLayer?.connection, connection.isVideoOrientationSupported {
+            connection.videoOrientation = orientation
         }
     }
     

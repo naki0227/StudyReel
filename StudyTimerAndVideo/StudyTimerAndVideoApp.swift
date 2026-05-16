@@ -11,6 +11,7 @@ import SwiftData
 //MARK: - アプリエントリーポイント
 @main
 struct StudyTimerAndVideoApp: App {
+    @StateObject private var storeKit = StoreKitManager()
     // Create container here to access context
     let container: ModelContainer
     
@@ -25,6 +26,7 @@ struct StudyTimerAndVideoApp: App {
     var body: some Scene {
         WindowGroup {
             StartView()
+                .environmentObject(storeKit)
                 .onAppear {
                     let context = container.mainContext
                     let migrator = DataMigrator(modelContext: context)
