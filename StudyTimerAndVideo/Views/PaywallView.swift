@@ -4,6 +4,8 @@ import StoreKit
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var storeKit: StoreKitManager
+    private let privacyPolicyURL = URL(string: "https://garrulous-court-1b7.notion.site/2bea705256988039b6fdd92ffb57a410")!
+    private let termsOfUseURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
     #if DEBUG
     @State private var showDebugTools = false
     #endif
@@ -27,6 +29,7 @@ struct PaywallView: View {
                         featureCard
                         comparisonCard
                         productCard
+                        legalCard
                         #if DEBUG
                         debugCard
                         #endif
@@ -267,6 +270,29 @@ struct PaywallView: View {
                 Task {
                     await storeKit.restorePurchases()
                 }
+            }
+            .font(.subheadline.weight(.semibold))
+        }
+        .padding(22)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(.white.opacity(0.82))
+        )
+    }
+
+    private var legalCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(L10n.string("サブスクリプション情報"))
+                .font(.headline)
+
+            Text(L10n.string("自動更新サブスクリプションです。購入確認後にApple IDへ課金され、現在の期間終了の24時間以上前に自動更新をオフにしない限り自動更新されます。"))
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            HStack(spacing: 16) {
+                Link(L10n.string("利用規約"), destination: termsOfUseURL)
+                Link(L10n.string("プライバシーポリシー"), destination: privacyPolicyURL)
             }
             .font(.subheadline.weight(.semibold))
         }

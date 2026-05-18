@@ -57,6 +57,9 @@
 "じっくり続けたい人向け" = "Best if you want to stick with it";
 "まずは気軽に試したい人向け" = "Best if you want to try it first";
 "いちばんおすすめ" = "Best value";
+"サブスクリプション情報" = "Subscription Information";
+"自動更新サブスクリプションです。購入確認後にApple IDへ課金され、現在の期間終了の24時間以上前に自動更新をオフにしない限り自動更新されます。" = "This is an auto-renewable subscription. Payment will be charged to your Apple ID at confirmation of purchase and renew automatically unless canceled at least 24 hours before the end of the current period.";
+"詳細な学習分析を見る" = "See deeper study insights";
 "商品がまだ設定されていません" = "Products aren't set up yet";
 "App Store Connect に Pro 商品を追加すると、ここに価格と購入ボタンが表示されます。" = "When you add Pro products in App Store Connect, pricing and purchase buttons will appear here.";
 "購入を復元" = "Restore Purchases";

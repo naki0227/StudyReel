@@ -127,6 +127,8 @@ struct StartView: View {
                                 }
                                 
                                 startButton
+
+                                proButton
                                 
                                 HStack(spacing: 20) {
                                     statsButton
@@ -328,6 +330,42 @@ struct StartView: View {
             .background(Color.white.opacity(0.9))
             .foregroundColor(.purple)
             .cornerRadius(12)
+        }
+    }
+
+    var proButton: some View {
+        Button(action: {
+            showPaywall = true
+        }) {
+            HStack(spacing: 10) {
+                Image(systemName: "sparkles.rectangle.stack.fill")
+                    .font(.headline)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.string("StudyReel Pro"))
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    Text(L10n.string("詳細な学習分析を見る"))
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.85))
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundColor(.white.opacity(0.85))
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .frame(maxWidth: 320)
+            .background(
+                LinearGradient(
+                    colors: [Color.orange, Color.pink],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .foregroundColor(.white)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 8)
         }
     }
     

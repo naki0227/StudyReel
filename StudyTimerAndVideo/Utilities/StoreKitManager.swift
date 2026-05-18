@@ -30,6 +30,9 @@ final class StoreKitManager: ObservableObject {
 
     init() {
         #if DEBUG
+        if UserDefaults.standard.object(forKey: debugUnlockKey) == nil {
+            UserDefaults.standard.set(true, forKey: debugUnlockKey)
+        }
         isDebugProUnlocked = UserDefaults.standard.bool(forKey: debugUnlockKey)
         #endif
         updatesTask = observeTransactionUpdates()

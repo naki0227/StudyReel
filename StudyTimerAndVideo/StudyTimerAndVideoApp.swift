@@ -31,6 +31,9 @@ struct StudyTimerAndVideoApp: App {
                     let context = container.mainContext
                     let migrator = DataMigrator(modelContext: context)
                     migrator.migrateIfNeeded()
+                    #if DEBUG
+                    DebugPreviewSeeder.seedIfNeeded(modelContext: context)
+                    #endif
                 }
         }
         .modelContainer(container)
