@@ -267,10 +267,3 @@ struct StudyReelWidget: Widget {
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
-
-#Preview(as: .systemSmall) {
-    StudyReelWidget()
-} timeline: {
-    SimpleEntry(date: .now, endTime: nil)
-    SimpleEntry(date: .now, endTime: Date().addingTimeInterval(1500))
-}

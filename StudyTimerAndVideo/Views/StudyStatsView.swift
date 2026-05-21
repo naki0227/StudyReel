@@ -3,6 +3,7 @@ import SwiftData
 
 struct StudyStatsView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var storeKit: StoreKitManager
 
@@ -30,15 +31,7 @@ struct StudyStatsView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.95, green: 0.98, blue: 1.0),
-                        Color(red: 0.90, green: 0.95, blue: 0.98),
-                        Color(red: 0.85, green: 0.91, blue: 0.95)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                AppPalette.dashboardGradient(for: colorScheme)
                 .ignoresSafeArea()
 
                 ScrollView {
@@ -99,7 +92,7 @@ struct StudyStatsView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text(L10n.string("Past You Dashboard"))
                 .font(.headline)
-                .foregroundColor(Color.blue.opacity(0.9))
+                .foregroundColor(AppPalette.accentText(for: colorScheme))
 
             Text(L10n.string("記録ではなく、勉強の流れを見る"))
                 .font(.title2.weight(.bold))
@@ -124,11 +117,11 @@ struct StudyStatsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.white.opacity(0.78))
+                .fill(AppPalette.cardFill(for: colorScheme))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(0.8), lineWidth: 1)
+                .stroke(AppPalette.stroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -156,7 +149,7 @@ struct StudyStatsView: View {
         .frame(maxWidth: .infinity, minHeight: 112, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.white.opacity(0.82))
+                .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
 
@@ -222,7 +215,7 @@ struct StudyStatsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.white.opacity(0.82))
+                .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
 
@@ -242,6 +235,10 @@ struct StudyStatsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
             .background(Color.blue.opacity(0.08))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(colorScheme == .dark ? Color.blue.opacity(0.18) : Color.clear, lineWidth: 1)
+            )
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -310,7 +307,7 @@ struct StudyStatsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.white.opacity(0.82))
+                .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
 
@@ -355,7 +352,7 @@ struct StudyStatsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.white.opacity(0.82))
+                .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
 
@@ -401,7 +398,7 @@ struct StudyStatsView: View {
             }
         }
         .padding(14)
-        .background(Color.white.opacity(0.65))
+        .background(AppPalette.secondaryCardFill(for: colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .contextMenu {
             Button(role: .destructive) {

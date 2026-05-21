@@ -7,6 +7,7 @@ struct StudyStatsTrendView: View {
     let sessions: [StudySession]
     @ObservedObject var subjectManager: SubjectManager
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var selectedPeriod: Calendar.Component = .day
     @State private var chartData: [StackedItem] = []
@@ -14,15 +15,7 @@ struct StudyStatsTrendView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.95, green: 0.98, blue: 1.0),
-                        Color(red: 0.90, green: 0.95, blue: 0.98),
-                        Color(red: 0.85, green: 0.91, blue: 0.95)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                AppPalette.dashboardGradient(for: colorScheme)
                 .ignoresSafeArea()
 
                 ScrollView {
@@ -59,7 +52,7 @@ struct StudyStatsTrendView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(L10n.string("Study Flow"))
                 .font(.headline)
-                .foregroundColor(.blue)
+                .foregroundColor(AppPalette.accentText(for: colorScheme))
 
             Text(L10n.string("どの教科が、いつ積み上がっているか"))
                 .font(.title3.weight(.bold))
@@ -73,7 +66,7 @@ struct StudyStatsTrendView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.white.opacity(0.82))
+                .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
 
@@ -94,7 +87,7 @@ struct StudyStatsTrendView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.white.opacity(0.82))
+                .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
 
@@ -127,7 +120,7 @@ struct StudyStatsTrendView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.white.opacity(0.82))
+                .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
 

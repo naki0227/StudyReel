@@ -3,6 +3,7 @@ import StoreKit
 
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var storeKit: StoreKitManager
     private let privacyPolicyURL = URL(string: "https://garrulous-court-1b7.notion.site/2bea705256988039b6fdd92ffb57a410")!
     private let termsOfUseURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
@@ -13,14 +14,7 @@ struct PaywallView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.96, green: 0.98, blue: 1.0),
-                        Color(red: 0.89, green: 0.94, blue: 0.98)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                AppPalette.paywallGradient(for: colorScheme)
                 .ignoresSafeArea()
 
                 ScrollView {
@@ -91,7 +85,7 @@ struct PaywallView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.white.opacity(0.82))
+                .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
 
@@ -108,7 +102,7 @@ struct PaywallView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.white.opacity(0.82))
+                .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
 
@@ -152,7 +146,7 @@ struct PaywallView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.white.opacity(0.82))
+                .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
 
@@ -277,7 +271,7 @@ struct PaywallView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.white.opacity(0.82))
+                .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
 
@@ -300,7 +294,7 @@ struct PaywallView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.white.opacity(0.82))
+                .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
 
@@ -370,7 +364,7 @@ struct PaywallView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.white.opacity(0.82))
+                .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
     #endif

@@ -6,6 +6,7 @@ import WidgetKit
 // MARK: - タイトル画面
 struct StartView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @Query private var goals: [DailyGoal]
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
     
@@ -52,11 +53,7 @@ struct StartView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.blue, Color.purple]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                AppPalette.homeGradient(for: colorScheme)
                 .ignoresSafeArea()
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
@@ -92,7 +89,7 @@ struct StartView: View {
                                     Text("StudyReel")
                                         .font(.largeTitle)
                                         .fontWeight(.bold)
-                                        .foregroundColor(.white)
+                                        .foregroundColor(titleColor)
                                     
                                     modePicker
                                     
@@ -101,6 +98,7 @@ struct StartView: View {
                                     }
                                     
                                     startButton
+                                    proButton
                                 }
                                 .frame(width: isIPad ? 400 : geometry.size.width * 0.5)
                                 
@@ -118,7 +116,7 @@ struct StartView: View {
                                 Text("StudyReel")
                                     .font(.largeTitle)
                                     .fontWeight(.bold)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(titleColor)
                                 
                                 modePicker
                                 
@@ -212,7 +210,7 @@ struct StartView: View {
                 Circle()
                     .stroke(lineWidth: 10)
                     .opacity(0.3)
-                    .foregroundColor(.white)
+                                .foregroundColor(.white)
                 
                 Circle()
                     .trim(from: 0.0, to: min(progress, 1.0))
@@ -243,14 +241,14 @@ struct StartView: View {
         HStack {
             Button(L10n.string("タイマー")) { selectedMode = .timer }
                 .padding()
-                .background(selectedMode == .timer ? Color.white : Color.gray.opacity(0.5))
-                .foregroundColor(.blue)
+                .background(AppPalette.controlFill(for: colorScheme, selected: selectedMode == .timer))
+                .foregroundColor(AppPalette.controlText(for: colorScheme, selected: selectedMode == .timer))
                 .cornerRadius(8)
             
             Button(L10n.string("ストップウォッチ")) { selectedMode = .stopwatch}
                 .padding()
-                .background(selectedMode == .stopwatch ? Color.white : Color.gray.opacity(0.5))
-                .foregroundColor(.blue)
+                .background(AppPalette.controlFill(for: colorScheme, selected: selectedMode == .stopwatch))
+                .foregroundColor(AppPalette.controlText(for: colorScheme, selected: selectedMode == .stopwatch))
                 .cornerRadius(8)
         }
     }
@@ -284,25 +282,26 @@ struct StartView: View {
         .pickerStyle(WheelPickerStyle())
         .foregroundColor(.white)
         .frame(height: 70)
+        .background(AppPalette.controlFill(for: colorScheme).opacity(0.9))
         .cornerRadius(12)
     }
     
     var startButton: some View {
         Button(action: {
-            if permissionManager.cameraPermissionGranted && permissionManager.photoLibraryPermissionGranted {
-                sessionBootstrap = SessionBootstrap(
-                    totalSeconds: hours * 3600 + minutes * 60 + seconds,
-                    mode: selectedMode,
-                    startedAt: nil,
-                    autoStart: false,
-                    initialRecordingEnabled: true,
-                    source: .app
-                )
-                showTimerView = true
-            } else {
-                permissionManager.checkPermissions()
-                if !permissionManager.cameraPermissionGranted || !permissionManager.photoLibraryPermissionGranted {
+            Task {
+                if permissionManager.hasRequiredPermissions {
+                    startSession(recordTimelapse: true)
+                    return
+                }
+
+                await permissionManager.requestRequiredPermissionsIfNeeded()
+
+                if permissionManager.hasRequiredPermissions {
+                    startSession(recordTimelapse: true)
+                } else if permissionManager.needsSettingsRedirect {
                     showPermissionAlert = true
+                } else {
+                    startSession(recordTimelapse: false)
                 }
             }
         }) {
@@ -310,8 +309,8 @@ struct StartView: View {
                 .font(.title2)
                 .padding()
                 .frame(width: 200)
-                .background(Color.white)
-                .foregroundColor(.blue)
+                .background(AppPalette.cardFillStrong(for: colorScheme))
+                .foregroundColor(colorScheme == .dark ? .white : .blue)
                 .cornerRadius(12)
         }
     }
@@ -327,8 +326,8 @@ struct StartView: View {
                     .font(.caption)
             }
             .frame(width: 100, height: 80)
-            .background(Color.white.opacity(0.9))
-            .foregroundColor(.purple)
+            .background(AppPalette.cardFillStrong(for: colorScheme))
+            .foregroundColor(colorScheme == .dark ? .white : .purple)
             .cornerRadius(12)
         }
     }
@@ -380,16 +379,32 @@ struct StartView: View {
                     .font(.caption)
             }
             .frame(width: 100, height: 80)
-            .background(Color.white.opacity(0.9))
-            .foregroundColor(.orange)
+            .background(AppPalette.cardFillStrong(for: colorScheme))
+            .foregroundColor(colorScheme == .dark ? .white : .orange)
             .cornerRadius(12)
         }
+    }
+
+    private var titleColor: Color {
+        colorScheme == .dark ? .white : .white
     }
     
     private func formatTime(_ seconds: Int) -> String {
         let h = seconds / 3600
         let m = (seconds % 3600) / 60
         return String(format: "%d:%02d", h, m)
+    }
+
+    private func startSession(recordTimelapse: Bool) {
+        sessionBootstrap = SessionBootstrap(
+            totalSeconds: hours * 3600 + minutes * 60 + seconds,
+            mode: selectedMode,
+            startedAt: nil,
+            autoStart: false,
+            initialRecordingEnabled: recordTimelapse,
+            source: .app
+        )
+        showTimerView = true
     }
 
     private func consumePendingSessionDraftIfNeeded() {
