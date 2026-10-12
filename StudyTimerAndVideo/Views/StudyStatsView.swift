@@ -36,7 +36,6 @@ struct StudyStatsView: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        headerCard
                         overviewGrid
                         pastYouPatternCard
                         filterCard
@@ -88,67 +87,31 @@ struct StudyStatsView: View {
         }
     }
 
-    var headerCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(L10n.string("Past You Dashboard"))
-                .font(.headline)
-                .foregroundColor(AppPalette.accentText(for: colorScheme))
-
-            Text(L10n.string("これまでの積み上げ"))
-                .font(.title2.weight(.bold))
-                .foregroundColor(.primary)
-
-            Text(summaryLine)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-
-            Button(action: { showSubjectManager = true }) {
-                Label(L10n.string("教科を管理"), systemImage: "book.closed")
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(Color.blue.opacity(0.10))
-                    .foregroundColor(.blue)
-                    .clipShape(Capsule())
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(22)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(AppPalette.cardFill(for: colorScheme))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(AppPalette.stroke(for: colorScheme), lineWidth: 1)
-        )
-    }
-
     var overviewGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
-            metricCard(title: L10n.string("Today"), value: formatHoursAndMinutes(todayTotalSeconds), tone: Color.blue)
-            metricCard(title: L10n.string("This Week"), value: formatHoursAndMinutes(thisWeekTotalSeconds), tone: Color.teal)
-            metricCard(title: L10n.string("Streak"), value: L10n.format("%d日", currentStreak), tone: Color.orange)
-            metricCard(title: L10n.string("Top Subject"), value: topSubject ?? L10n.string("No Data"), tone: Color.indigo)
+            metricCard(title: L10n.string("Today"), value: formatHoursAndMinutes(todayTotalSeconds))
+            metricCard(title: L10n.string("This Week"), value: formatHoursAndMinutes(thisWeekTotalSeconds))
+            metricCard(title: L10n.string("Streak"), value: L10n.format("%d日", currentStreak))
+            metricCard(title: L10n.string("Top Subject"), value: topSubject ?? L10n.string("No Data"))
         }
     }
 
-    func metricCard(title: String, value: String, tone: Color) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+    func metricCard(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.caption.weight(.semibold))
-                .foregroundColor(tone)
+                .foregroundColor(.secondary)
             Text(value)
                 .font(.title3.weight(.bold))
+                .monospacedDigit()
                 .foregroundColor(.primary)
+                .lineLimit(1)
                 .minimumScaleFactor(0.75)
-            Spacer(minLength: 0)
         }
-        .padding(18)
-        .frame(maxWidth: .infinity, minHeight: 112, alignment: .leading)
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
@@ -173,93 +136,66 @@ struct StudyStatsView: View {
                 }
             }
 
-            patternRow(
-                title: L10n.string("よく始める時間"),
-                value: patternMostCommonStartHourText,
-                detail: selectedPatternSubject == nil ? L10n.string("いちばん多く始めた時間") : L10n.string("この教科をいちばん多く始めた時間")
-            )
-            patternRow(
-                title: L10n.string("平均継続時間"),
-                value: formatHoursAndMinutes(patternAverageDurationSeconds),
-                detail: selectedPatternSubject == nil ? L10n.string("1回あたりの平均") : L10n.string("この教科の1回あたりの平均")
-            )
-            patternRow(
-                title: L10n.string("今の時間帯の記録"),
-                value: L10n.format("%d records", patternSessionsNearCurrentHour),
-                detail: selectedPatternSubject == nil ? L10n.string("前後1時間に始めた回数") : L10n.string("この教科を前後1時間に始めた回数")
-            )
+            patternRow(title: L10n.string("よく始める時間"), value: patternMostCommonStartHourText)
+            patternRow(title: L10n.string("平均継続時間"), value: formatHoursAndMinutes(patternAverageDurationSeconds))
             if !storeKit.isProUnlocked {
                 proLockedCard
             } else if let selectedPatternSubject {
                 patternRow(
                     title: L10n.string("先週比"),
-                    value: StudyInsights.weeklyComparisonText(for: filteredSessions, subject: selectedPatternSubject),
-                    detail: L10n.string("先週と比べた勉強時間")
+                    value: StudyInsights.weeklyComparisonText(for: filteredSessions, subject: selectedPatternSubject)
                 )
                 patternRow(
                     title: L10n.string("集中しやすい時間"),
-                    value: StudyInsights.strongestHourText(for: patternSessions),
-                    detail: L10n.string("この教科に集中しやすい時間")
+                    value: StudyInsights.strongestHourText(for: patternSessions)
                 )
-            }
-
-            if !topSubjects.isEmpty && selectedPatternSubject == nil {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(L10n.string("よく勉強している教科"))
-                        .font(.subheadline.weight(.semibold))
-                    FlowSubjects(subjects: topSubjects)
-                }
+            } else if !patternSubjects.isEmpty {
+                Text(L10n.string("教科を選ぶと、先週比と集中しやすい時間も表示されます。"))
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
             }
         }
-        .padding(22)
+        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
 
     var proLockedCard: some View {
         Button(action: { showPaywall = true }) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(L10n.string("StudyReel Pro"))
-                    .font(.subheadline.weight(.bold))
-                    .foregroundColor(.blue)
-                Text(L10n.string("教科別の先週比と集中しやすい時間帯は Pro で見られます。"))
-                    .font(.caption)
+            HStack(spacing: 12) {
+                Image(systemName: "lock.fill")
                     .foregroundColor(.secondary)
-                Text(L10n.string("Proを始める"))
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(.blue)
+                Text(L10n.string("教科別の先週比と集中しやすい時間帯は Pro で見られます。"))
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundColor(.secondary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
-            .background(Color.blue.opacity(0.08))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(colorScheme == .dark ? Color.blue.opacity(0.18) : Color.clear, lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .padding(12)
+            .background(Color.primary.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
     }
 
-    func patternRow(title: String, value: String, detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(.secondary)
-                Spacer()
-                Text(value)
-                    .font(.subheadline.weight(.bold))
-                    .foregroundColor(.primary)
-            }
-            Text(detail)
-                .font(.caption)
+    func patternRow(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.subheadline)
                 .foregroundColor(.secondary)
+            Spacer()
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .monospacedDigit()
+                .foregroundColor(.primary)
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
     }
 
     func subjectChip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
@@ -268,8 +204,8 @@ struct StudyStatsView: View {
                 .font(.caption.weight(.semibold))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
-                .background(isSelected ? Color.indigo.opacity(0.14) : Color.gray.opacity(0.10))
-                .foregroundColor(isSelected ? .indigo : .primary)
+                .background(isSelected ? AppPalette.skyDeep : Color.gray.opacity(0.12))
+                .foregroundColor(isSelected ? .white : .primary)
                 .clipShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -306,7 +242,7 @@ struct StudyStatsView: View {
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
@@ -317,8 +253,8 @@ struct StudyStatsView: View {
                 .font(.caption.weight(.semibold))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
-                .background(isSelected ? Color.blue.opacity(0.16) : Color.gray.opacity(0.10))
-                .foregroundColor(isSelected ? .blue : .primary)
+                .background(isSelected ? AppPalette.skyDeep : Color.gray.opacity(0.12))
+                .foregroundColor(isSelected ? .white : .primary)
                 .clipShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -351,29 +287,21 @@ struct StudyStatsView: View {
         .padding(22)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
 
     func historyRow(for session: StudySession) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            Circle()
-                .fill(Color.blue.opacity(0.18))
-                .frame(width: 38, height: 38)
-                .overlay(
-                    Text(String(session.subject.prefix(1)))
-                        .font(.subheadline.weight(.bold))
-                        .foregroundColor(.blue)
-                )
-
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text(session.subject)
                         .font(.subheadline.weight(.semibold))
                     Spacer()
-                    Text(formatClockTime(session.duration))
+                    Text(formatHoursAndMinutes(session.duration))
                         .font(.subheadline.weight(.bold))
+                        .monospacedDigit()
                 }
 
                 Text(formatDate(session.date))
@@ -409,13 +337,6 @@ struct StudyStatsView: View {
         }
     }
 
-    private var summaryLine: String {
-        if filteredSessions.isEmpty {
-            return L10n.string("最初の記録をつけると、ここに傾向が表示されます。")
-        }
-        return L10n.format("今日 %@ ・ 今週 %@", formatHoursAndMinutes(todayTotalSeconds), formatHoursAndMinutes(thisWeekTotalSeconds))
-    }
-
     private var todayTotalSeconds: Int {
         filteredSessions
             .filter { calendar.isDateInToday($0.date) }
@@ -428,10 +349,6 @@ struct StudyStatsView: View {
             .filter { calendar.isDate($0.date, equalTo: Date(), toGranularity: .weekOfYear) }
             .map(\.duration)
             .reduce(0, +)
-    }
-
-    private var averageDurationSeconds: Int {
-        StudyInsights.averageDurationSeconds(for: filteredSessions)
     }
 
     private var patternSessions: [StudySession] {
@@ -449,20 +366,8 @@ struct StudyStatsView: View {
         StudyInsights.averageDurationSeconds(for: patternSessions)
     }
 
-    private var patternSessionsNearCurrentHour: Int {
-        StudyInsights.sessionsNearCurrentHour(patternSessions)
-    }
-
-    private var sessionsNearCurrentHour: Int {
-        StudyInsights.sessionsNearCurrentHour(filteredSessions)
-    }
-
     private var topSubject: String? {
         subjectTotals.first?.key
-    }
-
-    private var topSubjects: [String] {
-        Array(subjectTotals.prefix(4).map(\.key))
     }
 
     private var subjectTotals: [(key: String, value: Int)] {
@@ -485,19 +390,8 @@ struct StudyStatsView: View {
         return streak
     }
 
-    private var mostCommonStartHourText: String {
-        StudyInsights.mostCommonStartHourText(for: filteredSessions)
-    }
-
     private var patternMostCommonStartHourText: String {
         StudyInsights.mostCommonStartHourText(for: patternSessions)
-    }
-
-    private func formatClockTime(_ seconds: Int) -> String {
-        let h = seconds / 3600
-        let m = (seconds % 3600) / 60
-        let s = seconds % 60
-        return String(format: "%02d:%02d:%02d", h, m, s)
     }
 
     private func formatHoursAndMinutes(_ seconds: Int) -> String {
@@ -516,24 +410,5 @@ struct StudyStatsView: View {
         formatter.timeStyle = .short
         formatter.locale = .autoupdatingCurrent
         return formatter.string(from: date)
-    }
-}
-
-private struct FlowSubjects: View {
-    let subjects: [String]
-
-    var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], spacing: 8) {
-            ForEach(subjects, id: \.self) { subject in
-                Text(subject)
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.blue.opacity(0.10))
-                    .foregroundColor(.blue)
-                    .clipShape(Capsule())
-            }
-        }
     }
 }

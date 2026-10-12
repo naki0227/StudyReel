@@ -337,7 +337,7 @@ struct StartView: View {
             showPaywall = true
         }) {
             HStack(spacing: 10) {
-                Image(systemName: "sparkles.rectangle.stack.fill")
+                Image(systemName: "chart.bar.xaxis")
                     .font(.headline)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L10n.string("StudyReel Pro"))

@@ -20,8 +20,7 @@ struct StudyStatsTrendView: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        introCard
-                        periodPickerCard
+                        periodPicker
                         chartCard
                     }
                     .padding(20)
@@ -48,47 +47,14 @@ struct StudyStatsTrendView: View {
         }
     }
 
-    private var introCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(L10n.string("Study Flow"))
-                .font(.headline)
-                .foregroundColor(AppPalette.accentText(for: colorScheme))
-
-            Text(L10n.string("教科ごとの勉強時間"))
-                .font(.title3.weight(.bold))
-                .foregroundColor(.primary)
-
-            Text(L10n.string("日・週・月・年で切り替えられます。"))
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+    private var periodPicker: some View {
+        Picker(L10n.string("期間"), selection: $selectedPeriod) {
+            Text(L10n.string("日")).tag(Calendar.Component.day)
+            Text(L10n.string("週")).tag(Calendar.Component.weekOfYear)
+            Text(L10n.string("月")).tag(Calendar.Component.month)
+            Text(L10n.string("年")).tag(Calendar.Component.year)
         }
-        .padding(22)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(AppPalette.cardFill(for: colorScheme))
-        )
-    }
-
-    private var periodPickerCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(L10n.string("期間"))
-                .font(.headline)
-
-            Picker(L10n.string("期間"), selection: $selectedPeriod) {
-                Text(L10n.string("日")).tag(Calendar.Component.day)
-                Text(L10n.string("週")).tag(Calendar.Component.weekOfYear)
-                Text(L10n.string("月")).tag(Calendar.Component.month)
-                Text(L10n.string("年")).tag(Calendar.Component.year)
-            }
-            .pickerStyle(.segmented)
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(AppPalette.cardFill(for: colorScheme))
-        )
+        .pickerStyle(.segmented)
     }
 
     private var chartCard: some View {
@@ -119,7 +85,7 @@ struct StudyStatsTrendView: View {
         .padding(22)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(AppPalette.cardFill(for: colorScheme))
         )
     }
