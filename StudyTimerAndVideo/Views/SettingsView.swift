@@ -10,8 +10,8 @@ struct SettingsView: View {
     @State private var showPaywall = false
     
     // 実際のURLやテキストに合わせて変更してください
-    let privacyPolicyURL = URL(string: "https://garrulous-court-1b7.notion.site/2bea705256988039b6fdd92ffb57a410")!
-    let termsOfServiceURL = URL(string: "https://garrulous-court-1b7.notion.site/2bea705256988039b6fdd92ffb57a410")!
+    let privacyPolicyURL = URL(string: "https://enludus.com/products/studyreel-privacy")!
+    let termsOfServiceURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
     
     var body: some View {
         NavigationView {

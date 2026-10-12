@@ -5,7 +5,7 @@ struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var storeKit: StoreKitManager
-    private let privacyPolicyURL = URL(string: "https://garrulous-court-1b7.notion.site/2bea705256988039b6fdd92ffb57a410")!
+    private let privacyPolicyURL = URL(string: "https://enludus.com/products/studyreel-privacy")!
     private let termsOfUseURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
     #if DEBUG
     @State private var showDebugTools = false

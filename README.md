@@ -86,7 +86,7 @@ graph TD
 
 ### Prerequisites
 *   Xcode 15.0+
-*   iOS 17.0+ (Target Deployment: 18.5)
+*   iOS 18.0+
 
 ### Build
 1.  Open `StudyTimerAndVideo.xcodeproj` in Xcode.
