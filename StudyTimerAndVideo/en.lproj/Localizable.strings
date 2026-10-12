@@ -200,3 +200,6 @@
 "顔の位置は端末の中だけで検出し、保存も送信もしません。" = "Face position is detected on your device only. It is never stored or sent.";
 "顔にモザイク" = "Face mosaic";
 "顔をスタンプで隠す" = "Hide face with a sticker";
+"横向き" = "Landscape";
+"縦向き" = "Portrait";
+"%@に切り替える" = "Switch to %@";

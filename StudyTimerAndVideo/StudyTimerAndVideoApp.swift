@@ -11,6 +11,7 @@ import SwiftData
 //MARK: - アプリエントリーポイント
 @main
 struct StudyTimerAndVideoApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var storeKit = StoreKitManager()
     // Create container here to access context
     let container: ModelContainer

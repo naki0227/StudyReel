@@ -45,6 +45,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     private var interval: Double = 5
     private var sessionStart = Date()
     private var elapsedOffset = 0
+    private var captureLandscape = true
     private var faceDetectionEnabled = true
     private let faceTracker = FaceTracker()
     private var track = FaceTrack()
@@ -144,8 +145,11 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
         }
     }
 
-    func start(mode: RecordingMode, interval: Double, sessionStart: Date, elapsedOffset: Int) {
+    func start(mode: RecordingMode, interval: Double, sessionStart: Date, elapsedOffset: Int, isLandscape: Bool) {
+        // 画面の回転が終わる前に最初のフレームが来ても、選んだ向きで記録する
+        updateOrientation(isLandscape: isLandscape)
         videoQueue.async {
+            self.captureLandscape = isLandscape
             self.discardWriter()
             self.mode = mode
             self.interval = interval
@@ -279,7 +283,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     @discardableResult
     private func append(_ pixelBuffer: CVPixelBuffer, at time: CMTime) -> Bool {
         if writer == nil {
-            setupWriter(width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
+            setupWriter()
         }
 
         guard let writer, writer.status == .writing,
@@ -298,10 +302,9 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
         return true
     }
 
-    private func setupWriter(width: Int, height: Int) {
+    private func setupWriter() {
         // 縦持ちならリール向けの縦長、横持ちなら横長で書き出す
-        let isPortrait = height > width
-        canvasSize = isPortrait ? CGSize(width: 1080, height: 1920) : CGSize(width: 1920, height: 1080)
+        canvasSize = captureLandscape ? CGSize(width: 1920, height: 1080) : CGSize(width: 1080, height: 1920)
 
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("studyreel-\(UUID().uuidString).mov")
 

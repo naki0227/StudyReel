@@ -8,6 +8,7 @@ struct ContentView: View {
     @EnvironmentObject private var storeKit: StoreKitManager
     @AppStorage(FaceHideStyle.storageKey) private var hideStyleRaw = FaceHideStyle.mosaic.rawValue
     @AppStorage(FaceStamp.storageKey) private var stamp = FaceStamp.defaultStamp
+    @AppStorage(CaptureOrientation.storageKey) private var captureOrientationRaw = CaptureOrientation.landscape.rawValue
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
 
     @StateObject private var recorder = TimeLapseRecorder()
@@ -128,10 +129,14 @@ struct ContentView: View {
         } message: {
             Text(L10n.string("ここまでの記録は保存されません。"))
         }
-        .sheet(isPresented: $showSaveSheet, onDismiss: { onFinish() }) {
+        .sheet(isPresented: $showSaveSheet, onDismiss: { finishSession() }) {
             SessionSaveView(subjectManager: subjectManager, duration: pendingDuration)
         }
+        .onChange(of: captureOrientationRaw) {
+            OrientationLock.lock(captureOrientation.mask)
+        }
         .onAppear {
+            OrientationLock.lock(captureOrientation.mask)
             recorder.setFaceDetectionEnabled(recordingMode != .off)
             guard bootstrap?.autoStart == true, !didAutoStart else { return }
             didAutoStart = true
@@ -148,6 +153,21 @@ struct ContentView: View {
             timerBadge
 
             Spacer()
+
+            if !isRecording {
+                Button {
+                    captureOrientationRaw = captureOrientation.toggled.rawValue
+                } label: {
+                    Label(captureOrientation.toggled.title, systemImage: "rotate.right")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14)
+                        .frame(height: 44)
+                        .background(.ultraThinMaterial.opacity(0.7))
+                        .clipShape(Capsule())
+                }
+                .accessibilityLabel(L10n.format("%@に切り替える", captureOrientation.toggled.title))
+            }
 
             Button {
                 showDiscardAlert = true
@@ -283,6 +303,10 @@ struct ContentView: View {
         formatTime(mode == .timer ? timerModel.remaining : stopwatchModel.elapsed)
     }
 
+    private var captureOrientation: CaptureOrientation {
+        CaptureOrientation(rawValue: captureOrientationRaw) ?? .landscape
+    }
+
     private var isRecordingVideo: Bool {
         recordingMode != .off && recorder.canCaptureVideo
     }
@@ -313,7 +337,13 @@ struct ContentView: View {
         }
 
         if isRecordingVideo {
-            recorder.start(mode: recordingMode, interval: 5, sessionStart: startedAt, elapsedOffset: elapsedBeforeLaunch)
+            recorder.start(
+                mode: recordingMode,
+                interval: 5,
+                sessionStart: startedAt,
+                elapsedOffset: elapsedBeforeLaunch,
+                isLandscape: captureOrientation.isLandscape
+            )
         }
 
         isRecording = true
@@ -383,6 +413,12 @@ struct ContentView: View {
         isPaused = false
         sessionStartedAt = nil
         clearWidgetTimerState()
+        finishSession()
+    }
+
+    // 録画画面を閉じるときだけ向きの固定を外す（確認画面を出している間は固定したまま）
+    private func finishSession() {
+        OrientationLock.unlock()
         onFinish()
     }
 
