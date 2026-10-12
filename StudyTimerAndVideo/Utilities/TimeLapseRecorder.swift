@@ -21,10 +21,14 @@ enum RecordingMode: String, CaseIterable, Identifiable {
 }
 
 //MARK: - 録画クラス
-// カメラのフレームを受け取りながら、その場で文字を重ねて動画ファイルに書き込む。
+// カメラのフレームをそのまま動画ファイルに書き込み、同時に顔の位置を記録する。
+// 文字・透かし・モザイクは、確認画面のあとに VideoExporter で合成する。
 // タイムラプスは一定間隔ごとに1枚、全部録画はすべてのフレームを書き込む。
 class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     @Published private(set) var canCaptureVideo = false
+    // プレビューにモザイクを出すための、カメラ映像に対する顔の位置（0〜1、左上原点）
+    @Published private(set) var liveFaceRect: CGRect?
+    @Published private(set) var bufferSize: CGSize = .zero
 
     private let session = AVCaptureSession()
     private let output = AVCaptureVideoDataOutput()
@@ -41,7 +45,10 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     private var interval: Double = 5
     private var sessionStart = Date()
     private var elapsedOffset = 0
-    private var style = VideoOverlayStyle(font: .standard, showsWatermark: true)
+    private var faceDetectionEnabled = true
+    private let faceTracker = FaceTracker()
+    private var track = FaceTrack()
+    private var lastSampleTime: Double?
 
     private var writer: AVAssetWriter?
     private var writerInput: AVAssetWriterInput?
@@ -54,7 +61,6 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     private var lastCaptureActiveSeconds: Double?
     private var lastAppendedTime: CMTime?
     private var frameIndex: Int64 = 0
-    private var cachedOverlay: (text: HourBlockText, image: CIImage)?
 
     override init() {
         super.init()
@@ -128,20 +134,30 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
 
     // MARK: - 記録の操作（メインスレッドから呼ぶ）
 
-    func start(mode: RecordingMode, interval: Double, sessionStart: Date, elapsedOffset: Int, style: VideoOverlayStyle) {
+    func setFaceDetectionEnabled(_ enabled: Bool) {
+        videoQueue.async {
+            self.faceDetectionEnabled = enabled
+            if !enabled {
+                self.faceTracker.reset()
+                DispatchQueue.main.async { self.liveFaceRect = nil }
+            }
+        }
+    }
+
+    func start(mode: RecordingMode, interval: Double, sessionStart: Date, elapsedOffset: Int) {
         videoQueue.async {
             self.discardWriter()
             self.mode = mode
             self.interval = interval
             self.sessionStart = sessionStart
             self.elapsedOffset = elapsedOffset
-            self.style = style
             self.activeSeconds = 0
             self.lastFramePTS = nil
             self.lastCaptureActiveSeconds = nil
             self.lastAppendedTime = nil
+            self.lastSampleTime = nil
             self.frameIndex = 0
-            self.cachedOverlay = nil
+            self.track = FaceTrack(isRealTime: mode == .full)
             self.isCapturing = mode != .off
         }
     }
@@ -159,8 +175,8 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
         }
     }
 
-    // 書き込みを終えて動画ファイルの URL を返す。何も記録していなければ nil
-    func finish(completion: @escaping (URL?) -> Void) {
+    // 書き込みを終えて、確認画面に渡す結果を返す。何も記録していなければ nil
+    func finish(completion: @escaping (RecordingResult?) -> Void) {
         videoQueue.async {
             self.isCapturing = false
             guard let writer = self.writer, let input = self.writerInput, let url = self.outputURL, writer.status == .writing else {
@@ -168,6 +184,8 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
                 DispatchQueue.main.async { completion(nil) }
                 return
             }
+
+            let result = RecordingResult(url: url, canvasSize: self.canvasSize, sessionStart: self.sessionStart, track: self.track)
 
             self.writer = nil
             self.writerInput = nil
@@ -181,7 +199,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
                     try? FileManager.default.removeItem(at: url)
                 }
                 DispatchQueue.main.async {
-                    completion(succeeded ? url : nil)
+                    completion(succeeded ? result : nil)
                 }
             }
         }
@@ -210,10 +228,23 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     // MARK: - フレーム処理（videoQueue）
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        guard isCapturing, let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+
+        if faceDetectionEnabled, faceTracker.process(pixelBuffer, time: pts.seconds) {
+            let rect = faceTracker.rectOrDefault
+            let size = CGSize(width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
+            DispatchQueue.main.async {
+                self.liveFaceRect = rect
+                if self.bufferSize != size {
+                    self.bufferSize = size
+                }
+            }
+        }
+
+        guard isCapturing else { return }
 
         // 一時停止していた時間は含めずに、勉強した時間だけを積み上げる
-        let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
         if let lastFramePTS {
             activeSeconds += max(0, CMTimeSubtract(pts, lastFramePTS).seconds)
         }
@@ -226,6 +257,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
             let time = CMTime(value: frameIndex, timescale: Self.timelapseFrameRate)
             if append(pixelBuffer, at: time) {
                 frameIndex += 1
+                recordSample(pixelBuffer, videoTime: time.seconds)
             }
         case .full:
             var time = CMTime(seconds: activeSeconds, preferredTimescale: 600)
@@ -233,7 +265,12 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
                 time = CMTimeAdd(lastAppendedTime, CMTime(seconds: Self.fullFrameDuration, preferredTimescale: 600))
                 activeSeconds = time.seconds
             }
-            _ = append(pixelBuffer, at: time)
+            if append(pixelBuffer, at: time) {
+                // 全部録画は 0.2 秒おきに記録して、間は確認画面と書き出しで補間する
+                if lastSampleTime == nil || time.seconds - (lastSampleTime ?? 0) >= 0.2 {
+                    recordSample(pixelBuffer, videoTime: time.seconds)
+                }
+            }
         case .off:
             break
         }
@@ -254,8 +291,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
         guard let outputBuffer else { return false }
 
         let frame = aspectFill(CIImage(cvPixelBuffer: pixelBuffer), to: canvasSize)
-        let composed = overlayImage(elapsedSeconds: elapsedOffset + Int(activeSeconds)).map { $0.composited(over: frame) } ?? frame
-        ciContext.render(composed, to: outputBuffer, bounds: CGRect(origin: .zero, size: canvasSize), colorSpace: CGColorSpaceCreateDeviceRGB())
+        ciContext.render(frame, to: outputBuffer, bounds: CGRect(origin: .zero, size: canvasSize), colorSpace: CGColorSpaceCreateDeviceRGB())
 
         guard adaptor?.append(outputBuffer, withPresentationTime: time) == true else { return false }
         lastAppendedTime = time
@@ -318,14 +354,36 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
             .cropped(to: CGRect(origin: .zero, size: size))
     }
 
-    private func overlayImage(elapsedSeconds: Int) -> CIImage? {
-        let text = HourBlockText(sessionStart: sessionStart, elapsedSeconds: elapsedSeconds)
-        if let cachedOverlay, cachedOverlay.text == text {
-            return cachedOverlay.image
+    private func recordSample(_ pixelBuffer: CVPixelBuffer, videoTime: Double) {
+        // 録画中に顔検出を切っていても、確認画面で動かせるよう既定の範囲を残しておく
+        if !faceDetectionEnabled {
+            faceTracker.process(pixelBuffer, time: lastFramePTS?.seconds ?? videoTime)
         }
-        guard let cgImage = VideoOverlayRenderer.makeImage(text: text, style: style, canvasSize: canvasSize) else { return nil }
-        let image = CIImage(cgImage: cgImage)
-        cachedOverlay = (text, image)
-        return image
+        let bufferRect = faceTracker.rectOrDefault
+        let rect = canvasRect(
+            fromBufferRect: bufferRect,
+            bufferSize: CGSize(width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
+        )
+        track.samples.append(FaceSample(
+            time: videoTime,
+            elapsed: Double(elapsedOffset) + activeSeconds,
+            rect: rect,
+            segment: faceTracker.segment
+        ))
+        lastSampleTime = videoTime
+    }
+
+    // カメラ映像の座標を、aspectFill で切り抜いた動画の座標に直す
+    private func canvasRect(fromBufferRect rect: CGRect, bufferSize: CGSize) -> CGRect {
+        guard bufferSize.width > 0, bufferSize.height > 0, canvasSize.width > 0 else { return rect }
+        let scale = max(canvasSize.width / bufferSize.width, canvasSize.height / bufferSize.height)
+        let dx = (canvasSize.width - bufferSize.width * scale) / 2
+        let dy = (canvasSize.height - bufferSize.height * scale) / 2
+        return FaceTrack.clamp(CGRect(
+            x: (rect.minX * bufferSize.width * scale + dx) / canvasSize.width,
+            y: (rect.minY * bufferSize.height * scale + dy) / canvasSize.height,
+            width: rect.width * bufferSize.width * scale / canvasSize.width,
+            height: rect.height * bufferSize.height * scale / canvasSize.height
+        ))
     }
 }

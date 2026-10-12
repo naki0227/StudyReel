@@ -1,13 +1,13 @@
 import SwiftUI
 import SwiftData
 import UIKit
-import Photos
 import WidgetKit
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var storeKit: StoreKitManager
-    @AppStorage(OverlayFont.storageKey) private var overlayFontRaw = OverlayFont.standard.rawValue
+    @AppStorage(FaceHideStyle.storageKey) private var hideStyleRaw = FaceHideStyle.mosaic.rawValue
+    @AppStorage(FaceStamp.storageKey) private var stamp = FaceStamp.defaultStamp
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
 
     @StateObject private var recorder = TimeLapseRecorder()
@@ -19,6 +19,8 @@ struct ContentView: View {
     @State private var recordingMode: RecordingMode = .timelapse
     @State private var videoSaved = false
     @State private var showPaywall = false
+    @State private var reviewResult: RecordingResult?
+    @State private var reviewOutcome: Bool?
     @State private var showSaveSheet = false
     @State private var showDiscardAlert = false
     @State private var pendingDuration = 0
@@ -50,7 +52,17 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             GeometryReader { geometry in
-                CameraPreview(recorder: recorder, isLandscape: geometry.size.width > geometry.size.height)
+                ZStack {
+                    CameraPreview(recorder: recorder, isLandscape: geometry.size.width > geometry.size.height)
+
+                    // 録画中もモザイクがかかる位置を見せておく
+                    if isRecordingVideo, let rect = previewFaceRect(in: geometry.size) {
+                        previewFaceMask(size: rect.size)
+                            .position(x: rect.midX, y: rect.midY)
+                            .animation(.easeOut(duration: 0.2), value: rect)
+                            .allowsHitTesting(false)
+                    }
+                }
             }
             .ignoresSafeArea()
 
@@ -92,6 +104,21 @@ struct ContentView: View {
                 recordingMode = .timelapse
                 showPaywall = true
             }
+            recorder.setFaceDetectionEnabled(recordingMode != .off)
+        }
+        .fullScreenCover(item: $reviewResult, onDismiss: {
+            if let reviewOutcome {
+                videoSaved = reviewOutcome
+                showSaveAlert = true
+            } else {
+                showSaveSheet = true
+            }
+            reviewOutcome = nil
+        }) { result in
+            VideoReviewView(result: result) { outcome in
+                reviewOutcome = outcome
+                reviewResult = nil
+            }
         }
         .alert(L10n.string("記録を中断しますか？"), isPresented: $showDiscardAlert) {
             Button(L10n.string("戻る"), role: .cancel) {}
@@ -105,6 +132,7 @@ struct ContentView: View {
             SessionSaveView(subjectManager: subjectManager, duration: pendingDuration)
         }
         .onAppear {
+            recorder.setFaceDetectionEnabled(recordingMode != .off)
             guard bootstrap?.autoStart == true, !didAutoStart else { return }
             didAutoStart = true
             startRecording()
@@ -285,11 +313,7 @@ struct ContentView: View {
         }
 
         if isRecordingVideo {
-            let style = VideoOverlayStyle(
-                font: OverlayFont.resolved(rawValue: overlayFontRaw, isPro: storeKit.isProUnlocked),
-                showsWatermark: !storeKit.isProUnlocked
-            )
-            recorder.start(mode: recordingMode, interval: 5, sessionStart: startedAt, elapsedOffset: elapsedBeforeLaunch, style: style)
+            recorder.start(mode: recordingMode, interval: 5, sessionStart: startedAt, elapsedOffset: elapsedBeforeLaunch)
         }
 
         isRecording = true
@@ -330,14 +354,11 @@ struct ContentView: View {
         pendingDuration = completedDuration
 
         if isRecordingVideo {
-            recorder.finish { url in
-                guard let url else {
+            recorder.finish { result in
+                if let result {
+                    reviewResult = result
+                } else {
                     showSaveSheet = true
-                    return
-                }
-                saveVideoToPhotos(url) { success in
-                    videoSaved = success
-                    showSaveAlert = true
                 }
             }
         } else {
@@ -365,14 +386,33 @@ struct ContentView: View {
         onFinish()
     }
 
-    private func saveVideoToPhotos(_ url: URL, completion: @escaping (Bool) -> Void) {
-        PHPhotoLibrary.shared().performChanges({
-            _ = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
-        }) { success, _ in
-            try? FileManager.default.removeItem(at: url)
-            DispatchQueue.main.async {
-                completion(success)
-            }
+    private func previewFaceRect(in viewSize: CGSize) -> CGRect? {
+        guard let rect = recorder.liveFaceRect, recorder.bufferSize.width > 0 else { return nil }
+        // プレビューはカメラ映像を aspectFill で表示しているので、同じ変換をかける
+        let buffer = recorder.bufferSize
+        let scale = max(viewSize.width / buffer.width, viewSize.height / buffer.height)
+        let width = buffer.width * scale
+        let height = buffer.height * scale
+        let dx = (viewSize.width - width) / 2
+        let dy = (viewSize.height - height) / 2
+        return CGRect(
+            x: dx + rect.minX * width,
+            y: dy + rect.minY * height,
+            width: rect.width * width,
+            height: rect.height * height
+        )
+    }
+
+    @ViewBuilder
+    private func previewFaceMask(size: CGSize) -> some View {
+        if FaceHideStyle.resolved(rawValue: hideStyleRaw, isPro: storeKit.isProUnlocked) == .stamp {
+            Text(stamp)
+                .font(.system(size: max(size.width, size.height) * 0.85))
+                .frame(width: size.width, height: size.height)
+        } else {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .frame(width: size.width, height: size.height)
         }
     }
 

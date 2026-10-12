@@ -53,21 +53,23 @@ StudyReel Pro は 3 つの商品で構成します。月額・年額は自動更
 - 透かし（右下の「StudyReel」）なしで動画を保存
 - 動画に入れる文字のフォントを選ぶ
 - 全部録画（タイムラプスではなく等速で全部記録）
+- 顔をスタンプで隠す
 - 教科別の先週比・集中しやすい時間帯
 
 ## What Stays Free
 
 - タイマー・ストップウォッチ
 - 時刻入りのタイムラプス（透かしあり）
+- 顔に自動でモザイク（録画後に位置を調整できる）
 - 統計・カレンダー・推移グラフ
 - ウィジェット
 
 ## Review Notes
 
 - EN:
-  `StudyReel Pro removes the watermark from exported videos, unlocks additional overlay fonts and full-length (real-time) recording, and adds per-subject insights. Timer, time-lapse recording, stats, calendar, and trend charts remain free. Pro is available as monthly or yearly auto-renewable subscriptions (each with a 1-week free trial) or as a one-time lifetime purchase. Restore Purchases is on the paywall.`
+  `StudyReel Pro removes the watermark from exported videos, unlocks additional overlay fonts and full-length (real-time) recording, and adds face stickers and per-subject insights. Face mosaic (on-device Vision, nothing stored or sent), timer, time-lapse recording, stats, calendar, and trend charts remain free. Pro is available as monthly or yearly auto-renewable subscriptions (each with a 1-week free trial) or as a one-time lifetime purchase. Restore Purchases is on the paywall.`
 - JA:
-  `StudyReel Pro では、動画の透かしを外して保存できるほか、文字のフォント選択と全部録画（等速）、教科別の分析が使えます。タイマー、タイムラプス、統計、カレンダー、推移グラフは無料です。月額・年額の自動更新サブスクリプション（各1週間の無料体験つき）と、買い切りから選べます。購入の復元は課金画面にあります。`
+  `StudyReel Pro では、動画の透かしを外して保存できるほか、文字のフォント選択、全部録画（等速）、顔のスタンプ、教科別の分析が使えます。顔のモザイク（端末内のVisionで検出し、保存・送信なし）、タイマー、タイムラプス、統計、カレンダー、推移グラフは無料です。月額・年額の自動更新サブスクリプション（各1週間の無料体験つき）と、買い切りから選べます。購入の復元は課金画面にあります。`
 
 ## Checklist
 

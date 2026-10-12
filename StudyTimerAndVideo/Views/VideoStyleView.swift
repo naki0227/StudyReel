@@ -4,9 +4,15 @@ import SwiftUI
 struct VideoStyleView: View {
     @EnvironmentObject private var storeKit: StoreKitManager
     @AppStorage(OverlayFont.storageKey) private var overlayFontRaw = OverlayFont.standard.rawValue
+    @AppStorage(FaceHideStyle.storageKey) private var hideStyleRaw = FaceHideStyle.mosaic.rawValue
+    @AppStorage(FaceStamp.storageKey) private var stamp = FaceStamp.defaultStamp
     @State private var showPaywall = false
 
     private let sample = HourBlockText(sessionStart: Date(), elapsedSeconds: 0)
+
+    private var selectedHideStyle: FaceHideStyle {
+        FaceHideStyle.resolved(rawValue: hideStyleRaw, isPro: storeKit.isProUnlocked)
+    }
 
     private var selectedFont: OverlayFont {
         OverlayFont.resolved(rawValue: overlayFontRaw, isPro: storeKit.isProUnlocked)
@@ -48,6 +54,55 @@ struct VideoStyleView: View {
                         }
                     }
                 }
+            }
+
+            Section {
+                ForEach(FaceHideStyle.allCases) { style in
+                    Button {
+                        if style.isPro && !storeKit.isProUnlocked {
+                            showPaywall = true
+                        } else {
+                            hideStyleRaw = style.rawValue
+                        }
+                    } label: {
+                        HStack {
+                            Text(style.title)
+                                .foregroundColor(.primary)
+                            Spacer()
+                            if style.isPro && !storeKit.isProUnlocked {
+                                Text(L10n.string("Pro"))
+                                    .font(.caption.weight(.bold))
+                                    .foregroundColor(.secondary)
+                            } else if style == selectedHideStyle {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(AppPalette.skyDeep)
+                            }
+                        }
+                    }
+                }
+
+                if selectedHideStyle == .stamp {
+                    HStack {
+                        ForEach(FaceStamp.options, id: \.self) { option in
+                            Button {
+                                stamp = option
+                            } label: {
+                                Text(option)
+                                    .font(.title2)
+                                    .frame(maxWidth: .infinity, minHeight: 40)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .fill(option == stamp ? AppPalette.sky.opacity(0.3) : Color.clear)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            } header: {
+                Text(L10n.string("顔の隠し方"))
+            } footer: {
+                Text(L10n.string("顔の位置は端末の中だけで検出し、保存も送信もしません。"))
             }
         }
         .navigationTitle(L10n.string("動画"))
