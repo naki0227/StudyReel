@@ -60,13 +60,7 @@ struct StudyStatsView: View {
                         Button(action: { showSubjectManager = true }) {
                             Image(systemName: "book.closed")
                         }
-                        Button(action: {
-                            if storeKit.isProUnlocked {
-                                showTrend = true
-                            } else {
-                                showPaywall = true
-                            }
-                        }) {
+                        Button(action: { showTrend = true }) {
                             Image(systemName: "chart.bar.xaxis")
                         }
                     }

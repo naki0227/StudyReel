@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct SettingsView: View {
+    @AppStorage(OverlayFont.storageKey) private var overlayFontRaw = OverlayFont.standard.rawValue
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var storeKit: StoreKitManager
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
@@ -46,6 +47,19 @@ struct SettingsView: View {
                             Spacer()
                             Text(nextReminderDate.formatted(date: .abbreviated, time: .shortened))
                                 .foregroundColor(.gray)
+                        }
+                    }
+                }
+
+                Section(header: Text(L10n.string("動画"))) {
+                    NavigationLink {
+                        VideoStyleView()
+                    } label: {
+                        HStack {
+                            Text(L10n.string("文字のフォント"))
+                            Spacer()
+                            Text(OverlayFont.resolved(rawValue: overlayFontRaw, isPro: storeKit.isProUnlocked).displayName)
+                                .foregroundColor(.secondary)
                         }
                     }
                 }

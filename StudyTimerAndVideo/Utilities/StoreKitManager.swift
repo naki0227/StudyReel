@@ -3,14 +3,17 @@ import StoreKit
 
 @MainActor
 final class StoreKitManager: ObservableObject {
-    static let productIDs = [
-        "com.ni.StudyReel.pro.monthly",
-        "com.ni.StudyReel.pro.yearly"
-    ]
+    static let monthlyID = "com.ni.StudyReel.pro.monthly"
+    static let yearlyID = "com.ni.StudyReel.pro.yearly"
+    static let lifetimeID = "com.ni.StudyReel.pro.lifetime"
+
+    static let productIDs = [monthlyID, yearlyID, lifetimeID]
 
     @Published private(set) var products: [Product] = []
     @Published private(set) var purchasedProductIDs = Set<String>()
     @Published private(set) var isLoading = false
+    // お試し期間を使えるサブスクの ID
+    @Published private(set) var trialEligibleProductIDs = Set<String>()
     @Published var purchaseErrorMessage: String?
 
     private var updatesTask: Task<Void, Never>?
@@ -53,6 +56,7 @@ final class StoreKitManager: ObservableObject {
             products = try await Product.products(for: Self.productIDs)
                 .sorted { $0.price < $1.price }
             await updatePurchasedProducts()
+            await updateTrialEligibility()
         } catch {
             purchaseErrorMessage = error.localizedDescription
         }
@@ -66,6 +70,7 @@ final class StoreKitManager: ObservableObject {
                 let transaction = try Self.checkVerified(verification)
                 purchasedProductIDs.insert(transaction.productID)
                 await transaction.finish()
+                await updateTrialEligibility()
             case .userCancelled, .pending:
                 break
             @unknown default:
@@ -101,12 +106,32 @@ final class StoreKitManager: ObservableObject {
     }
     #endif
 
+    func freeTrialPeriod(for product: Product) -> Product.SubscriptionPeriod? {
+        guard trialEligibleProductIDs.contains(product.id),
+              let offer = product.subscription?.introductoryOffer,
+              offer.paymentMode == .freeTrial else { return nil }
+        return offer.period
+    }
+
+    private func updateTrialEligibility() async {
+        var eligible = Set<String>()
+        for product in products {
+            guard let subscription = product.subscription,
+                  subscription.introductoryOffer?.paymentMode == .freeTrial else { continue }
+            if await subscription.isEligibleForIntroOffer {
+                eligible.insert(product.id)
+            }
+        }
+        trialEligibleProductIDs = eligible
+    }
+
     private func updatePurchasedProducts() async {
         var updatedIDs = Set<String>()
 
+        // 買い切りも currentEntitlements に含まれる。返金・期限切れは revocationDate / 一覧から外れることで反映される
         for await result in Transaction.currentEntitlements {
             guard let transaction = try? Self.checkVerified(result) else { continue }
-            if Self.productIDs.contains(transaction.productID) {
+            if Self.productIDs.contains(transaction.productID), transaction.revocationDate == nil {
                 updatedIDs.insert(transaction.productID)
             }
         }
@@ -120,13 +145,8 @@ final class StoreKitManager: ObservableObject {
                 guard let self else { continue }
                 guard let transaction = try? Self.checkVerified(result) else { continue }
 
-                await MainActor.run {
-                    if Self.productIDs.contains(transaction.productID) {
-                        self.purchasedProductIDs.insert(transaction.productID)
-                    }
-                }
-
                 await transaction.finish()
+                await self.updatePurchasedProducts()
             }
         }
     }

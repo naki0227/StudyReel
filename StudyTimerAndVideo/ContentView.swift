@@ -1,10 +1,13 @@
 import SwiftUI
 import SwiftData
 import UIKit
+import Photos
 import WidgetKit
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var storeKit: StoreKitManager
+    @AppStorage(OverlayFont.storageKey) private var overlayFontRaw = OverlayFont.standard.rawValue
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
 
     @StateObject private var recorder = TimeLapseRecorder()
@@ -13,7 +16,9 @@ struct ContentView: View {
 
     @State private var isRecording = false
     @State private var showSaveAlert = false
-    @State private var enableRecording = true
+    @State private var recordingMode: RecordingMode = .timelapse
+    @State private var videoSaved = false
+    @State private var showPaywall = false
     @State private var showSaveSheet = false
     @State private var showDiscardAlert = false
     @State private var pendingDuration = 0
@@ -39,7 +44,7 @@ struct ContentView: View {
         self.onFinish = onFinish
         self.mode = mode
         self.bootstrap = bootstrap
-        _enableRecording = State(initialValue: bootstrap?.initialRecordingEnabled ?? true)
+        _recordingMode = State(initialValue: (bootstrap?.initialRecordingEnabled ?? true) ? .timelapse : .off)
     }
 
     var body: some View {
@@ -72,12 +77,21 @@ struct ContentView: View {
                     .padding(.bottom, 16)
             }
         }
-        .alert(L10n.string("保存完了"), isPresented: $showSaveAlert) {
+        .alert(videoSaved ? L10n.string("保存完了") : L10n.string("動画を保存できませんでした"), isPresented: $showSaveAlert) {
             Button(L10n.string("OK")) {
                 showSaveSheet = true
             }
         } message: {
-            Text(L10n.string("タイムラプスを写真に保存しました。"))
+            Text(videoSaved ? L10n.string("動画を写真に保存しました。") : L10n.string("設定アプリで写真への追加を許可してください。"))
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
+        .onChange(of: recordingMode) { _, newMode in
+            if newMode.isPro && !storeKit.isProUnlocked {
+                recordingMode = .timelapse
+                showPaywall = true
+            }
         }
         .alert(L10n.string("記録を中断しますか？"), isPresented: $showDiscardAlert) {
             Button(L10n.string("戻る"), role: .cancel) {}
@@ -153,23 +167,32 @@ struct ContentView: View {
 
     private var bottomControls: some View {
         VStack(spacing: 10) {
-            if enableRecording && !recorder.canCaptureVideo {
-                Text(L10n.string("この端末ではタイムラプスを記録できません。"))
+            if recordingMode != .off && !recorder.canCaptureVideo {
+                Text(L10n.string("この端末では録画できません。"))
                     .font(.footnote)
                     .foregroundColor(.white.opacity(0.8))
             }
 
             if !isRecording {
-                Toggle(L10n.string("タイムラプスを記録する"), isOn: $enableRecording)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(.white)
-                    .tint(AppPalette.sky)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(Color.black.opacity(0.35))
-                    )
+                VStack(alignment: .leading, spacing: 8) {
+                    Picker(L10n.string("録画"), selection: $recordingMode) {
+                        ForEach(RecordingMode.allCases) { mode in
+                            Text(mode.isPro && !storeKit.isProUnlocked ? "\(mode.title) (Pro)" : mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    if recordingMode == .full {
+                        Text(L10n.string("全部録画は1時間で約2GB使います。"))
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color.black.opacity(0.35))
+                )
             }
 
             HStack(spacing: 10) {
@@ -209,19 +232,19 @@ struct ContentView: View {
 
     private var statusColor: Color {
         if isPaused { return .orange }
-        if isRecording { return enableRecording && recorder.canCaptureVideo ? .red : .green }
+        if isRecording { return isRecordingVideo ? .red : .green }
         return .white.opacity(0.7)
     }
 
     private var statusText: String {
         if isPaused { return L10n.string("一時停止中") }
-        if isRecording { return L10n.string(enableRecording && recorder.canCaptureVideo ? "録画中" : "計測中") }
+        if isRecording { return L10n.string(isRecordingVideo ? "録画中" : "計測中") }
         return L10n.string("開始前")
     }
 
     private var badgeCaption: String {
         var parts = [mode == .timer ? L10n.string("タイマー") : L10n.string("ストップウォッチ")]
-        parts.append(timelapseLabel)
+        parts.append(recordingLabel)
         if bootstrap?.source == .widget {
             parts.append(L10n.string("Widgetから開始"))
         }
@@ -232,14 +255,19 @@ struct ContentView: View {
         formatTime(mode == .timer ? timerModel.remaining : stopwatchModel.elapsed)
     }
 
-    private var timelapseLabel: String {
-        if !enableRecording { return L10n.string("タイムラプスオフ") }
-        return recorder.canCaptureVideo ? L10n.string("タイムラプスオン") : L10n.string("タイムラプス利用不可")
+    private var isRecordingVideo: Bool {
+        recordingMode != .off && recorder.canCaptureVideo
+    }
+
+    private var recordingLabel: String {
+        if recordingMode != .off && !recorder.canCaptureVideo { return L10n.string("録画できません") }
+        return recordingMode.title
     }
 
     private func startRecording() {
         let elapsedBeforeLaunch = bootstrap?.elapsedSecondsAtLaunch ?? 0
-        sessionStartedAt = bootstrap?.startedAt ?? Date()
+        let startedAt = bootstrap?.startedAt ?? Date()
+        sessionStartedAt = startedAt
 
         Task {
             await StudyNotificationManager.shared.clearPendingQuietReminder()
@@ -256,8 +284,12 @@ struct ContentView: View {
             clearWidgetTimerState()
         }
 
-        if enableRecording && recorder.canCaptureVideo {
-            recorder.startCapturing(interval: 5)
+        if isRecordingVideo {
+            let style = VideoOverlayStyle(
+                font: OverlayFont.resolved(rawValue: overlayFontRaw, isPro: storeKit.isProUnlocked),
+                showsWatermark: !storeKit.isProUnlocked
+            )
+            recorder.start(mode: recordingMode, interval: 5, sessionStart: startedAt, elapsedOffset: elapsedBeforeLaunch, style: style)
         }
 
         isRecording = true
@@ -275,8 +307,8 @@ struct ContentView: View {
                 stopwatchModel.resume()
             }
 
-            if enableRecording && recorder.canCaptureVideo {
-                recorder.resumeCapturing(interval: 5)
+            if isRecordingVideo {
+                recorder.resume()
             }
             isPaused = false
         } else {
@@ -286,8 +318,8 @@ struct ContentView: View {
                 stopwatchModel.pause()
             }
 
-            if enableRecording && recorder.canCaptureVideo {
-                recorder.pauseCapturing()
+            if isRecordingVideo {
+                recorder.pause()
             }
             isPaused = true
         }
@@ -297,13 +329,14 @@ struct ContentView: View {
         let completedDuration = mode == .timer ? max(totalSeconds - timerModel.remaining, 0) : stopwatchModel.elapsed
         pendingDuration = completedDuration
 
-        if enableRecording && recorder.canCaptureVideo {
-            recorder.stopCapturing()
-            recorder.exportToVideo { url in
-                if let url {
-                    UISaveVideoAtPathToSavedPhotosAlbum(url.path, nil, nil, nil)
+        if isRecordingVideo {
+            recorder.finish { url in
+                guard let url else {
+                    showSaveSheet = true
+                    return
                 }
-                DispatchQueue.main.async {
+                saveVideoToPhotos(url) { success in
+                    videoSaved = success
                     showSaveAlert = true
                 }
             }
@@ -324,12 +357,23 @@ struct ContentView: View {
         UIApplication.shared.isIdleTimerDisabled = false
         timerModel.stop()
         stopwatchModel.stop()
-        recorder.stopCapturing()
+        recorder.cancel()
         isRecording = false
         isPaused = false
         sessionStartedAt = nil
         clearWidgetTimerState()
         onFinish()
+    }
+
+    private func saveVideoToPhotos(_ url: URL, completion: @escaping (Bool) -> Void) {
+        PHPhotoLibrary.shared().performChanges({
+            _ = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
+        }) { success, _ in
+            try? FileManager.default.removeItem(at: url)
+            DispatchQueue.main.async {
+                completion(success)
+            }
+        }
     }
 
     private func formatTime(_ totalSeconds: Int) -> String {

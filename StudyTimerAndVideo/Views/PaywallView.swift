@@ -67,10 +67,10 @@ struct PaywallView: View {
                 .font(.subheadline.weight(.bold))
                 .foregroundColor(AppPalette.accentText(for: colorScheme))
 
-            Text(L10n.string("振り返りを、もっと細かく。"))
+            Text(L10n.string("勉強Vlogを、もっと自由に。"))
                 .font(.title2.weight(.bold))
 
-            Text(L10n.string("教科ごとの伸びや、集中しやすい時間帯がわかります。"))
+            Text(L10n.string("透かしなしの動画、フォント選び、全部録画が使えます。"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
@@ -100,15 +100,17 @@ struct PaywallView: View {
             .foregroundColor(.secondary)
             .padding(.bottom, 8)
 
-            comparisonRow(L10n.string("タイマー・タイムラプス"), free: true)
+            comparisonRow(L10n.string("時刻入りのタイムラプス"), free: true)
             Divider()
-            comparisonRow(L10n.string("基本の統計・カレンダー"), free: true)
+            comparisonRow(L10n.string("統計・カレンダー・推移グラフ"), free: true)
             Divider()
-            comparisonRow(L10n.string("教科別の先週比"), free: false)
+            comparisonRow(L10n.string("透かしなしで保存"), free: false)
             Divider()
-            comparisonRow(L10n.string("集中しやすい時間帯"), free: false)
+            comparisonRow(L10n.string("動画のフォントを選ぶ"), free: false)
             Divider()
-            comparisonRow(L10n.string("勉強時間の推移グラフ"), free: false)
+            comparisonRow(L10n.string("全部録画（等速）"), free: false)
+            Divider()
+            comparisonRow(L10n.string("教科別の先週比・集中しやすい時間帯"), free: false)
         }
         .padding(20)
         .background(cardBackground)
@@ -193,8 +195,8 @@ struct PaywallView: View {
                                 .clipShape(Capsule())
                         }
                     }
-                    if let monthly = monthlyEquivalent(for: product) {
-                        Text(L10n.format("月あたり %@", monthly))
+                    if let detail = planDetail(for: product) {
+                        Text(detail)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -227,7 +229,7 @@ struct PaywallView: View {
                 await storeKit.purchase(product)
             }
         } label: {
-            Text(storeKit.isProUnlocked ? L10n.string("Proは有効です") : L10n.string("Proを始める"))
+            Text(purchaseButtonTitle)
                 .font(.headline)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
@@ -242,7 +244,11 @@ struct PaywallView: View {
 
     private var legalFooter: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(L10n.string("購入確定時にApple IDへ請求されます。期間終了の24時間前までに解約しない限り自動で更新されます。解約はApple IDの設定からいつでもできます。"))
+            Text(L10n.string("月額・年額は自動更新のサブスクリプションです。購入確定時（無料期間がある場合は終了時）にApple IDへ請求され、期間終了の24時間前までに解約しない限り自動で更新されます。解約はApple IDの設定からいつでもできます。"))
+                .font(.caption2)
+                .foregroundColor(.secondary)
+
+            Text(L10n.string("買い切りは一度の購入でずっと使えます。"))
                 .font(.caption2)
                 .foregroundColor(.secondary)
 
@@ -267,7 +273,49 @@ struct PaywallView: View {
         return storeKit.products.first(where: { isRecommended($0) }) ?? storeKit.products.first
     }
 
+    private var purchaseButtonTitle: String {
+        if storeKit.isProUnlocked {
+            return L10n.string("Proは有効です")
+        }
+        if let product = selectedProduct, storeKit.freeTrialPeriod(for: product) != nil {
+            return L10n.string("無料で試す")
+        }
+        return L10n.string("Proを始める")
+    }
+
+    private func planDetail(for product: Product) -> String? {
+        var parts: [String] = []
+        if let period = storeKit.freeTrialPeriod(for: product) {
+            parts.append(L10n.format("最初の%@は無料", periodText(period)))
+        }
+        if let monthly = monthlyEquivalent(for: product) {
+            parts.append(L10n.format("月あたり %@", monthly))
+        }
+        if product.id == StoreKitManager.lifetimeID {
+            parts.append(L10n.string("一度の購入でずっと使える"))
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private func periodText(_ period: Product.SubscriptionPeriod) -> String {
+        switch period.unit {
+        case .day:
+            return period.value == 7 ? L10n.string("1週間") : L10n.format("%d日間", period.value)
+        case .week:
+            return L10n.format("%d週間", period.value)
+        case .month:
+            return L10n.format("%dか月", period.value)
+        case .year:
+            return L10n.format("%d年", period.value)
+        @unknown default:
+            return L10n.format("%d日間", period.value)
+        }
+    }
+
     private func planTitle(for product: Product) -> String {
+        if product.id == StoreKitManager.lifetimeID {
+            return L10n.string("買い切り")
+        }
         if product.id.contains("yearly") {
             return L10n.string("年額プラン")
         }
@@ -278,6 +326,9 @@ struct PaywallView: View {
     }
 
     private func priceLabel(for product: Product) -> String {
+        if product.id == StoreKitManager.lifetimeID {
+            return product.displayPrice
+        }
         if product.id.contains("yearly") {
             return L10n.format("%@ / 年", product.displayPrice)
         }

@@ -343,7 +343,7 @@ struct StartView: View {
                     Text(L10n.string("StudyReel Pro"))
                         .font(.headline)
                         .fontWeight(.semibold)
-                    Text(L10n.string("教科別の分析と推移グラフ"))
+                    Text(L10n.string("透かしなし・フォント・全部録画"))
                         .font(.caption)
                         .foregroundColor(AppPalette.ink.opacity(0.75))
                 }
