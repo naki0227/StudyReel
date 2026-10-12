@@ -43,30 +43,33 @@ struct ContentView: View {
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
+        ZStack {
+            GeometryReader { geometry in
                 CameraPreview(recorder: recorder, isLandscape: geometry.size.width > geometry.size.height)
-                    .ignoresSafeArea()
+            }
+            .ignoresSafeArea()
 
-                Color.black.opacity(0.38)
-                    .ignoresSafeArea()
+            // 画面全体は暗くせず、文字の載る上下だけ薄く落として自分の姿を確認しやすくする
+            VStack(spacing: 0) {
+                LinearGradient(colors: [Color.black.opacity(0.45), .clear], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 160)
+                Spacer()
+                LinearGradient(colors: [.clear, Color.black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 220)
+            }
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
 
-                VStack(spacing: 0) {
-                    topBar
-                        .padding(.horizontal, 20)
-                        .padding(.top, 24)
+            VStack(spacing: 0) {
+                topBar
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
 
-                    Spacer(minLength: 24)
+                Spacer()
 
-                    focusPanel
-                        .padding(.horizontal, 20)
-
-                    Spacer(minLength: 18)
-
-                    bottomControls
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 28)
-                }
+                bottomControls
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
             }
         }
         .alert(L10n.string("保存完了"), isPresented: $showSaveAlert) {
@@ -74,15 +77,15 @@ struct ContentView: View {
                 showSaveSheet = true
             }
         } message: {
-            Text(L10n.string("カメラロールに動画を保存しました。"))
+            Text(L10n.string("タイムラプスを写真に保存しました。"))
         }
-        .alert(L10n.string("このセッションを中断しますか？"), isPresented: $showDiscardAlert) {
+        .alert(L10n.string("記録を中断しますか？"), isPresented: $showDiscardAlert) {
             Button(L10n.string("戻る"), role: .cancel) {}
             Button(L10n.string("中断する"), role: .destructive) {
                 discardSession()
             }
         } message: {
-            Text(L10n.string("保存せずに終了します。"))
+            Text(L10n.string("ここまでの記録は保存されません。"))
         }
         .sheet(isPresented: $showSaveSheet, onDismiss: { onFinish() }) {
             SessionSaveView(subjectManager: subjectManager, duration: pendingDuration)
@@ -97,92 +100,79 @@ struct ContentView: View {
         }
     }
 
+    // 左上にタイマー、右上に中断ボタン。中央はカメラ映像のために空けておく
     private var topBar: some View {
-        HStack {
-            Button {
-                showDiscardAlert = true
-            } label: {
-                Label(L10n.string("中断"), systemImage: "stop.fill")
-                    .font(.headline.weight(.semibold))
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 12)
-                    .foregroundColor(.white)
-                    .background(Color.red)
-                    .clipShape(Capsule())
-            }
+        HStack(alignment: .top) {
+            timerBadge
 
             Spacer()
 
-            HStack(spacing: 8) {
+            Button {
+                showDiscardAlert = true
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.headline.weight(.bold))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(.ultraThinMaterial.opacity(0.7))
+                    .clipShape(Circle())
+            }
+            .accessibilityLabel(L10n.string("中断"))
+        }
+    }
+
+    private var timerBadge: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
                 Circle()
                     .fill(statusColor)
                     .frame(width: 8, height: 8)
                 Text(statusText)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.white)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(.ultraThinMaterial.opacity(0.6))
-            .clipShape(Capsule())
-        }
-    }
-
-    private var focusPanel: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(sessionTitle)
-                    .font(.headline)
-                    .foregroundColor(Color.white.opacity(0.78))
-
-                Text(sessionHeadline)
-                    .font(.system(size: 30, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if let sourceText {
-                    Text(sourceText)
-                        .font(.subheadline.weight(.medium))
-                        .foregroundColor(Color(red: 1.0, green: 0.88, blue: 0.70))
-                }
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.white.opacity(0.9))
             }
 
             Text(displayedTime)
-                .font(.system(size: 58, weight: .bold, design: .rounded))
+                .font(.system(size: 30, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .foregroundColor(.white)
-                .minimumScaleFactor(0.72)
                 .lineLimit(1)
 
-            HStack(spacing: 10) {
-                infoChip(title: mode == .timer ? L10n.string("タイマー") : L10n.string("自由計測"))
-                infoChip(title: timelapseLabel)
-            }
-
-            if enableRecording && !recorder.canCaptureVideo {
-                Text(L10n.string("この端末ではタイムラプスを記録できません。"))
-                    .font(.footnote)
-                    .foregroundColor(.white.opacity(0.72))
-            }
+            Text(badgeCaption)
+                .font(.caption2.weight(.medium))
+                .foregroundColor(.white.opacity(0.75))
+                .lineLimit(1)
         }
-        .padding(24)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(panelBackground)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.black.opacity(0.4))
+        )
     }
 
     private var bottomControls: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 10) {
+            if enableRecording && !recorder.canCaptureVideo {
+                Text(L10n.string("この端末ではタイムラプスを記録できません。"))
+                    .font(.footnote)
+                    .foregroundColor(.white.opacity(0.8))
+            }
+
             if !isRecording {
                 Toggle(L10n.string("タイムラプスを記録する"), isOn: $enableRecording)
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(controlPanelBackground)
+                    .tint(AppPalette.sky)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(Color.black.opacity(0.35))
+                    )
             }
 
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 if isRecording {
                     Button {
                         togglePause()
@@ -190,9 +180,10 @@ struct ContentView: View {
                         Label(L10n.string(isPaused ? "再開" : "一時停止"), systemImage: isPaused ? "play.fill" : "pause.fill")
                             .font(.headline.weight(.semibold))
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 18)
+                            .padding(.vertical, 16)
                             .foregroundColor(.white)
-                            .background(Color.white.opacity(0.12))
+                            .background(Color.white.opacity(0.18))
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     }
                 }
 
@@ -203,81 +194,38 @@ struct ContentView: View {
                         startRecording()
                     }
                 } label: {
-                    Text(L10n.string(isRecording ? "終了して保存" : "開始"))
+                    Label(L10n.string(isRecording ? "終了して保存" : "開始"), systemImage: isRecording ? "stop.fill" : "record.circle")
                         .font(.headline.weight(.semibold))
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
-                        .foregroundColor(.white)
-                        .background(isRecording ? Color.green.opacity(0.95) : Color.green)
+                        .padding(.vertical, 16)
+                        .foregroundColor(AppPalette.ink)
+                        .background(isRecording ? Color.white : AppPalette.sky)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
-    }
-
-    private var panelBackground: some View {
-        RoundedRectangle(cornerRadius: 30, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.07, green: 0.15, blue: 0.22).opacity(0.88),
-                        Color(red: 0.04, green: 0.09, blue: 0.14).opacity(0.92)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 30, style: .continuous)
-                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
-            )
-    }
-
-    private var controlPanelBackground: some View {
-        RoundedRectangle(cornerRadius: 22, style: .continuous)
-            .fill(Color.black.opacity(0.28))
-            .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-            )
-    }
-
-    private func infoChip(title: String) -> some View {
-        Text(title)
-            .font(.subheadline.weight(.semibold))
-            .foregroundColor(.white)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(Color.white.opacity(0.10))
-            .clipShape(Capsule())
+        .frame(maxWidth: 520)
     }
 
     private var statusColor: Color {
         if isPaused { return .orange }
-        if isRecording { return .green }
+        if isRecording { return enableRecording && recorder.canCaptureVideo ? .red : .green }
         return .white.opacity(0.7)
     }
 
     private var statusText: String {
         if isPaused { return L10n.string("一時停止中") }
-        if isRecording { return L10n.string("計測中") }
+        if isRecording { return L10n.string(enableRecording && recorder.canCaptureVideo ? "録画中" : "計測中") }
         return L10n.string("開始前")
     }
 
-    private var sessionTitle: String {
-        mode == .timer ? L10n.string("タイマーセッション") : L10n.string("自由計測")
-    }
-
-    private var sessionHeadline: String {
-        if mode == .timer {
-            return bootstrap?.source == .widget ? L10n.string("すぐに集中を始める") : L10n.string("いまの25分を積み上げる")
+    private var badgeCaption: String {
+        var parts = [mode == .timer ? L10n.string("タイマー") : L10n.string("ストップウォッチ")]
+        parts.append(timelapseLabel)
+        if bootstrap?.source == .widget {
+            parts.append(L10n.string("Widgetから開始"))
         }
-        return L10n.string("時間を決めずに集中する")
-    }
-
-    private var sourceText: String? {
-        guard bootstrap?.source == .widget else { return nil }
-        return L10n.string("Widgetから開始")
+        return parts.joined(separator: " · ")
     }
 
     private var displayedTime: String {
@@ -388,7 +336,10 @@ struct ContentView: View {
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let seconds = totalSeconds % 60
-        return String(format: "%02dh%02dm%02ds", hours, minutes, seconds)
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        }
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 
     private func clearWidgetTimerState() {

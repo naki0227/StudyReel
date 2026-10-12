@@ -1,17 +1,22 @@
 import SwiftUI
 
 enum AppPalette {
+    // enludus.com と揃えたブランドカラー
+    static let ink = Color(red: 0.03, green: 0.07, blue: 0.11)        // #08111c
+    static let sky = Color(red: 0.57, green: 0.87, blue: 1.0)         // #92ddff
+    static let skyDeep = Color(red: 0.18, green: 0.62, blue: 0.84)    // #2d9fd6
+    static let orange = Color(red: 1.0, green: 0.61, blue: 0.38)      // #ff9b61
+
     static func homeGradient(for scheme: ColorScheme) -> LinearGradient {
         LinearGradient(
             colors: scheme == .dark
                 ? [
-                    Color(red: 0.20, green: 0.30, blue: 0.52),
-                    Color(red: 0.28, green: 0.36, blue: 0.60),
-                    Color(red: 0.38, green: 0.28, blue: 0.56)
+                    Color(red: 0.04, green: 0.09, blue: 0.15),
+                    Color(red: 0.07, green: 0.20, blue: 0.30)
                 ]
                 : [
-                    Color(red: 0.30, green: 0.60, blue: 0.98),
-                    Color(red: 0.47, green: 0.37, blue: 0.95)
+                    skyDeep,
+                    Color(red: 0.12, green: 0.40, blue: 0.66)
                 ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing

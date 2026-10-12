@@ -11,6 +11,8 @@ struct PaywallView: View {
     @State private var showDebugTools = false
     #endif
 
+    @State private var selectedProductID: String?
+
     var body: some View {
         NavigationView {
             ZStack {
@@ -18,17 +20,18 @@ struct PaywallView: View {
                 .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 16) {
                         heroCard
-                        featureCard
                         comparisonCard
                         productCard
-                        legalCard
+                        legalFooter
                         #if DEBUG
                         debugCard
                         #endif
                     }
                     .padding(20)
+                    .frame(maxWidth: 560)
+                    .frame(maxWidth: .infinity)
                 }
             }
             .navigationTitle(L10n.string("StudyReel Pro"))
@@ -59,205 +62,97 @@ struct PaywallView: View {
     }
 
     private var heroCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(L10n.string("StudyReel Pro"))
-                .font(.headline)
-                .foregroundColor(.blue)
+                .font(.subheadline.weight(.bold))
+                .foregroundColor(AppPalette.accentText(for: colorScheme))
 
-            Text(L10n.string("学習の流れを、もっと深く見る"))
+            Text(L10n.string("振り返りを、もっと細かく。"))
                 .font(.title2.weight(.bold))
 
-            Text(L10n.string("詳細な統計、教科別の深い分析、今後のバックアップ機能などを Pro で使えるようにします。"))
+            Text(L10n.string("教科ごとの伸びや、集中しやすい時間帯がわかります。"))
                 .font(.subheadline)
-                .foregroundColor(.secondary)
-
-            Text(L10n.string("基本の学習体験は無料のまま、深い振り返りだけを Pro にしています。"))
-                .font(.caption)
                 .foregroundColor(.secondary)
 
             if storeKit.isProUnlocked {
                 Label(L10n.string("Proが有効です"), systemImage: "checkmark.seal.fill")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(.green)
+                    .padding(.top, 4)
             }
         }
         .padding(22)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(AppPalette.cardFill(for: colorScheme))
-        )
-    }
-
-    private var featureCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(L10n.string("Proでできること"))
-                .font(.headline)
-            featureRow(L10n.string("教科別の先週比と強い時間帯"))
-            featureRow(L10n.string("詳細な学習パターン分析"))
-            featureRow(L10n.string("今後のバックアップと書き出し機能"))
-            featureRow(L10n.string("長期の学習傾向を深く振り返る"))
-        }
-        .padding(22)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(AppPalette.cardFill(for: colorScheme))
-        )
+        .background(cardBackground)
     }
 
     private var comparisonCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(L10n.string("無料版と Pro"))
-                .font(.headline)
-
-            comparisonRow(
-                title: L10n.string("タイマー・ストップウォッチ"),
-                freeValue: L10n.string("使える"),
-                proValue: L10n.string("使える")
-            )
-            comparisonRow(
-                title: L10n.string("タイムラプス記録"),
-                freeValue: L10n.string("使える"),
-                proValue: L10n.string("使える")
-            )
-            comparisonRow(
-                title: L10n.string("基本統計"),
-                freeValue: L10n.string("使える"),
-                proValue: L10n.string("使える")
-            )
-            comparisonRow(
-                title: L10n.string("教科別の先週比"),
-                freeValue: L10n.string("なし"),
-                proValue: L10n.string("使える")
-            )
-            comparisonRow(
-                title: L10n.string("強い時間帯の分析"),
-                freeValue: L10n.string("なし"),
-                proValue: L10n.string("使える")
-            )
-            comparisonRow(
-                title: L10n.string("書き出し・バックアップ"),
-                freeValue: L10n.string("今後対応"),
-                proValue: L10n.string("今後対応")
-            )
-        }
-        .padding(22)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(AppPalette.cardFill(for: colorScheme))
-        )
-    }
-
-    private func featureRow(_ title: String) -> some View {
-        Label(title, systemImage: "sparkles")
-            .font(.subheadline.weight(.medium))
-            .foregroundColor(.primary)
-    }
-
-    private func comparisonRow(title: String, freeValue: String, proValue: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-
-            HStack(spacing: 12) {
-                comparisonPill(title: L10n.string("Free"), value: freeValue, tint: Color.gray.opacity(0.12))
-                comparisonPill(title: L10n.string("Pro"), value: proValue, tint: Color.blue.opacity(0.12))
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Text(L10n.string("Free"))
+                    .frame(width: 52)
+                Text(L10n.string("Pro"))
+                    .frame(width: 52)
+                    .foregroundColor(AppPalette.accentText(for: colorScheme))
             }
+            .font(.caption.weight(.bold))
+            .foregroundColor(.secondary)
+            .padding(.bottom, 8)
+
+            comparisonRow(L10n.string("タイマー・タイムラプス"), free: true)
+            Divider()
+            comparisonRow(L10n.string("基本の統計・カレンダー"), free: true)
+            Divider()
+            comparisonRow(L10n.string("教科別の先週比"), free: false)
+            Divider()
+            comparisonRow(L10n.string("集中しやすい時間帯"), free: false)
+            Divider()
+            comparisonRow(L10n.string("勉強時間の推移グラフ"), free: false)
         }
+        .padding(20)
+        .background(cardBackground)
     }
 
-    private func comparisonPill(title: String, value: String, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+    private func comparisonRow(_ title: String, free: Bool) -> some View {
+        HStack {
             Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
-            Text(value)
-                .font(.subheadline.weight(.bold))
-                .foregroundColor(.primary)
+                .font(.subheadline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Image(systemName: free ? "checkmark" : "minus")
+                .foregroundColor(free ? .primary : .secondary)
+                .frame(width: 52)
+            Image(systemName: "checkmark")
+                .foregroundColor(AppPalette.accentText(for: colorScheme))
+                .frame(width: 52)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 12)
-        .padding(.horizontal, 14)
-        .background(tint)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .font(.subheadline.weight(.semibold))
+        .padding(.vertical, 10)
     }
 
     private var productCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(L10n.string("プランを選ぶ"))
-                .font(.headline)
-
-            if storeKit.isLoading {
+        VStack(alignment: .leading, spacing: 12) {
+            if storeKit.isLoading && storeKit.products.isEmpty {
                 ProgressView()
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 20)
             } else if storeKit.products.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(L10n.string("商品がまだ設定されていません"))
+                    Text(L10n.string("プランを読み込めませんでした"))
                         .font(.headline)
-                    Text(L10n.string("App Store Connect に Pro 商品を追加すると、ここに価格と購入ボタンが表示されます。"))
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    Button(L10n.string("再読み込み")) {
+                        Task {
+                            await storeKit.refresh()
+                        }
+                    }
+                    .font(.subheadline.weight(.semibold))
                 }
             } else {
                 ForEach(storeKit.products, id: \.id) { product in
-                    Button {
-                        Task {
-                            await storeKit.purchase(product)
-                        }
-                    } label: {
-                        HStack(alignment: .top, spacing: 12) {
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack(spacing: 8) {
-                                    Text(planTitle(for: product))
-                                        .font(.headline)
-                                        .foregroundColor(.primary)
-
-                                    if isRecommended(product) {
-                                        Text(L10n.string("おすすめ"))
-                                            .font(.caption.weight(.bold))
-                                            .foregroundColor(.blue)
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 4)
-                                            .background(Color.blue.opacity(0.12))
-                                            .clipShape(Capsule())
-                                    }
-                                }
-
-                                Text(planSubtitle(for: product))
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundColor(.secondary)
-
-                                Text(product.description)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.leading)
-                            }
-                            Spacer()
-                            VStack(alignment: .trailing, spacing: 4) {
-                                Text(product.displayPrice)
-                                    .font(.headline.weight(.bold))
-                                    .foregroundColor(.blue)
-
-                                if let footnote = planFootnote(for: product) {
-                                    Text(footnote)
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                        }
-                        .padding(16)
-                        .background(isRecommended(product) ? Color.blue.opacity(0.1) : Color.blue.opacity(0.06))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(isRecommended(product) ? Color.blue.opacity(0.24) : Color.clear, lineWidth: 1.5)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
+                    planRow(product)
                 }
+
+                purchaseButton
             }
 
             Button(L10n.string("購入を復元")) {
@@ -265,37 +160,111 @@ struct PaywallView: View {
                     await storeKit.restorePurchases()
                 }
             }
-            .font(.subheadline.weight(.semibold))
+            .font(.footnote.weight(.semibold))
+            .frame(maxWidth: .infinity)
+            .padding(.top, 4)
         }
-        .padding(22)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(AppPalette.cardFill(for: colorScheme))
-        )
+        .padding(20)
+        .background(cardBackground)
     }
 
-    private var legalCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(L10n.string("サブスクリプション情報"))
-                .font(.headline)
+    private func planRow(_ product: Product) -> some View {
+        let isSelected = selectedProduct?.id == product.id
 
-            Text(L10n.string("自動更新サブスクリプションです。購入確認後にApple IDへ課金され、現在の期間終了の24時間以上前に自動更新をオフにしない限り自動更新されます。"))
-                .font(.caption)
+        return Button {
+            selectedProductID = product.id
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
+                    .font(.title3)
+                    .foregroundColor(isSelected ? AppPalette.accentText(for: colorScheme) : .secondary)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(planTitle(for: product))
+                            .font(.headline)
+                        if isRecommended(product) {
+                            Text(L10n.string("おすすめ"))
+                                .font(.caption2.weight(.bold))
+                                .foregroundColor(AppPalette.ink)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(AppPalette.orange)
+                                .clipShape(Capsule())
+                        }
+                    }
+                    if let monthly = monthlyEquivalent(for: product) {
+                        Text(L10n.format("月あたり %@", monthly))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                Spacer()
+
+                Text(priceLabel(for: product))
+                    .font(.headline.weight(.bold))
+                    .monospacedDigit()
+            }
+            .foregroundColor(.primary)
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(isSelected ? AppPalette.sky.opacity(colorScheme == .dark ? 0.16 : 0.22) : Color.primary.opacity(0.04))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(isSelected ? AppPalette.skyDeep : Color.clear, lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var purchaseButton: some View {
+        Button {
+            guard let product = selectedProduct else { return }
+            Task {
+                await storeKit.purchase(product)
+            }
+        } label: {
+            Text(storeKit.isProUnlocked ? L10n.string("Proは有効です") : L10n.string("Proを始める"))
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .foregroundColor(AppPalette.ink)
+                .background(AppPalette.sky)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .disabled(storeKit.isProUnlocked || selectedProduct == nil)
+        .opacity(storeKit.isProUnlocked ? 0.6 : 1)
+        .padding(.top, 4)
+    }
+
+    private var legalFooter: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(L10n.string("購入確定時にApple IDへ請求されます。期間終了の24時間前までに解約しない限り自動で更新されます。解約はApple IDの設定からいつでもできます。"))
+                .font(.caption2)
                 .foregroundColor(.secondary)
 
             HStack(spacing: 16) {
                 Link(L10n.string("利用規約"), destination: termsOfUseURL)
                 Link(L10n.string("プライバシーポリシー"), destination: privacyPolicyURL)
             }
-            .font(.subheadline.weight(.semibold))
+            .font(.caption.weight(.semibold))
         }
-        .padding(22)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(AppPalette.cardFill(for: colorScheme))
-        )
+        .padding(.horizontal, 4)
+    }
+
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 24, style: .continuous)
+            .fill(AppPalette.cardFill(for: colorScheme))
+    }
+
+    private var selectedProduct: Product? {
+        if let selectedProductID, let product = storeKit.products.first(where: { $0.id == selectedProductID }) {
+            return product
+        }
+        return storeKit.products.first(where: { isRecommended($0) }) ?? storeKit.products.first
     }
 
     private func planTitle(for product: Product) -> String {
@@ -308,21 +277,19 @@ struct PaywallView: View {
         return product.displayName
     }
 
-    private func planSubtitle(for product: Product) -> String {
+    private func priceLabel(for product: Product) -> String {
         if product.id.contains("yearly") {
-            return L10n.string("じっくり続けたい人向け")
+            return L10n.format("%@ / 年", product.displayPrice)
         }
         if product.id.contains("monthly") {
-            return L10n.string("まずは気軽に試したい人向け")
+            return L10n.format("%@ / 月", product.displayPrice)
         }
-        return product.displayName
+        return product.displayPrice
     }
 
-    private func planFootnote(for product: Product) -> String? {
-        if product.id.contains("yearly") {
-            return L10n.string("いちばんおすすめ")
-        }
-        return nil
+    private func monthlyEquivalent(for product: Product) -> String? {
+        guard product.id.contains("yearly") else { return nil }
+        return (product.price / 12).formatted(product.priceFormatStyle)
     }
 
     private func isRecommended(_ product: Product) -> Bool {
@@ -360,12 +327,9 @@ struct PaywallView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
         }
-        .padding(22)
+        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(AppPalette.cardFill(for: colorScheme))
-        )
+        .background(cardBackground)
     }
     #endif
 }

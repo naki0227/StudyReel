@@ -67,7 +67,7 @@ struct SessionSaveView: View {
                             .frame(maxWidth: .infinity, alignment: .center)
 
                         if let recent = mostRecentSubject {
-                            Text(L10n.format("前回は「%@」を勉強していました", recent))
+                            Text(L10n.format("前回：%@", recent))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }

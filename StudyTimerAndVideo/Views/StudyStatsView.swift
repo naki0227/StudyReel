@@ -94,7 +94,7 @@ struct StudyStatsView: View {
                 .font(.headline)
                 .foregroundColor(AppPalette.accentText(for: colorScheme))
 
-            Text(L10n.string("記録ではなく、勉強の流れを見る"))
+            Text(L10n.string("これまでの積み上げ"))
                 .font(.title2.weight(.bold))
                 .foregroundColor(.primary)
 
@@ -176,17 +176,17 @@ struct StudyStatsView: View {
             patternRow(
                 title: L10n.string("よく始める時間"),
                 value: patternMostCommonStartHourText,
-                detail: selectedPatternSubject == nil ? L10n.string("過去の自分が一番入りやすかった時間帯") : L10n.string("この教科で一番入りやすかった時間帯")
+                detail: selectedPatternSubject == nil ? L10n.string("いちばん多く始めた時間") : L10n.string("この教科をいちばん多く始めた時間")
             )
             patternRow(
                 title: L10n.string("平均継続時間"),
                 value: formatHoursAndMinutes(patternAverageDurationSeconds),
-                detail: selectedPatternSubject == nil ? L10n.string("無理なく続けられている基準") : L10n.string("この教科で無理なく続けられている基準")
+                detail: selectedPatternSubject == nil ? L10n.string("1回あたりの平均") : L10n.string("この教科の1回あたりの平均")
             )
             patternRow(
-                title: L10n.string("この時間帯の気配"),
+                title: L10n.string("今の時間帯の記録"),
                 value: L10n.format("%d records", patternSessionsNearCurrentHour),
-                detail: selectedPatternSubject == nil ? L10n.string("今と近い時間に始まった過去セッション") : L10n.string("この教科で今と近い時間に始まった過去セッション")
+                detail: selectedPatternSubject == nil ? L10n.string("前後1時間に始めた回数") : L10n.string("この教科を前後1時間に始めた回数")
             )
             if !storeKit.isProUnlocked {
                 proLockedCard
@@ -194,18 +194,18 @@ struct StudyStatsView: View {
                 patternRow(
                     title: L10n.string("先週比"),
                     value: StudyInsights.weeklyComparisonText(for: filteredSessions, subject: selectedPatternSubject),
-                    detail: L10n.string("この教科が先週と比べてどれだけ伸びたか")
+                    detail: L10n.string("先週と比べた勉強時間")
                 )
                 patternRow(
-                    title: L10n.string("強い時間帯"),
+                    title: L10n.string("集中しやすい時間"),
                     value: StudyInsights.strongestHourText(for: patternSessions),
-                    detail: L10n.string("この教科で集中が始まりやすい時間帯")
+                    detail: L10n.string("この教科に集中しやすい時間")
                 )
             }
 
             if !topSubjects.isEmpty && selectedPatternSubject == nil {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(L10n.string("よく積み上がっている教科"))
+                    Text(L10n.string("よく勉強している教科"))
                         .font(.subheadline.weight(.semibold))
                     FlowSubjects(subjects: topSubjects)
                 }
@@ -225,7 +225,7 @@ struct StudyStatsView: View {
                 Text(L10n.string("StudyReel Pro"))
                     .font(.subheadline.weight(.bold))
                     .foregroundColor(.blue)
-                Text(L10n.string("教科別の先週比や強い時間帯は Pro で見られます。"))
+                Text(L10n.string("教科別の先週比と集中しやすい時間帯は Pro で見られます。"))
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Text(L10n.string("Proを始める"))
@@ -411,9 +411,9 @@ struct StudyStatsView: View {
 
     private var summaryLine: String {
         if filteredSessions.isEmpty {
-            return L10n.string("最初の1セッションを記録すると、過去の自分の傾向がここに育っていきます。")
+            return L10n.string("最初の記録をつけると、ここに傾向が表示されます。")
         }
-        return L10n.format("今日は %@、今週は %@。過去の自分の流れが少しずつ見えてきています。", formatHoursAndMinutes(todayTotalSeconds), formatHoursAndMinutes(thisWeekTotalSeconds))
+        return L10n.format("今日 %@ ・ 今週 %@", formatHoursAndMinutes(todayTotalSeconds), formatHoursAndMinutes(thisWeekTotalSeconds))
     }
 
     private var todayTotalSeconds: Int {

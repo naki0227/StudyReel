@@ -42,7 +42,7 @@ final class StudyNotificationManager {
 
         let center = UNUserNotificationCenter.current()
         let content = UNMutableNotificationContent()
-        content.title = L10n.string("そろそろ StudyReel に入る時間です")
+        content.title = L10n.string("そろそろ勉強の時間です")
         content.body = StudyInsights.quietReminderBody(for: sessions)
         content.sound = .default
 

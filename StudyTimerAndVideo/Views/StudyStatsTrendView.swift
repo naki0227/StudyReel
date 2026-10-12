@@ -54,11 +54,11 @@ struct StudyStatsTrendView: View {
                 .font(.headline)
                 .foregroundColor(AppPalette.accentText(for: colorScheme))
 
-            Text(L10n.string("どの教科が、いつ積み上がっているか"))
+            Text(L10n.string("教科ごとの勉強時間"))
                 .font(.title3.weight(.bold))
                 .foregroundColor(.primary)
 
-            Text(L10n.string("期間を切り替えると、日・週・月・年の流れを見比べられます。"))
+            Text(L10n.string("日・週・月・年で切り替えられます。"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }
@@ -97,7 +97,7 @@ struct StudyStatsTrendView: View {
                 .font(.headline)
 
             if chartData.isEmpty {
-                Text(L10n.string("まだグラフにできる記録がありません"))
+                Text(L10n.string("まだ記録がありません"))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, minHeight: 260, alignment: .center)

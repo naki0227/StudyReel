@@ -26,7 +26,7 @@ struct SettingsView: View {
                 }
 
                 Section(header: Text(L10n.string("通知"))) {
-                    Toggle(L10n.string("静かな開始リマインド"), isOn: $quietReminderEnabled)
+                    Toggle(L10n.string("勉強リマインダー"), isOn: $quietReminderEnabled)
                         .onChange(of: quietReminderEnabled) { _, enabled in
                             Task {
                                 let resolved = await StudyNotificationManager.shared.setQuietReminderEnabled(enabled, sessions: sessions)
@@ -36,7 +36,7 @@ struct SettingsView: View {
                             }
                         }
 
-                    Text(L10n.string("オンにすると、過去の学習時間に合わせて1日1回だけ静かな開始通知を出します。"))
+                    Text(L10n.string("いつも勉強している時間に、1日1回だけお知らせします。"))
                         .font(.caption)
                         .foregroundColor(.gray)
 
@@ -73,10 +73,10 @@ struct SettingsView: View {
                 }
                 
                 Section(header: Text(L10n.string("注意事項"))) {
-                    Text(L10n.string("・本アプリは学習中の様子を撮影しますが、映像は端末内にのみ保存され、外部サーバーへ送信されることはありません。"))
+                    Text(L10n.string("撮影した映像は端末内にだけ保存され、外部には送信されません。"))
                         .font(.caption)
                         .foregroundColor(.gray)
-                    Text(L10n.string("・長時間の撮影はバッテリーを消費します。充電しながらの使用を推奨します。"))
+                    Text(L10n.string("長時間の撮影はバッテリーを多く使います。充電しながらの利用がおすすめです。"))
                         .font(.caption)
                         .foregroundColor(.gray)
                 }

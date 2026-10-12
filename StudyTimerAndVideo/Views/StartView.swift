@@ -309,8 +309,8 @@ struct StartView: View {
                 .font(.title2)
                 .padding()
                 .frame(width: 200)
-                .background(AppPalette.cardFillStrong(for: colorScheme))
-                .foregroundColor(colorScheme == .dark ? .white : .blue)
+                .background(AppPalette.sky)
+                .foregroundColor(AppPalette.ink)
                 .cornerRadius(12)
         }
     }
@@ -343,26 +343,20 @@ struct StartView: View {
                     Text(L10n.string("StudyReel Pro"))
                         .font(.headline)
                         .fontWeight(.semibold)
-                    Text(L10n.string("詳細な学習分析を見る"))
+                    Text(L10n.string("教科別の分析と推移グラフ"))
                         .font(.caption)
-                        .foregroundColor(.white.opacity(0.85))
+                        .foregroundColor(AppPalette.ink.opacity(0.75))
                 }
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.bold))
-                    .foregroundColor(.white.opacity(0.85))
+                    .foregroundColor(AppPalette.ink.opacity(0.6))
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 16)
             .frame(maxWidth: 320)
-            .background(
-                LinearGradient(
-                    colors: [Color.orange, Color.pink],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .foregroundColor(.white)
+            .background(AppPalette.orange)
+            .foregroundColor(AppPalette.ink)
             .cornerRadius(16)
             .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 8)
         }
