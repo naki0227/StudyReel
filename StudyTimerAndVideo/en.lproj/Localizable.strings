@@ -9,9 +9,6 @@
 "開始" = "Start";
 "再開" = "Resume";
 "一時停止" = "Pause";
-"一時停止中" = "Paused";
-"計測中" = "Timing";
-"開始前" = "Ready";
 "Widgetから開始" = "From widget";
 "勉強時間の推移" = "Study Time Trend";
 "StudyReel Pro" = "StudyReel Pro";
@@ -137,7 +134,6 @@
 "simulator や開発ビルドで、購入なしに Pro 導線を確認できます。" = "In the simulator or a debug build, you can verify the Pro flow without making a purchase.";
 "開発用にProを有効化" = "Enable Pro for development";
 "開発用Proを解除する" = "Disable development Pro";
-"録画中" = "Recording";
 "プランを読み込めませんでした" = "Couldn't load plans";
 "再読み込み" = "Try Again";
 "月あたり %@" = "%@ per month";
@@ -175,7 +171,6 @@
 "動画を写真に保存しました。" = "Video saved to Photos.";
 "設定アプリで写真への追加を許可してください。" = "Allow StudyReel to add to Photos in Settings.";
 "この端末では録画できません。" = "Recording isn't available on this device.";
-"録画" = "Recording";
 "全部録画は1時間で約2GB使います。" = "Full recording uses about 2 GB per hour.";
 "録画できません" = "Recording unavailable";
 "動画" = "Video";

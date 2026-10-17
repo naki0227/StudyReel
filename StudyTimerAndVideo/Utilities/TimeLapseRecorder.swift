@@ -26,9 +26,6 @@ enum RecordingMode: String, CaseIterable, Identifiable {
 // タイムラプスは一定間隔ごとに1枚、全部録画はすべてのフレームを書き込む。
 class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     @Published private(set) var canCaptureVideo = false
-    // プレビューにモザイクを出すための、カメラ映像に対する顔の位置（0〜1、左上原点）
-    @Published private(set) var liveFaceRect: CGRect?
-    @Published private(set) var bufferSize: CGSize = .zero
 
     private let session = AVCaptureSession()
     private let output = AVCaptureVideoDataOutput()
@@ -46,7 +43,6 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     private var sessionStart = Date()
     private var elapsedOffset = 0
     private var captureLandscape = true
-    private var faceDetectionEnabled = true
     private let faceTracker = FaceTracker()
     private var track = FaceTrack()
     private var lastSampleTime: Double?
@@ -135,16 +131,6 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
 
     // MARK: - 記録の操作（メインスレッドから呼ぶ）
 
-    func setFaceDetectionEnabled(_ enabled: Bool) {
-        videoQueue.async {
-            self.faceDetectionEnabled = enabled
-            if !enabled {
-                self.faceTracker.reset()
-                DispatchQueue.main.async { self.liveFaceRect = nil }
-            }
-        }
-    }
-
     func start(mode: RecordingMode, interval: Double, sessionStart: Date, elapsedOffset: Int, isLandscape: Bool) {
         // 画面の回転が終わる前に最初のフレームが来ても、選んだ向きで記録する
         updateOrientation(isLandscape: isLandscape)
@@ -162,6 +148,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
             self.lastSampleTime = nil
             self.frameIndex = 0
             self.track = FaceTrack(isRealTime: mode == .full)
+            self.faceTracker.reset()
             self.isCapturing = mode != .off
         }
     }
@@ -235,18 +222,10 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
 
-        if faceDetectionEnabled, faceTracker.process(pixelBuffer, time: pts.seconds) {
-            let rect = faceTracker.rectOrDefault
-            let size = CGSize(width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer))
-            DispatchQueue.main.async {
-                self.liveFaceRect = rect
-                if self.bufferSize != size {
-                    self.bufferSize = size
-                }
-            }
-        }
-
         guard isCapturing else { return }
+
+        // 録画中は画面に出さず、顔の位置だけ記録しておく（確認画面と書き出しで使う）
+        faceTracker.process(pixelBuffer, time: pts.seconds)
 
         // 一時停止していた時間は含めずに、勉強した時間だけを積み上げる
         if let lastFramePTS {
@@ -358,10 +337,6 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     }
 
     private func recordSample(_ pixelBuffer: CVPixelBuffer, videoTime: Double) {
-        // 録画中に顔検出を切っていても、確認画面で動かせるよう既定の範囲を残しておく
-        if !faceDetectionEnabled {
-            faceTracker.process(pixelBuffer, time: lastFramePTS?.seconds ?? videoTime)
-        }
         let bufferRect = faceTracker.rectOrDefault
         let rect = canvasRect(
             fromBufferRect: bufferRect,
