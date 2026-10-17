@@ -11,7 +11,7 @@ struct VideoReviewView: View {
 
     @StateObject private var player: ReviewPlayer
     @State private var result: RecordingResult
-    @State private var saveOption: VideoSaveOption = .hidden
+    @State private var saveOption: VideoSaveOption = RecordingSettings.autoMosaic ? .hidden : .plain
     @State private var dragOffset: CGSize = .zero
     @GestureState private var pinchScale: CGFloat = 1
     @State private var exportProgress: Double?
@@ -275,7 +275,7 @@ struct VideoReviewView: View {
         player.pause()
         let overlay = VideoOverlayStyle(
             font: OverlayFont.resolved(rawValue: overlayFontRaw, isPro: storeKit.isProUnlocked),
-            showsWatermark: !storeKit.isProUnlocked
+            showsWatermark: RecordingSettings.showsWatermark(isPro: storeKit.isProUnlocked)
         )
         let base = VideoExportOptions(hidesFaces: true, hideStyle: hideStyle, stamp: stamp, overlay: overlay)
 
@@ -312,6 +312,12 @@ struct VideoReviewView: View {
                 // 端末内にも残す設定なら、最初に書き出せた動画（モザイクありを優先）をコピーしておく
                 if storedVideoName == nil && MediaStore.keepsVideoInApp {
                     storedVideoName = MediaStore.storeVideo(copying: url)
+                }
+                // 写真に保存しない設定なら、アプリ内に残せたかどうかを結果にする
+                guard RecordingSettings.savesToPhotos else {
+                    try? FileManager.default.removeItem(at: url)
+                    runExports(jobs, index: index + 1, savedAll: savedAll && storedVideoName != nil)
+                    return
                 }
                 saveToPhotos(url) { success in
                     runExports(jobs, index: index + 1, savedAll: savedAll && success)

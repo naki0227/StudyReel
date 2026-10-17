@@ -43,6 +43,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     private var sessionStart = Date()
     private var elapsedOffset = 0
     private var captureLandscape = true
+    private var isFrontCamera = true
     private let faceTracker = FaceTracker()
     private var track = FaceTrack()
     private var lastSampleTime: Double?
@@ -73,8 +74,10 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     private func setupSession() {
         session.sessionPreset = .high
 
-        // 内カメラ入力
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front),
+        // 設定で選んだカメラ（既定は前面）
+        let position = RecordingSettings.camera.avPosition
+        isFrontCamera = position == .front
+        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position),
               let input = try? AVCaptureDeviceInput(device: device),
               session.canAddInput(input) else {
             DispatchQueue.main.async {
@@ -117,10 +120,10 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
             if connection.isVideoOrientationSupported {
                 connection.videoOrientation = orientation
             }
-            // プレビューと同じく鏡写しで記録する
+            // 前面カメラはプレビューと同じく鏡写しで記録する
             if connection.isVideoMirroringSupported {
                 connection.automaticallyAdjustsVideoMirroring = false
-                connection.isVideoMirrored = true
+                connection.isVideoMirrored = isFrontCamera
             }
         }
 
@@ -283,7 +286,8 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
 
     private func setupWriter() {
         // 縦持ちならリール向けの縦長、横持ちなら横長で書き出す
-        canvasSize = captureLandscape ? CGSize(width: 1920, height: 1080) : CGSize(width: 1080, height: 1920)
+        let size = RecordingSettings.quality.landscapeSize
+        canvasSize = captureLandscape ? size : CGSize(width: size.height, height: size.width)
 
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("studyreel-\(UUID().uuidString).mov")
 

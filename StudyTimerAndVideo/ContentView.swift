@@ -85,7 +85,7 @@ struct ContentView: View {
                 showSaveSheet = true
             }
         } message: {
-            Text(videoSaved ? L10n.string("動画を写真に保存しました。") : L10n.string("設定アプリで写真への追加を許可してください。"))
+            Text(saveResultMessage)
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView()
@@ -293,6 +293,13 @@ struct ContentView: View {
         formatTime(mode == .timer ? timerModel.remaining : stopwatchModel.elapsed)
     }
 
+    private var saveResultMessage: String {
+        if !RecordingSettings.savesToPhotos {
+            return videoSaved ? L10n.string("動画をアプリ内に保存しました。") : L10n.string("動画を保存できませんでした。空き容量を確認してください。")
+        }
+        return videoSaved ? L10n.string("動画を写真に保存しました。") : L10n.string("設定アプリで写真への追加を許可してください。")
+    }
+
     private var captureOrientation: CaptureOrientation {
         CaptureOrientation(rawValue: captureOrientationRaw) ?? .landscape
     }
@@ -329,7 +336,7 @@ struct ContentView: View {
         if isRecordingVideo {
             recorder.start(
                 mode: recordingMode,
-                interval: 5,
+                interval: RecordingSettings.interval,
                 sessionStart: startedAt,
                 elapsedOffset: elapsedBeforeLaunch,
                 isLandscape: captureOrientation.isLandscape

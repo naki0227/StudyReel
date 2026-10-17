@@ -106,7 +106,7 @@ struct PaywallView: View {
             Divider()
             comparisonRow(L10n.string("統計・カレンダー・推移グラフ"), free: true)
             Divider()
-            comparisonRow(L10n.string("透かしなしで保存"), free: false)
+            comparisonRow(L10n.string("ロゴなしで保存"), free: false)
             Divider()
             comparisonRow(L10n.string("動画のフォントを選ぶ"), free: false)
             Divider()
@@ -114,7 +114,7 @@ struct PaywallView: View {
             Divider()
             comparisonRow(L10n.string("全部録画（等速）"), free: false)
             Divider()
-            comparisonRow(L10n.string("教科別の先週比・集中しやすい時間帯"), free: false)
+            comparisonRow(L10n.string("教科別の内訳"), free: false)
         }
         .padding(20)
         .background(cardBackground)

@@ -125,7 +125,7 @@ struct StartView: View {
                 CalendarView()
             }
             .sheet(isPresented: $showSettings) {
-                SettingsView()
+                SettingsView(subjectManager: subjectManager)
             }
             .sheet(isPresented: $showPaywall) {
                 PaywallView()

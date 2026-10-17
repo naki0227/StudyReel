@@ -1,79 +1,84 @@
 import SwiftUI
 import SwiftData
+import Charts
 
+// 07 統計（シンプル版）。週・月・年の合計と、よく勉強する時間帯だけを見せる
 struct StudyStatsView: View {
     @Environment(\.dismiss) var dismiss
-    @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var storeKit: StoreKitManager
 
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
-    @Query private var tags: [Tag]
-
     @ObservedObject var subjectManager: SubjectManager
 
-    @State private var showTrend = false
+    @State private var period: StatsPeriod = .month
+    @State private var anchor = Date()
     @State private var showManualAdd = false
-    @State private var showSubjectManager = false
     @State private var showPaywall = false
-    @State private var selectedTag: Tag?
-    @State private var selectedPatternSubject: String?
 
     private let calendar = Calendar.current
 
-    var filteredSessions: [StudySession] {
-        if let tag = selectedTag {
-            return sessions.filter { $0.tags?.contains(tag) ?? false }
-        }
-        return sessions
-    }
-
     var body: some View {
-        NavigationView {
-            ZStack {
-                AppPalette.dashboardGradient(for: colorScheme)
-                .ignoresSafeArea()
-
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        overviewGrid
-                        pastYouPatternCard
-                        filterCard
-                        historyCard
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    Picker(L10n.string("期間"), selection: $period) {
+                        ForEach(StatsPeriod.allCases) { item in
+                            Text(item.title).tag(item)
+                        }
                     }
-                    .padding(20)
+                    .pickerStyle(.segmented)
+                    .onChange(of: period) { anchor = Date() }
+
+                    periodNavigator
+
+                    VStack(spacing: 6) {
+                        Text(compactDuration(totalSeconds))
+                            .font(ReelTheme.serif(40))
+                            .foregroundColor(ReelTheme.ink)
+                            .monospacedDigit()
+                        Text(summaryLine)
+                            .font(ReelTheme.sans(12))
+                            .foregroundColor(ReelTheme.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    barChart
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(L10n.string("よく勉強する時間帯"))
+                            .font(ReelTheme.sans(13))
+                            .foregroundColor(ReelTheme.ink)
+                        hourStrip
+                    }
+
+                    subjectSection
                 }
+                .padding(20)
+                .frame(maxWidth: 640)
+                .frame(maxWidth: .infinity)
             }
-            .navigationTitle(L10n.string("学習統計"))
-            .navigationBarTitleDisplayMode(.inline)
+            .background(ReelTheme.background.ignoresSafeArea())
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(L10n.string("閉じる")) {
-                        dismiss()
-                    }
+                    Text(L10n.string("統計"))
+                        .font(ReelTheme.serif(24))
+                        .foregroundColor(ReelTheme.ink)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack {
-                        Button(action: { showManualAdd = true }) {
+                    HStack(spacing: 16) {
+                        Button {
+                            showManualAdd = true
+                        } label: {
                             Image(systemName: "plus")
                         }
-                        Button(action: { showSubjectManager = true }) {
-                            Image(systemName: "book.closed")
-                        }
-                        Button(action: { showTrend = true }) {
-                            Image(systemName: "chart.bar.xaxis")
-                        }
+                        .accessibilityLabel(L10n.string("手動追加"))
+                        Button(L10n.string("閉じる")) { dismiss() }
                     }
+                    .foregroundColor(ReelTheme.accentDeep)
                 }
-            }
-            .sheet(isPresented: $showTrend) {
-                StudyStatsTrendView(sessions: filteredSessions, subjectManager: subjectManager)
             }
             .sheet(isPresented: $showManualAdd) {
                 ManualAddView(subjectManager: subjectManager)
-            }
-            .sheet(isPresented: $showSubjectManager) {
-                SubjectEditView(subjectManager: subjectManager)
             }
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
@@ -81,329 +86,293 @@ struct StudyStatsView: View {
         }
     }
 
-    var overviewGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
-            metricCard(title: L10n.string("Today"), value: formatHoursAndMinutes(todayTotalSeconds))
-            metricCard(title: L10n.string("This Week"), value: formatHoursAndMinutes(thisWeekTotalSeconds))
-            metricCard(title: L10n.string("Streak"), value: L10n.format("%d日", currentStreak))
-            metricCard(title: L10n.string("Top Subject"), value: topSubject ?? L10n.string("No Data"))
-        }
-    }
+    // MARK: - Parts
 
-    func metricCard(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
-            Text(value)
-                .font(.title3.weight(.bold))
-                .monospacedDigit()
-                .foregroundColor(.primary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(AppPalette.cardFill(for: colorScheme))
-        )
-    }
-
-    var pastYouPatternCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(L10n.string("Past You Patterns"))
-                .font(.headline)
-
-            if !patternSubjects.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        subjectChip(title: L10n.string("All Subjects"), isSelected: selectedPatternSubject == nil) {
-                            selectedPatternSubject = nil
-                        }
-                        ForEach(patternSubjects, id: \.self) { subject in
-                            subjectChip(title: subject, isSelected: selectedPatternSubject == subject) {
-                                selectedPatternSubject = subject
-                            }
-                        }
-                    }
-                }
-            }
-
-            patternRow(title: L10n.string("よく始める時間"), value: patternMostCommonStartHourText)
-            patternRow(title: L10n.string("平均継続時間"), value: formatHoursAndMinutes(patternAverageDurationSeconds))
-            if !storeKit.isProUnlocked {
-                proLockedCard
-            } else if let selectedPatternSubject {
-                patternRow(
-                    title: L10n.string("先週比"),
-                    value: StudyInsights.weeklyComparisonText(for: filteredSessions, subject: selectedPatternSubject)
-                )
-                patternRow(
-                    title: L10n.string("集中しやすい時間"),
-                    value: StudyInsights.strongestHourText(for: patternSessions)
-                )
-            } else if !patternSubjects.isEmpty {
-                Text(L10n.string("教科を選ぶと、先週比と集中しやすい時間も表示されます。"))
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(AppPalette.cardFill(for: colorScheme))
-        )
-    }
-
-    var proLockedCard: some View {
-        Button(action: { showPaywall = true }) {
-            HStack(spacing: 12) {
-                Image(systemName: "lock.fill")
-                    .foregroundColor(.secondary)
-                Text(L10n.string("教科別の先週比と集中しやすい時間帯は Pro で見られます。"))
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.leading)
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.bold))
-                    .foregroundColor(.secondary)
-            }
-            .padding(12)
-            .background(Color.primary.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-
-    func patternRow(title: String, value: String) -> some View {
+    private var periodNavigator: some View {
         HStack {
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+            Button {
+                move(by: -1)
+            } label: {
+                Image(systemName: "chevron.left")
+            }
             Spacer()
-            Text(value)
-                .font(.subheadline.weight(.semibold))
-                .monospacedDigit()
-                .foregroundColor(.primary)
+            Text(periodTitle)
+                .font(ReelTheme.sans(15))
+                .foregroundColor(ReelTheme.ink)
+            Spacer()
+            Button {
+                move(by: 1)
+            } label: {
+                Image(systemName: "chevron.right")
+            }
+            .disabled(isCurrentPeriod)
+            .opacity(isCurrentPeriod ? 0.3 : 1)
         }
-        .padding(.vertical, 4)
+        .font(.system(size: 15, weight: .light))
+        .foregroundColor(ReelTheme.secondary)
     }
 
-    func subjectChip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 9)
-                .background(isSelected ? AppPalette.skyDeep : Color.gray.opacity(0.12))
-                .foregroundColor(isSelected ? .white : .primary)
-                .clipShape(Capsule())
+    private var barChart: some View {
+        Chart(buckets) { bucket in
+            BarMark(
+                x: .value("", bucket.label),
+                y: .value("", Double(bucket.seconds) / 3600),
+                width: .ratio(0.35)
+            )
+            .foregroundStyle(ReelTheme.accent)
+            .cornerRadius(2)
         }
-        .buttonStyle(.plain)
+        .chartXAxis {
+            AxisMarks(values: axisLabels) { _ in
+                AxisValueLabel()
+                    .font(ReelTheme.sans(10))
+                    .foregroundStyle(ReelTheme.secondary)
+            }
+        }
+        .chartYAxis(.hidden)
+        .frame(height: 150)
     }
 
-    var filterCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private var hourStrip: some View {
+        let totals = hourTotals
+        let peak = max(totals.max() ?? 0, 1)
+        return VStack(spacing: 6) {
+            HStack(spacing: 2) {
+                ForEach(0..<24, id: \.self) { hour in
+                    Rectangle()
+                        .fill(ReelTheme.accent.opacity(0.12 + 0.88 * Double(totals[hour]) / Double(peak)))
+                        .frame(height: 18)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
             HStack {
-                Text(L10n.string("Filter"))
-                    .font(.headline)
-                Spacer()
-                if selectedTag != nil {
-                    Button(L10n.string("フィルタ解除")) {
-                        selectedTag = nil
-                    }
-                    .font(.caption)
-                    .foregroundColor(.red)
+                ForEach([0, 6, 12, 18, 24], id: \.self) { hour in
+                    Text("\(hour)")
+                    if hour != 24 { Spacer() }
                 }
             }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    filterChip(title: L10n.string("すべて"), isSelected: selectedTag == nil) {
-                        selectedTag = nil
-                    }
-                    ForEach(tags) { tag in
-                        filterChip(title: tag.name, isSelected: selectedTag == tag) {
-                            selectedTag = tag
-                        }
-                    }
-                }
-            }
+            .font(ReelTheme.sans(10))
+            .foregroundColor(ReelTheme.secondary)
         }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(AppPalette.cardFill(for: colorScheme))
-        )
     }
 
-    func filterChip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 9)
-                .background(isSelected ? AppPalette.skyDeep : Color.gray.opacity(0.12))
-                .foregroundColor(isSelected ? .white : .primary)
-                .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
-    }
-
-    var historyCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
+    // 教科ごとの内訳は Pro
+    @ViewBuilder
+    private var subjectSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(L10n.string("学習履歴"))
-                    .font(.headline)
+                Text(L10n.string("教科別の内訳"))
+                    .font(ReelTheme.sans(13))
+                    .foregroundColor(ReelTheme.ink)
                 Spacer()
-                Text(L10n.format("%d sessions", filteredSessions.count))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            if filteredSessions.isEmpty {
-                Text(L10n.string("まだ記録がありません"))
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 24)
-            } else {
-                VStack(spacing: 10) {
-                    ForEach(filteredSessions.prefix(20)) { session in
-                        historyRow(for: session)
-                    }
+                if !storeKit.isProUnlocked {
+                    Text("Pro")
+                        .font(ReelTheme.sans(11, weight: .semibold))
+                        .foregroundColor(ReelTheme.accentDeep)
                 }
             }
-        }
-        .padding(22)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(AppPalette.cardFill(for: colorScheme))
-        )
-    }
 
-    func historyRow(for session: StudySession) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text(session.subject)
-                        .font(.subheadline.weight(.semibold))
-                    Spacer()
-                    Text(formatHoursAndMinutes(session.duration))
-                        .font(.subheadline.weight(.bold))
-                        .monospacedDigit()
-                }
-
-                Text(formatDate(session.date))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                if let tags = session.tags, !tags.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 6) {
-                            ForEach(tags) { tag in
-                                Text(tag.name)
-                                    .font(.caption2)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(tag.color.opacity(0.14))
-                                    .foregroundColor(tag.color)
-                                    .clipShape(Capsule())
+            if storeKit.isProUnlocked {
+                let totals = subjectTotals
+                if totals.isEmpty {
+                    Text(L10n.string("まだ記録がありません"))
+                        .font(ReelTheme.sans(13))
+                        .foregroundColor(ReelTheme.secondary)
+                } else {
+                    VStack(spacing: 10) {
+                        ForEach(totals, id: \.subject) { item in
+                            HStack(spacing: 10) {
+                                Text(item.subject)
+                                    .font(ReelTheme.sans(13))
+                                    .foregroundColor(ReelTheme.ink)
+                                    .frame(width: 84, alignment: .leading)
+                                    .lineLimit(1)
+                                GeometryReader { geometry in
+                                    Capsule()
+                                        .fill(ReelTheme.accent)
+                                        .frame(width: max(4, geometry.size.width * CGFloat(item.seconds) / CGFloat(max(totalSeconds, 1))))
+                                }
+                                .frame(height: 6)
+                                Text(compactDuration(item.seconds))
+                                    .font(ReelTheme.sans(12))
+                                    .foregroundColor(ReelTheme.secondary)
+                                    .monospacedDigit()
+                                    .frame(width: 64, alignment: .trailing)
                             }
                         }
                     }
+                    .padding(16)
+                    .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
                 }
+            } else {
+                Button {
+                    showPaywall = true
+                } label: {
+                    HStack {
+                        Image(systemName: "lock")
+                        Text(L10n.string("どの教科にどれだけ時間を使ったかを見られます"))
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                    }
+                    .font(ReelTheme.sans(12))
+                    .foregroundColor(ReelTheme.secondary)
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
+                }
+                .buttonStyle(.plain)
             }
         }
-        .padding(14)
-        .background(AppPalette.secondaryCardFill(for: colorScheme))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .contextMenu {
-            Button(role: .destructive) {
-                MediaStore.delete(session.thumbnailFileName, session.videoFileName)
-                modelContext.delete(session)
-            } label: {
-                Text(L10n.string("削除"))
+    }
+
+    // MARK: - Data
+
+    private struct Bucket: Identifiable {
+        let id: Int
+        let label: String
+        let seconds: Int
+    }
+
+    private var interval: DateInterval {
+        calendar.dateInterval(of: period.component, for: anchor) ?? DateInterval(start: anchor, duration: 86_400)
+    }
+
+    private var periodSessions: [StudySession] {
+        let range = interval
+        return sessions.filter { range.contains($0.date) }
+    }
+
+    private var totalSeconds: Int {
+        periodSessions.map(\.duration).reduce(0, +)
+    }
+
+    private var buckets: [Bucket] {
+        let range = interval
+        let items = periodSessions
+        switch period {
+        case .week, .month:
+            var result: [Bucket] = []
+            var day = range.start
+            var index = 0
+            while day < range.end {
+                let total = items.filter { calendar.isDate($0.date, inSameDayAs: day) }.map(\.duration).reduce(0, +)
+                result.append(Bucket(id: index, label: dayLabel(day), seconds: total))
+                index += 1
+                day = calendar.date(byAdding: .day, value: 1, to: day) ?? range.end
+            }
+            return result
+        case .year:
+            return (1...12).map { month in
+                let total = items.filter { calendar.component(.month, from: $0.date) == month }.map(\.duration).reduce(0, +)
+                return Bucket(id: month, label: "\(month)", seconds: total)
             }
         }
     }
 
-    private var todayTotalSeconds: Int {
-        filteredSessions
-            .filter { calendar.isDateInToday($0.date) }
-            .map(\.duration)
-            .reduce(0, +)
-    }
-
-    private var thisWeekTotalSeconds: Int {
-        filteredSessions
-            .filter { calendar.isDate($0.date, equalTo: Date(), toGranularity: .weekOfYear) }
-            .map(\.duration)
-            .reduce(0, +)
-    }
-
-    private var patternSessions: [StudySession] {
-        if let selectedPatternSubject {
-            return filteredSessions.filter { $0.subject == selectedPatternSubject }
+    private var axisLabels: [String] {
+        switch period {
+        case .week: return buckets.map(\.label)
+        case .month: return ["1", "7", "14", "21", "28"]
+        case .year: return ["1", "4", "7", "10", "12"]
         }
-        return filteredSessions
     }
 
-    private var patternSubjects: [String] {
-        Array(subjectTotals.prefix(6).map(\.key))
+    private func dayLabel(_ date: Date) -> String {
+        if period == .week {
+            let formatter = DateFormatter()
+            formatter.locale = .autoupdatingCurrent
+            formatter.setLocalizedDateFormatFromTemplate("EEE")
+            return formatter.string(from: date)
+        }
+        return "\(calendar.component(.day, from: date))"
     }
 
-    private var patternAverageDurationSeconds: Int {
-        StudyInsights.averageDurationSeconds(for: patternSessions)
+    // 勉強していた時間を、またがる時間帯ごとに振り分ける
+    private var hourTotals: [Int] {
+        var totals = Array(repeating: 0, count: 24)
+        for session in periodSessions {
+            var cursor = session.date
+            var remaining = session.duration
+            while remaining > 0 {
+                let hour = calendar.component(.hour, from: cursor)
+                let nextHour = calendar.dateInterval(of: .hour, for: cursor)?.end ?? cursor.addingTimeInterval(3600)
+                let chunk = min(remaining, max(1, Int(nextHour.timeIntervalSince(cursor))))
+                totals[hour] += chunk
+                remaining -= chunk
+                cursor = nextHour
+            }
+        }
+        return totals
     }
 
-    private var topSubject: String? {
-        subjectTotals.first?.key
-    }
-
-    private var subjectTotals: [(key: String, value: Int)] {
-        Dictionary(grouping: filteredSessions, by: \.subject)
+    private var subjectTotals: [(subject: String, seconds: Int)] {
+        Dictionary(grouping: periodSessions, by: \.subject)
             .map { ($0.key, $0.value.map(\.duration).reduce(0, +)) }
-            .sorted { $0.value > $1.value }
+            .sorted { $0.1 > $1.1 }
     }
 
-    private var currentStreak: Int {
-        let days = Set(filteredSessions.map { calendar.startOfDay(for: $0.date) })
-        guard !days.isEmpty else { return 0 }
-
-        var streak = 0
-        var cursor = calendar.startOfDay(for: Date())
-        while days.contains(cursor) {
-            streak += 1
-            guard let previous = calendar.date(byAdding: .day, value: -1, to: cursor) else { break }
-            cursor = previous
-        }
-        return streak
+    private var studiedDays: Int {
+        Set(periodSessions.map { calendar.startOfDay(for: $0.date) }).count
     }
 
-    private var patternMostCommonStartHourText: String {
-        StudyInsights.mostCommonStartHourText(for: patternSessions)
+    private var summaryLine: String {
+        guard studiedDays > 0 else { return L10n.string("まだ記録がありません") }
+        return L10n.format("%d日勉強 · 1日平均 %@", studiedDays, compactDuration(totalSeconds / studiedDays))
     }
 
-    private func formatHoursAndMinutes(_ seconds: Int) -> String {
-        let hours = seconds / 3600
-        let minutes = (seconds % 3600) / 60
-
-        if hours > 0 {
-            return L10n.format("%d時間%d分", hours, minutes)
-        }
-        return L10n.format("%d分", minutes)
-    }
-
-    private func formatDate(_ date: Date) -> String {
+    private var periodTitle: String {
         let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
         formatter.locale = .autoupdatingCurrent
-        return formatter.string(from: date)
+        switch period {
+        case .week:
+            formatter.setLocalizedDateFormatFromTemplate("MMMd")
+            let end = interval.end.addingTimeInterval(-1)
+            return "\(formatter.string(from: interval.start)) – \(formatter.string(from: end))"
+        case .month:
+            formatter.setLocalizedDateFormatFromTemplate("yMMMM")
+            return formatter.string(from: anchor)
+        case .year:
+            formatter.setLocalizedDateFormatFromTemplate("y")
+            return formatter.string(from: anchor)
+        }
+    }
+
+    private var isCurrentPeriod: Bool {
+        interval.contains(Date())
+    }
+
+    private func move(by value: Int) {
+        if let next = calendar.date(byAdding: period.component, value: value, to: anchor) {
+            anchor = next
+        }
+    }
+
+    private func compactDuration(_ seconds: Int) -> String {
+        let h = seconds / 3600
+        let m = (seconds % 3600) / 60
+        return h > 0 ? "\(h)h \(String(format: "%02d", m))m" : "\(m)m"
+    }
+}
+
+enum StatsPeriod: String, CaseIterable, Identifiable {
+    case week
+    case month
+    case year
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .week: return L10n.string("週")
+        case .month: return L10n.string("月")
+        case .year: return L10n.string("年")
+        }
+    }
+
+    var component: Calendar.Component {
+        switch self {
+        case .week: return .weekOfYear
+        case .month: return .month
+        case .year: return .year
+        }
     }
 }
