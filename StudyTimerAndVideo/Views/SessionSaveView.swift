@@ -5,7 +5,6 @@ import SwiftData
 struct SessionSaveView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
-    @EnvironmentObject private var storeKit: StoreKitManager
 
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
     @ObservedObject var subjectManager: SubjectManager
@@ -229,7 +228,7 @@ struct SessionSaveView: View {
         modelContext.insert(session)
         didSave = true
         CloudBackup.markChanged()
-        CloudBackup.backupIfNeeded(context: modelContext, isPro: storeKit.isProUnlocked)
+        CloudBackup.backupIfNeeded(context: modelContext)
         let updatedSessions = [session] + sessions
         Task {
             await StudyNotificationManager.shared.scheduleQuietReminderIfNeeded(with: updatedSessions)

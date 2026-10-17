@@ -129,7 +129,6 @@ struct PaywallView: View {
             Divider()
             comparisonRow(L10n.string("教科別の内訳"), free: false)
             Divider()
-            comparisonRow(L10n.string("iCloudバックアップ"), free: false)
         }
         .padding(20)
         .background(cardBackground)

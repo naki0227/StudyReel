@@ -16,7 +16,7 @@ struct SettingsView: View {
     @AppStorage(RecordingSettings.autoMosaicKey) private var autoMosaic = true
     @AppStorage(RecordingSettings.saveToPhotosKey) private var saveToPhotos = true
     @AppStorage(MediaStore.keepVideoKey) private var keepInApp = true
-    @AppStorage(CloudBackup.autoBackupKey) private var autoBackup = false
+    @AppStorage(CloudBackup.autoBackupKey) private var autoBackup = true
     @ObservedObject private var cloudBackup = CloudBackup.shared
     @State private var showRestoreConfirm = false
     @State private var backupMessage: String?
@@ -214,49 +214,35 @@ struct SettingsView: View {
 
     // MARK: - iCloudバックアップ
 
-    @ViewBuilder
     private var backupCard: some View {
-        if storeKit.isProUnlocked {
-            card {
-                ReelRow(systemImage: "icloud", title: L10n.string("自動でバックアップ")) {
-                    Toggle("", isOn: $autoBackup).labelsHidden().tint(ReelTheme.accent)
-                }
-                divider
-                Button { backupNow() } label: {
-                    ReelRow(systemImage: "arrow.up.to.line", title: L10n.string("今すぐバックアップ")) {
-                        if cloudBackup.isWorking {
-                            ProgressView()
-                        } else {
-                            chevron
-                        }
-                    }
-                }
-                .disabled(cloudBackup.isWorking)
-                divider
-                Button { showRestoreConfirm = true } label: {
-                    ReelRow(systemImage: "arrow.down.to.line", title: L10n.string("バックアップから戻す")) { chevron }
-                }
-                .disabled(cloudBackup.isWorking)
+        card {
+            ReelRow(systemImage: "icloud", title: L10n.string("自動でバックアップ")) {
+                Toggle("", isOn: $autoBackup).labelsHidden().tint(ReelTheme.accent)
             }
-        } else {
-            card {
-                Button { showPaywall = true } label: {
-                    ReelRow(systemImage: "icloud", title: L10n.string("自動でバックアップ")) {
-                        HStack(spacing: 6) {
-                            Text("Pro").font(ReelTheme.sans(11, weight: .semibold)).foregroundColor(ReelTheme.accentDeep)
-                            Toggle("", isOn: .constant(false)).labelsHidden().tint(ReelTheme.accent).disabled(true)
-                        }
+            divider
+            Button { backupNow() } label: {
+                ReelRow(systemImage: "arrow.up.to.line", title: L10n.string("今すぐバックアップ")) {
+                    if cloudBackup.isWorking {
+                        ProgressView()
+                    } else {
+                        chevron
                     }
                 }
             }
+            .disabled(cloudBackup.isWorking)
+            divider
+            Button { showRestoreConfirm = true } label: {
+                ReelRow(systemImage: "arrow.down.to.line", title: L10n.string("バックアップから戻す")) { chevron }
+            }
+            .disabled(cloudBackup.isWorking)
         }
     }
 
     private var backupNote: String {
-        if storeKit.isProUnlocked, let last = cloudBackup.lastBackupDate {
+        if let last = cloudBackup.lastBackupDate {
             return L10n.format("最後のバックアップ %@", last.formatted(date: .abbreviated, time: .shortened))
         }
-        return L10n.string("記録と動画をiCloudに残せます。機種変更やアプリの入れ直しのあとに戻せます。")
+        return L10n.string("記録と動画をiCloudに残します。ファイルアプリの「StudyReel」フォルダから家族にも共有できます。")
     }
 
     private func backupNow() {

@@ -1,7 +1,8 @@
 import Foundation
 import SwiftData
 
-// iCloud Drive（アプリ専用の見えないフォルダ）への手動・自動バックアップ。Pro のみ
+// iCloud Drive への手動・自動バックアップ。無料で使えて、最初からオン
+// ファイルアプリの「StudyReel」フォルダに出るので、そこから家族と共有もできる
 // 記録は backup.json に、サムネイルと動画は Media フォルダにコピーする
 @MainActor
 final class CloudBackup: ObservableObject {
@@ -19,7 +20,7 @@ final class CloudBackup: ObservableObject {
     }
 
     static var isAutoBackupEnabled: Bool {
-        UserDefaults.standard.bool(forKey: autoBackupKey)
+        UserDefaults.standard.object(forKey: autoBackupKey) as? Bool ?? true
     }
 
     // iCloud にサインインしていて、iCloud Drive が使えるか
@@ -35,8 +36,8 @@ final class CloudBackup: ObservableObject {
     }
 
     // アプリが裏に回ったときや、記録を保存したあとに呼ぶ。変更がなければ1日1回まで
-    static func backupIfNeeded(context: ModelContext, isPro: Bool) {
-        guard isPro, isAutoBackupEnabled, isAvailable else { return }
+    static func backupIfNeeded(context: ModelContext) {
+        guard isAutoBackupEnabled, isAvailable else { return }
         let hasChanges = UserDefaults.standard.bool(forKey: needsBackupKey)
         if !hasChanges, let last = shared.lastBackupDate, Calendar.current.isDateInToday(last) { return }
         Task { @MainActor in

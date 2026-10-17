@@ -56,9 +56,9 @@ struct StudyTimerAndVideoApp: App {
                 }
             }
             .onChange(of: scenePhase) { _, phase in
-                // Pro で自動バックアップをオンにしていれば、裏に回ったときに iCloud へ送る
+                // 自動バックアップがオンなら、裏に回ったときに iCloud へ送る
                 if phase == .background {
-                    CloudBackup.backupIfNeeded(context: container.mainContext, isPro: storeKit.isProUnlocked)
+                    CloudBackup.backupIfNeeded(context: container.mainContext)
                 }
             }
             .onAppear {
