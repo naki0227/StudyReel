@@ -165,14 +165,38 @@ enum VideoExporter {
         ).integral
     }
 
+    // 顔の範囲を楕円（丸）に切り抜いてモザイクをかける。縁は少しだけぼかして自然になじませる
     static func mosaic(_ image: CIImage, in ciRect: CGRect, canvasSize: CGSize) -> CIImage {
-        image.clampedToExtent()
+        guard ciRect.width > 0, ciRect.height > 0 else { return image }
+
+        let pixellated = image.clampedToExtent()
             .applyingFilter("CIPixellate", parameters: [
                 kCIInputScaleKey: max(canvasSize.width, canvasSize.height) * 0.03,
                 kCIInputCenterKey: CIVector(x: ciRect.midX, y: ciRect.midY)
             ])
             .cropped(to: ciRect)
-            .composited(over: image)
+
+        let radius = ciRect.height / 2
+        guard let circle = CIFilter(name: "CIRadialGradient", parameters: [
+            "inputCenter": CIVector(x: 0, y: 0),
+            "inputRadius0": radius * 0.94,
+            "inputRadius1": radius,
+            "inputColor0": CIColor(red: 1, green: 1, blue: 1, alpha: 1),
+            "inputColor1": CIColor(red: 1, green: 1, blue: 1, alpha: 0)
+        ])?.outputImage else {
+            return pixellated.composited(over: image)
+        }
+
+        // 円を顔の範囲の縦横比に合わせて楕円にする
+        let mask = circle
+            .transformed(by: CGAffineTransform(scaleX: ciRect.width / ciRect.height, y: 1))
+            .transformed(by: CGAffineTransform(translationX: ciRect.midX, y: ciRect.midY))
+            .cropped(to: ciRect)
+
+        return pixellated.applyingFilter("CIBlendWithAlphaMask", parameters: [
+            kCIInputBackgroundImageKey: image,
+            kCIInputMaskImageKey: mask
+        ])
     }
 
     private static func stampImage(_ stamp: String, side: CGFloat) -> CIImage? {

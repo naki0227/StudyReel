@@ -186,7 +186,7 @@ struct VideoReviewView: View {
 
     @ViewBuilder
     private func faceBox(size: CGSize) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
+        let shape = Ellipse()
         ZStack {
             if hideStyle == .stamp {
                 Text(stamp)
