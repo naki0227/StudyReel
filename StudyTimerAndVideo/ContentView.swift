@@ -57,28 +57,26 @@ struct ContentView: View {
             }
             .ignoresSafeArea()
 
-            // 画面全体は暗くせず、文字の載る上下だけ薄く落として自分の姿を確認しやすくする
+            // 文字やボタンが読めるよう、上下だけごく薄く落とす。映像はほぼそのまま見せる
             VStack(spacing: 0) {
-                LinearGradient(colors: [Color.black.opacity(0.45), .clear], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 160)
+                LinearGradient(colors: [Color.black.opacity(0.28), .clear], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 130)
                 Spacer()
-                LinearGradient(colors: [.clear, Color.black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 220)
+                LinearGradient(colors: [.clear, Color.black.opacity(0.32)], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 170)
             }
             .ignoresSafeArea()
             .allowsHitTesting(false)
 
-            VStack(spacing: 0) {
-                topBar
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-
-                Spacer()
-
-                bottomControls
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
+            GeometryReader { geometry in
+                if geometry.size.width > geometry.size.height {
+                    landscapeControls
+                } else {
+                    portraitControls
+                }
             }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
         }
         .alert(videoSaved ? L10n.string("保存完了") : L10n.string("動画を保存できませんでした"), isPresented: $showSaveAlert) {
             Button(L10n.string("OK")) {
@@ -136,136 +134,195 @@ struct ContentView: View {
         }
     }
 
-    // 左上にタイマー、右上に中断ボタン。中央はカメラ映像のために空けておく
-    private var topBar: some View {
-        HStack(alignment: .top) {
-            timerBadge
+    // MARK: - 録画画面のレイアウト
+    // 中央はカメラ映像のために空けて、操作は端に寄せる。横向きは右側、縦向きは下側にシャッター
 
+    private var landscapeControls: some View {
+        HStack(alignment: .top, spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                topLeftButtons
+                Spacer()
+                if !isRecording {
+                    modeChips
+                }
+            }
             Spacer()
+            VStack(alignment: .trailing, spacing: 0) {
+                timerBadge
+                Spacer()
+                VStack(spacing: 16) {
+                    shutterButton
+                    if isRecording {
+                        pauseButton
+                    }
+                }
+                .frame(width: 76)
+                Spacer()
+                if recordingMode == .full && !isRecording {
+                    storageNote
+                }
+            }
+        }
+    }
+
+    private var portraitControls: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .top) {
+                topLeftButtons
+                Spacer()
+                timerBadge
+            }
+            Spacer()
+            VStack(spacing: 14) {
+                if !isRecording {
+                    modeChips
+                    if recordingMode == .full {
+                        storageNote
+                    }
+                }
+                ZStack {
+                    shutterButton
+                    if isRecording {
+                        HStack {
+                            pauseButton
+                            Spacer()
+                        }
+                        .frame(width: 220)
+                    }
+                }
+            }
+        }
+    }
+
+    private var topLeftButtons: some View {
+        HStack(spacing: 10) {
+            Button {
+                showDiscardAlert = true
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 38, height: 38)
+                    .background(Circle().fill(Color.white.opacity(0.22)))
+            }
+            .accessibilityLabel(L10n.string("中断"))
 
             if !isRecording {
                 Button {
                     captureOrientationRaw = captureOrientation.toggled.rawValue
                 } label: {
-                    Label(captureOrientation.toggled.title, systemImage: "rotate.right")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 14)
-                        .frame(height: 44)
-                        .background(.ultraThinMaterial.opacity(0.7))
-                        .clipShape(Capsule())
+                    HStack(spacing: 6) {
+                        Image(systemName: "rotate.right")
+                        Text(captureOrientation.toggled.title)
+                    }
+                    .font(ReelTheme.sans(13, weight: .medium))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .frame(height: 38)
+                    .background(Capsule().fill(Color.white.opacity(0.22)))
                 }
                 .accessibilityLabel(L10n.format("%@に切り替える", captureOrientation.toggled.title))
             }
 
-            Button {
-                showDiscardAlert = true
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.headline.weight(.bold))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-                    .background(.ultraThinMaterial.opacity(0.7))
-                    .clipShape(Circle())
+            if recordingMode != .off && !recorder.canCaptureVideo {
+                Text(L10n.string("この端末では録画できません。"))
+                    .font(ReelTheme.sans(11))
+                    .foregroundColor(.white.opacity(0.85))
             }
-            .accessibilityLabel(L10n.string("中断"))
         }
     }
 
+    // 右上のタイマー。動画に入る文字と同じフォントで、白い文字に影をつける
     private var timerBadge: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .trailing, spacing: 3) {
             HStack(spacing: 6) {
                 Circle()
                     .fill(statusColor)
-                    .frame(width: 8, height: 8)
-                Text(statusText)
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(.white.opacity(0.9))
+                    .frame(width: 7, height: 7)
+                Text(displayedTime)
+                    .font(OverlayFont.resolved(rawValue: overlayFontRaw, isPro: storeKit.isProUnlocked).font(size: 26))
+                    .monospacedDigit()
+                    .lineLimit(1)
             }
-
-            // 動画に入る文字と同じフォントで表示する
-            Text(displayedTime)
-                .font(OverlayFont.resolved(rawValue: overlayFontRaw, isPro: storeKit.isProUnlocked).font(size: 30))
-                .monospacedDigit()
-                .foregroundColor(.white)
-                .lineLimit(1)
-
-            Text(badgeCaption)
-                .font(.caption2.weight(.medium))
-                .foregroundColor(.white.opacity(0.75))
+            Text("\(statusText) · \(badgeCaption)")
+                .font(ReelTheme.sans(11))
+                .opacity(0.85)
                 .lineLimit(1)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.black.opacity(0.4))
-        )
+        .foregroundColor(.white)
+        .shadow(color: .black.opacity(0.4), radius: 6, x: 0, y: 1)
     }
 
-    private var bottomControls: some View {
-        VStack(spacing: 10) {
-            if recordingMode != .off && !recorder.canCaptureVideo {
-                Text(L10n.string("この端末では録画できません。"))
-                    .font(.footnote)
-                    .foregroundColor(.white.opacity(0.8))
+    // カメラのシャッターのような丸いボタン。開始前は丸、録画中は四角
+    private var shutterButton: some View {
+        Button {
+            if isRecording {
+                stopAndSave()
+            } else {
+                startRecording()
             }
+        } label: {
+            ZStack {
+                Circle()
+                    .stroke(Color.white, lineWidth: 3)
+                    .frame(width: 72, height: 72)
+                if isRecording {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(Color.white)
+                        .frame(width: 26, height: 26)
+                } else {
+                    Circle()
+                        .fill(isRecordingVideo ? Color(red: 1.0, green: 0.36, blue: 0.33) : Color.white)
+                        .frame(width: 58, height: 58)
+                }
+            }
+            .shadow(color: .black.opacity(0.25), radius: 8)
+        }
+        .accessibilityLabel(L10n.string(isRecording ? "終了して保存" : "開始"))
+    }
 
-            if !isRecording {
-                VStack(alignment: .leading, spacing: 8) {
-                    Picker(L10n.string("録画"), selection: $recordingMode) {
-                        ForEach(RecordingMode.allCases) { mode in
-                            Text(mode.isPro && !storeKit.isProUnlocked ? "\(mode.title) (Pro)" : mode.title).tag(mode)
+    private var pauseButton: some View {
+        Button {
+            togglePause()
+        } label: {
+            Image(systemName: isPaused ? "play.fill" : "pause.fill")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 44, height: 44)
+                .background(Circle().fill(Color.white.opacity(0.22)))
+        }
+        .accessibilityLabel(L10n.string(isPaused ? "再開" : "一時停止"))
+    }
+
+    private var modeChips: some View {
+        HStack(spacing: 6) {
+            ForEach(RecordingMode.allCases) { option in
+                Button {
+                    recordingMode = option
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(option.title)
+                        if option.isPro && !storeKit.isProUnlocked {
+                            Text("PRO")
+                                .font(.system(size: 9, weight: .heavy))
+                                .opacity(0.75)
                         }
                     }
-                    .pickerStyle(.segmented)
-
-                    if recordingMode == .full {
-                        Text(L10n.string("全部録画は1時間で約2GB使います。"))
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.8))
-                    }
-                }
-                .padding(12)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color.black.opacity(0.35))
-                )
-            }
-
-            HStack(spacing: 10) {
-                if isRecording {
-                    Button {
-                        togglePause()
-                    } label: {
-                        Label(L10n.string(isPaused ? "再開" : "一時停止"), systemImage: isPaused ? "play.fill" : "pause.fill")
-                            .font(.headline.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .foregroundColor(.white)
-                            .background(Color.white.opacity(0.18))
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    }
-                }
-
-                Button {
-                    if isRecording {
-                        stopAndSave()
-                    } else {
-                        startRecording()
-                    }
-                } label: {
-                    Label(L10n.string(isRecording ? "終了して保存" : "開始"), systemImage: isRecording ? "stop.fill" : "record.circle")
-                        .font(.headline.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .foregroundColor(AppPalette.ink)
-                        .background(isRecording ? Color.white : AppPalette.sky)
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .font(ReelTheme.sans(12, weight: .medium))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .foregroundColor(recordingMode == option ? ReelTheme.ink : .white)
+                    .background(Capsule().fill(recordingMode == option ? Color.white : Color.white.opacity(0.22)))
                 }
             }
         }
-        .frame(maxWidth: 520)
+    }
+
+    private var storageNote: some View {
+        Text(L10n.string("全部録画は1時間で約2GB使います。"))
+            .font(ReelTheme.sans(11))
+            .foregroundColor(.white.opacity(0.85))
+            .shadow(color: .black.opacity(0.4), radius: 4)
     }
 
     private var statusColor: Color {
