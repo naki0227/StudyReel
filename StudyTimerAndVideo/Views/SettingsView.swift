@@ -4,6 +4,7 @@ import SwiftData
 // 08 設定。必要な項目だけを、撮影・モザイク・保存先・学習の順に並べる
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var storeKit: StoreKitManager
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
     @ObservedObject var subjectManager: SubjectManager
@@ -15,6 +16,10 @@ struct SettingsView: View {
     @AppStorage(RecordingSettings.autoMosaicKey) private var autoMosaic = true
     @AppStorage(RecordingSettings.saveToPhotosKey) private var saveToPhotos = true
     @AppStorage(MediaStore.keepVideoKey) private var keepInApp = true
+    @AppStorage(CloudBackup.autoBackupKey) private var autoBackup = false
+    @ObservedObject private var cloudBackup = CloudBackup.shared
+    @State private var showRestoreConfirm = false
+    @State private var backupMessage: String?
 
     @State private var quietReminderEnabled = StudyNotificationManager.shared.isQuietReminderEnabled
     @State private var showPaywall = false
@@ -126,6 +131,10 @@ struct SettingsView: View {
                         note(L10n.string("いつも勉強している時間に、1日1回だけお知らせします。"))
                     }
 
+                    sectionTitle(L10n.string("iCloudバックアップ"))
+                    backupCard
+                    note(backupNote)
+
                     sectionTitle(L10n.string("StudyReel Pro"))
                     card {
                         Button { showPaywall = true } label: {
@@ -182,11 +191,92 @@ struct SettingsView: View {
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
             }
+            .alert(L10n.string("バックアップから戻しますか？"), isPresented: $showRestoreConfirm) {
+                Button(L10n.string("キャンセル"), role: .cancel) {}
+                Button(L10n.string("戻す")) { restoreBackup() }
+            } message: {
+                Text(L10n.string("今ある記録は消さずに、バックアップにだけある記録を足します。"))
+            }
+            .alert(
+                backupMessage ?? "",
+                isPresented: Binding(get: { backupMessage != nil }, set: { if !$0 { backupMessage = nil } })
+            ) {
+                Button(L10n.string("OK")) {}
+            }
             .sheet(isPresented: $showSubjects) {
                 SubjectEditView(subjectManager: subjectManager)
             }
             .sheet(isPresented: $showTags) {
                 TagManagerView()
+            }
+        }
+    }
+
+    // MARK: - iCloudバックアップ
+
+    @ViewBuilder
+    private var backupCard: some View {
+        if storeKit.isProUnlocked {
+            card {
+                ReelRow(systemImage: "icloud", title: L10n.string("自動でバックアップ")) {
+                    Toggle("", isOn: $autoBackup).labelsHidden().tint(ReelTheme.accent)
+                }
+                divider
+                Button { backupNow() } label: {
+                    ReelRow(systemImage: "arrow.up.to.line", title: L10n.string("今すぐバックアップ")) {
+                        if cloudBackup.isWorking {
+                            ProgressView()
+                        } else {
+                            chevron
+                        }
+                    }
+                }
+                .disabled(cloudBackup.isWorking)
+                divider
+                Button { showRestoreConfirm = true } label: {
+                    ReelRow(systemImage: "arrow.down.to.line", title: L10n.string("バックアップから戻す")) { chevron }
+                }
+                .disabled(cloudBackup.isWorking)
+            }
+        } else {
+            card {
+                Button { showPaywall = true } label: {
+                    ReelRow(systemImage: "icloud", title: L10n.string("自動でバックアップ")) {
+                        HStack(spacing: 6) {
+                            Text("Pro").font(ReelTheme.sans(11, weight: .semibold)).foregroundColor(ReelTheme.accentDeep)
+                            Toggle("", isOn: .constant(false)).labelsHidden().tint(ReelTheme.accent).disabled(true)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var backupNote: String {
+        if storeKit.isProUnlocked, let last = cloudBackup.lastBackupDate {
+            return L10n.format("最後のバックアップ %@", last.formatted(date: .abbreviated, time: .shortened))
+        }
+        return L10n.string("記録と動画をiCloudに残せます。機種変更やアプリの入れ直しのあとに戻せます。")
+    }
+
+    private func backupNow() {
+        Task {
+            do {
+                try await cloudBackup.backupNow(context: modelContext)
+                backupMessage = L10n.string("バックアップしました。")
+            } catch {
+                backupMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func restoreBackup() {
+        Task {
+            do {
+                let count = try await cloudBackup.restore(context: modelContext)
+                backupMessage = L10n.format("%d件の記録を戻しました。", count)
+            } catch {
+                backupMessage = error.localizedDescription
             }
         }
     }

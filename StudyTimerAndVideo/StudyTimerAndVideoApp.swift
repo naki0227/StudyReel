@@ -14,6 +14,8 @@ struct StudyTimerAndVideoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var storeKit = StoreKitManager()
     @State private var showsSplash = true
+    @AppStorage(OnboardingView.storageKey) private var hasSeenOnboarding = false
+    @Environment(\.scenePhase) private var scenePhase
     // Create container here to access context
     let container: ModelContainer
     
@@ -29,6 +31,15 @@ struct StudyTimerAndVideoApp: App {
         WindowGroup {
             ZStack {
                 StartView()
+                if !hasSeenOnboarding {
+                    OnboardingView {
+                        withAnimation(.easeOut(duration: 0.35)) {
+                            hasSeenOnboarding = true
+                        }
+                    }
+                    .transition(.opacity)
+                    .zIndex(0.5)
+                }
                 if showsSplash {
                     SplashView()
                         .transition(.opacity)
@@ -44,8 +55,18 @@ struct StudyTimerAndVideoApp: App {
                     showsSplash = false
                 }
             }
+            .onChange(of: scenePhase) { _, phase in
+                // Pro で自動バックアップをオンにしていれば、裏に回ったときに iCloud へ送る
+                if phase == .background {
+                    CloudBackup.backupIfNeeded(context: container.mainContext, isPro: storeKit.isProUnlocked)
+                }
+            }
             .onAppear {
                 let context = container.mainContext
+                // すでに使っている人には案内を出さない
+                if !hasSeenOnboarding, (try? context.fetchCount(FetchDescriptor<StudySession>())) ?? 0 > 0 {
+                    hasSeenOnboarding = true
+                }
                 let migrator = DataMigrator(modelContext: context)
                 migrator.migrateIfNeeded()
                 #if DEBUG

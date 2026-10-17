@@ -48,7 +48,7 @@ enum VideoSaveOption: String, CaseIterable, Identifiable {
     }
 }
 
-struct FaceSample {
+struct FaceSample: Codable {
     let time: Double     // 動画上の秒
     let elapsed: Double  // その時点までの勉強時間（秒）
     let rect: CGRect     // 動画に対する 0〜1 の座標（左上原点）

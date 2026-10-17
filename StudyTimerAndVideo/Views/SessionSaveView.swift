@@ -5,6 +5,7 @@ import SwiftData
 struct SessionSaveView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var storeKit: StoreKitManager
 
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
     @ObservedObject var subjectManager: SubjectManager
@@ -24,10 +25,11 @@ struct SessionSaveView: View {
 
     private let media: SessionMedia
 
-    init(subjectManager: SubjectManager, duration: Int, media: SessionMedia = SessionMedia()) {
+    init(subjectManager: SubjectManager, duration: Int, media: SessionMedia = SessionMedia(), date: Date = Date()) {
         self.subjectManager = subjectManager
         self.media = media
         _duration = State(initialValue: duration)
+        _date = State(initialValue: date)
     }
 
     var body: some View {
@@ -226,6 +228,8 @@ struct SessionSaveView: View {
         )
         modelContext.insert(session)
         didSave = true
+        CloudBackup.markChanged()
+        CloudBackup.backupIfNeeded(context: modelContext, isPro: storeKit.isProUnlocked)
         let updatedSessions = [session] + sessions
         Task {
             await StudyNotificationManager.shared.scheduleQuietReminderIfNeeded(with: updatedSessions)

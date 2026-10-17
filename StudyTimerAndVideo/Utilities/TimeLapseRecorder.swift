@@ -7,6 +7,9 @@ enum RecordingMode: String, CaseIterable, Identifiable {
     case full
     case off
 
+    // 最後に選んだ撮り方を次回も使う
+    static let storageKey = "recording_mode"
+
     var id: String { rawValue }
 
     var isPro: Bool { self == .full }
@@ -26,6 +29,8 @@ enum RecordingMode: String, CaseIterable, Identifiable {
 // タイムラプスは一定間隔ごとに1枚、全部録画はすべてのフレームを書き込む。
 class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     @Published private(set) var canCaptureVideo = false
+    // 電話や別アプリの画面分割などでカメラが止められている間 true
+    @Published private(set) var isInterrupted = false
 
     private let session = AVCaptureSession()
     private let output = AVCaptureVideoDataOutput()
@@ -41,7 +46,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     private var isCapturing = false
     private var interval: Double = 5
     private var sessionStart = Date()
-    private var elapsedOffset = 0
+    private var elapsedOffset: Double = 0
     private var captureLandscape = true
     private var isFrontCamera = true
     private let faceTracker = FaceTracker()
@@ -59,10 +64,25 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     private var lastCaptureActiveSeconds: Double?
     private var lastAppendedTime: CMTime?
     private var frameIndex: Int64 = 0
+    private var lastRecoverySave = Date.distantPast
 
     override init() {
         super.init()
         setupSession()
+        NotificationCenter.default.addObserver(self, selector: #selector(sessionWasInterrupted), name: AVCaptureSession.wasInterruptedNotification, object: session)
+        NotificationCenter.default.addObserver(self, selector: #selector(sessionInterruptionEnded), name: AVCaptureSession.interruptionEndedNotification, object: session)
+    }
+
+    @objc private func sessionWasInterrupted() {
+        DispatchQueue.main.async {
+            self.isInterrupted = true
+        }
+    }
+
+    @objc private func sessionInterruptionEnded() {
+        DispatchQueue.main.async {
+            self.isInterrupted = false
+        }
     }
 
     deinit {
@@ -143,7 +163,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
             self.mode = mode
             self.interval = interval
             self.sessionStart = sessionStart
-            self.elapsedOffset = elapsedOffset
+            self.elapsedOffset = Double(elapsedOffset)
             self.activeSeconds = 0
             self.lastFramePTS = nil
             self.lastCaptureActiveSeconds = nil
@@ -163,8 +183,13 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
         }
     }
 
-    func resume() {
+    // elapsedNow を渡すと、撮れていなかった間の勉強時間も動画の文字に反映する（アプリを離れていたときなど）
+    func resume(elapsedNow: Int? = nil) {
         videoQueue.async {
+            if let elapsedNow {
+                self.elapsedOffset = max(0, Double(elapsedNow) - self.activeSeconds)
+            }
+            self.lastFramePTS = nil
             self.isCapturing = self.mode != .off
         }
     }
@@ -180,6 +205,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
             }
 
             let result = RecordingResult(url: url, canvasSize: self.canvasSize, sessionStart: self.sessionStart, track: self.track)
+            SessionRecovery.clearRecording()
 
             self.writer = nil
             self.writerInput = nil
@@ -203,6 +229,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
         videoQueue.async {
             self.isCapturing = false
             self.discardWriter()
+            SessionRecovery.clearRecording()
         }
     }
 
@@ -314,6 +341,9 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
                 ]
             )
 
+            // 10秒ごとに区切って書くと、途中でアプリが終了してもそこまでは再生できるファイルになる
+            writer.movieFragmentInterval = CMTime(seconds: 10, preferredTimescale: 600)
+
             guard writer.canAdd(input) else { return }
             writer.add(input)
             guard writer.startWriting() else { return }
@@ -323,6 +353,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
             self.writerInput = input
             self.adaptor = adaptor
             self.outputURL = url
+            self.lastRecoverySave = .distantPast
         } catch {
             print("❌ writer setup error: \(error)")
         }
@@ -348,11 +379,29 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
         )
         track.samples.append(FaceSample(
             time: videoTime,
-            elapsed: Double(elapsedOffset) + activeSeconds,
+            elapsed: elapsedOffset + activeSeconds,
             rect: rect,
             segment: faceTracker.segment
         ))
         lastSampleTime = videoTime
+
+        // アプリが落ちても書きかけの動画を拾えるよう、30秒おきに控えを残す
+        if Date().timeIntervalSince(lastRecoverySave) >= 30 {
+            saveRecoveryInfo()
+        }
+    }
+
+    private func saveRecoveryInfo() {
+        guard let outputURL else { return }
+        lastRecoverySave = Date()
+        SessionRecovery.saveRecording(RecordingRecoveryInfo(
+            videoPath: outputURL.path,
+            canvasWidth: canvasSize.width,
+            canvasHeight: canvasSize.height,
+            sessionStart: sessionStart,
+            isRealTime: track.isRealTime,
+            samples: track.samples
+        ))
     }
 
     // カメラ映像の座標を、aspectFill で切り抜いた動画の座標に直す

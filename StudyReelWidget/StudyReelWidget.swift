@@ -137,7 +137,7 @@ struct SimpleEntry: TimelineEntry {
 }
 
 // アプリと同じ、明るく透明感のある色
-private enum WidgetTheme {
+enum WidgetTheme {
     static let ink = Color(red: 0.180, green: 0.227, blue: 0.275)
     static let secondary = Color(red: 0.557, green: 0.604, blue: 0.651)
     static let accentSoft = Color(red: 0.882, green: 0.929, blue: 0.965)

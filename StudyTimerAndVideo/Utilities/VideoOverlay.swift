@@ -119,6 +119,7 @@ struct VideoOverlayStyle {
 //  - 時刻：「09:12」（1分ごとに進む）
 //  - 経過時間：「00:12:34」（動画の進みに合わせて1秒ごとに進む）
 //  - 1時間ごと：「14:00 → 15:00 / 1時間目」
+// 全部録画のときは呼び出し側で30分単位に丸めて渡す
 struct OverlayText: Equatable {
     let primary: String
     let secondary: String?

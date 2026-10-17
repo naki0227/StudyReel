@@ -9,3 +9,7 @@
 "自由に" = "Open";
 "タイマーを止める" = "Stop Timer";
 "25分・50分・90分のタイマーや、ストップウォッチをすぐに始められます。" = "Start a 25, 50, or 90 minute timer or a stopwatch right away.";
+"一時停止中" = "Paused";
+"録画しながら勉強中" = "Studying · recording";
+"勉強中" = "Studying";
+"タイマー" = "Timer";

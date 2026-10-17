@@ -67,9 +67,11 @@ enum VideoExporter {
                 }
             }
 
+            // 全部録画は文字を30分ごとに切り替える（毎秒描き直すと書き出しが遅くなるうえ、見た目も落ち着かない）
+            let elapsed = Int(result.track.elapsed(at: seconds))
             let text = OverlayText(
                 sessionStart: result.sessionStart,
-                elapsedSeconds: Int(result.track.elapsed(at: seconds)),
+                elapsedSeconds: result.track.isRealTime ? elapsed / 1800 * 1800 : elapsed,
                 layout: options.overlay.layout
             )
             if overlayCache?.text != text {

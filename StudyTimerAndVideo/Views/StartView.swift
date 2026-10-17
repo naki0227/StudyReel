@@ -17,6 +17,7 @@ struct StartView: View {
     @State private var showSettings = false
     @State private var showPaywall = false
     @State private var showNewSession = false
+    @State private var showWeeklyVlog = false
 
     // タイマー設定値(時・分・秒)
     @State private var hours = 0
@@ -30,6 +31,7 @@ struct StartView: View {
     @StateObject private var draftStore = CurrentSessionDraftStore()
 
     @State private var showPermissionAlert = false
+    @AppStorage(OnboardingView.storageKey) private var hasSeenOnboarding = false
     @State private var sessionBootstrap: SessionBootstrap?
 
     var today: Date {
@@ -118,6 +120,9 @@ struct StartView: View {
             .sheet(isPresented: $showStatsView) {
                 StudyStatsView(subjectManager: subjectManager)
             }
+            .sheet(isPresented: $showWeeklyVlog) {
+                WeeklyVlogView()
+            }
             .sheet(isPresented: $showGoalSetting) {
                 GoalSettingView()
             }
@@ -151,6 +156,8 @@ struct StartView: View {
             .onOpenURL { url in
                 handleIncomingURL(url)
             }
+            // 前回の勉強中にアプリが終了していたら、そこまでの記録を保存できるようにする
+            .sessionRecoveryPrompt(subjectManager: subjectManager, isEnabled: hasSeenOnboarding)
         }
     }
 
@@ -164,6 +171,7 @@ struct StartView: View {
 
             Spacer()
 
+            headerIcon("film.stack", label: L10n.string("1週間のVlog")) { showWeeklyVlog = true }
             headerIcon("chart.bar", label: L10n.string("統計")) { showStatsView = true }
             headerIcon("calendar", label: L10n.string("カレンダー")) { showCalendar = true }
             headerIcon("gearshape", label: L10n.string("設定・情報")) { showSettings = true }
