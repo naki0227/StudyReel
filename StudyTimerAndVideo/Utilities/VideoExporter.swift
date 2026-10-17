@@ -7,9 +7,13 @@ struct VideoExportOptions {
     var hideStyle: FaceHideStyle
     var stamp: String
     var overlay: VideoOverlayStyle
+    var filter: VideoFilter = .none
+    var bgm: BGMTrack = .none
+    // 素の録画の中で使う範囲（秒）。nil なら全体
+    var trim: ClosedRange<Double>?
 }
 
-// 録画した素の動画に、モザイク（またはスタンプ）・中央の時刻・透かしを重ねて書き出す
+// 録画した素の動画に、フィルター・モザイク（またはスタンプ）・中央の時刻・透かし・BGM を重ねて書き出す
 enum VideoExporter {
     private static let queue = DispatchQueue(label: "com.studyTimer.exportQueue", qos: .userInitiated)
 
@@ -27,15 +31,72 @@ enum VideoExporter {
         }
     }
 
-    private static func render(result: RecordingResult, options: VideoExportOptions, progress: (Double) -> Void) -> URL? {
+    // フレームごとの見た目（フィルター → 顔 → 時刻と透かし）。プレビュー用のサムネイルでも使う
+    final class FrameRenderer {
+        let result: RecordingResult
+        let options: VideoExportOptions
+        private var overlayCache: (text: HourBlockText, image: CIImage)?
+        private var stampCache: (side: Int, image: CIImage)?
+
+        init(result: RecordingResult, options: VideoExportOptions) {
+            self.result = result
+            self.options = options
+        }
+
+        func render(_ source: CIImage, at seconds: Double) -> CIImage {
+            let canvasSize = result.canvasSize
+            var image = options.filter.apply(to: source)
+
+            if options.hidesFaces, let rect = result.track.rect(at: seconds) {
+                let ciRect = VideoExporter.ciRect(for: rect, canvasSize: canvasSize)
+                switch options.hideStyle {
+                case .mosaic:
+                    image = VideoExporter.mosaic(image, in: ciRect, canvasSize: canvasSize)
+                case .stamp:
+                    let side = Int(max(ciRect.width, ciRect.height) / 16) * 16 + 16
+                    if stampCache?.side != side {
+                        stampCache = VideoExporter.stampImage(options.stamp, side: CGFloat(side)).map { (side, $0) }
+                    }
+                    if let stamp = stampCache?.image {
+                        let placed = stamp.transformed(by: CGAffineTransform(
+                            translationX: ciRect.midX - CGFloat(side) / 2,
+                            y: ciRect.midY - CGFloat(side) / 2
+                        ))
+                        image = placed.composited(over: image)
+                    }
+                }
+            }
+
+            let text = HourBlockText(sessionStart: result.sessionStart, elapsedSeconds: Int(result.track.elapsed(at: seconds)))
+            if overlayCache?.text != text {
+                overlayCache = VideoOverlayRenderer.makeImage(text: text, style: options.overlay, canvasSize: canvasSize)
+                    .map { (text, CIImage(cgImage: $0)) }
+            }
+            if let overlay = overlayCache?.image {
+                image = overlay.composited(over: image)
+            }
+            return image.cropped(to: CGRect(origin: .zero, size: canvasSize))
+        }
+    }
+
+    private static func render(result: RecordingResult, options: VideoExportOptions, progress: @escaping (Double) -> Void) -> URL? {
         let asset = AVURLAsset(url: result.url)
         guard let videoTrack = asset.tracks(withMediaType: .video).first else { return nil }
-        let duration = max(asset.duration.seconds, 0.001)
+        let fullDuration = max(asset.duration.seconds, 0.001)
+        let trim = options.trim.map { max(0, $0.lowerBound)...min(fullDuration, $0.upperBound) } ?? 0...fullDuration
+        let start = CMTime(seconds: trim.lowerBound, preferredTimescale: 600)
+        let duration = max(trim.upperBound - trim.lowerBound, 0.001)
         let canvasSize = result.canvasSize
         let outputURL = FileManager.default.temporaryDirectory.appendingPathComponent("studyreel-export-\(UUID().uuidString).mov")
+        let bgmURL = options.bgm == .none ? nil : BGMRenderer.render(options.bgm, duration: duration)
+        defer {
+            if let bgmURL { try? FileManager.default.removeItem(at: bgmURL) }
+        }
 
         do {
+            // 映像の読み込み（カットした範囲だけ）
             let reader = try AVAssetReader(asset: asset)
+            reader.timeRange = CMTimeRange(start: start, duration: CMTime(seconds: duration, preferredTimescale: 600))
             let readerOutput = AVAssetReaderTrackOutput(
                 track: videoTrack,
                 outputSettings: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
@@ -43,6 +104,28 @@ enum VideoExporter {
             readerOutput.alwaysCopiesSampleData = false
             guard reader.canAdd(readerOutput) else { return nil }
             reader.add(readerOutput)
+
+            // BGM の読み込み
+            var audioReader: AVAssetReader?
+            var audioOutput: AVAssetReaderTrackOutput?
+            if let bgmURL {
+                let audioAsset = AVURLAsset(url: bgmURL)
+                if let audioTrack = audioAsset.tracks(withMediaType: .audio).first {
+                    let r = try AVAssetReader(asset: audioAsset)
+                    let o = AVAssetReaderTrackOutput(track: audioTrack, outputSettings: [
+                        AVFormatIDKey: kAudioFormatLinearPCM,
+                        AVLinearPCMBitDepthKey: 16,
+                        AVLinearPCMIsFloatKey: false,
+                        AVLinearPCMIsBigEndianKey: false,
+                        AVLinearPCMIsNonInterleaved: false
+                    ])
+                    if r.canAdd(o) {
+                        r.add(o)
+                        audioReader = r
+                        audioOutput = o
+                    }
+                }
+            }
 
             let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mov)
             var settings: [String: Any] = [
@@ -53,96 +136,112 @@ enum VideoExporter {
             if result.track.isRealTime {
                 settings[AVVideoCompressionPropertiesKey] = [AVVideoAverageBitRateKey: 5_000_000]
             }
-            let input = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
-            input.expectsMediaDataInRealTime = false
+            let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
+            videoInput.expectsMediaDataInRealTime = false
             let adaptor = AVAssetWriterInputPixelBufferAdaptor(
-                assetWriterInput: input,
+                assetWriterInput: videoInput,
                 sourcePixelBufferAttributes: [
                     kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
                     kCVPixelBufferWidthKey as String: Int(canvasSize.width),
                     kCVPixelBufferHeightKey as String: Int(canvasSize.height)
                 ]
             )
-            guard writer.canAdd(input) else { return nil }
-            writer.add(input)
+            guard writer.canAdd(videoInput) else { return nil }
+            writer.add(videoInput)
+
+            var audioInput: AVAssetWriterInput?
+            if audioOutput != nil {
+                let input = AVAssetWriterInput(mediaType: .audio, outputSettings: [
+                    AVFormatIDKey: kAudioFormatMPEG4AAC,
+                    AVNumberOfChannelsKey: 2,
+                    AVSampleRateKey: 44_100,
+                    AVEncoderBitRateKey: 160_000
+                ])
+                input.expectsMediaDataInRealTime = false
+                if writer.canAdd(input) {
+                    writer.add(input)
+                    audioInput = input
+                }
+            }
 
             guard reader.startReading(), writer.startWriting() else { return nil }
+            if let audioReader, audioInput != nil, !audioReader.startReading() {
+                return nil
+            }
             writer.startSession(atSourceTime: .zero)
 
             let context = CIContext()
             let colorSpace = CGColorSpaceCreateDeviceRGB()
             let bounds = CGRect(origin: .zero, size: canvasSize)
-            var overlayCache: (text: HourBlockText, image: CIImage)?
-            var stampCache: (side: Int, image: CIImage)?
+            let frameRenderer = FrameRenderer(result: result, options: options)
+            let group = DispatchGroup()
             var lastProgress = 0.0
+            var videoFailed = false
 
-            while let sample = readerOutput.copyNextSampleBuffer() {
-                guard let pixelBuffer = CMSampleBufferGetImageBuffer(sample) else { continue }
-                let time = CMSampleBufferGetPresentationTimeStamp(sample)
-                let seconds = time.seconds
-
-                var image = CIImage(cvPixelBuffer: pixelBuffer)
-
-                if options.hidesFaces, let rect = result.track.rect(at: seconds) {
-                    let ciRect = CGRect(
-                        x: rect.minX * canvasSize.width,
-                        y: (1 - rect.maxY) * canvasSize.height,
-                        width: rect.width * canvasSize.width,
-                        height: rect.height * canvasSize.height
-                    ).integral
-
-                    switch options.hideStyle {
-                    case .mosaic:
-                        image = mosaic(image, in: ciRect, canvasSize: canvasSize)
-                    case .stamp:
-                        let side = Int(max(ciRect.width, ciRect.height) / 16) * 16 + 16
-                        if stampCache?.side != side {
-                            stampCache = stampImage(options.stamp, side: CGFloat(side)).map { (side, $0) }
-                        }
-                        if let stamp = stampCache?.image {
-                            let placed = stamp.transformed(by: CGAffineTransform(
-                                translationX: ciRect.midX - CGFloat(side) / 2,
-                                y: ciRect.midY - CGFloat(side) / 2
-                            ))
-                            image = placed.composited(over: image)
-                        }
+            // 映像と音声は、それぞれ書き込める状態になったときに交互に流し込む
+            group.enter()
+            let videoQueue = DispatchQueue(label: "com.studyTimer.export.video")
+            videoInput.requestMediaDataWhenReady(on: videoQueue) {
+                while videoInput.isReadyForMoreMediaData {
+                    guard let sample = readerOutput.copyNextSampleBuffer() else {
+                        videoInput.markAsFinished()
+                        group.leave()
+                        return
                     }
-                }
+                    guard let pixelBuffer = CMSampleBufferGetImageBuffer(sample),
+                          let pool = adaptor.pixelBufferPool else { continue }
 
-                let text = HourBlockText(sessionStart: result.sessionStart, elapsedSeconds: Int(result.track.elapsed(at: seconds)))
-                if overlayCache?.text != text {
-                    overlayCache = VideoOverlayRenderer.makeImage(text: text, style: options.overlay, canvasSize: canvasSize)
-                        .map { (text, CIImage(cgImage: $0)) }
-                }
-                if let overlay = overlayCache?.image {
-                    image = overlay.composited(over: image)
-                }
+                    let sourceTime = CMSampleBufferGetPresentationTimeStamp(sample)
+                    let seconds = sourceTime.seconds
+                    let image = frameRenderer.render(CIImage(cvPixelBuffer: pixelBuffer), at: seconds)
 
-                while !input.isReadyForMoreMediaData {
-                    Thread.sleep(forTimeInterval: 0.005)
-                }
+                    var outputBuffer: CVPixelBuffer?
+                    CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &outputBuffer)
+                    guard let outputBuffer else { continue }
+                    context.render(image, to: outputBuffer, bounds: bounds, colorSpace: colorSpace)
 
-                guard let pool = adaptor.pixelBufferPool else { break }
-                var outputBuffer: CVPixelBuffer?
-                CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &outputBuffer)
-                guard let outputBuffer else { continue }
+                    if !adaptor.append(outputBuffer, withPresentationTime: CMTimeSubtract(sourceTime, start)) {
+                        videoFailed = true
+                        reader.cancelReading()
+                        videoInput.markAsFinished()
+                        group.leave()
+                        return
+                    }
 
-                context.render(image.cropped(to: bounds), to: outputBuffer, bounds: bounds, colorSpace: colorSpace)
-                adaptor.append(outputBuffer, withPresentationTime: time)
-
-                let value = min(1, seconds / duration)
-                if value - lastProgress >= 0.01 {
-                    lastProgress = value
-                    progress(value)
+                    let value = min(1, (seconds - trim.lowerBound) / duration)
+                    if value - lastProgress >= 0.01 {
+                        lastProgress = value
+                        progress(value)
+                    }
                 }
             }
 
-            input.markAsFinished()
+            if let audioInput, let audioOutput {
+                group.enter()
+                let audioQueue = DispatchQueue(label: "com.studyTimer.export.audio")
+                audioInput.requestMediaDataWhenReady(on: audioQueue) {
+                    while audioInput.isReadyForMoreMediaData {
+                        guard let sample = audioOutput.copyNextSampleBuffer() else {
+                            audioInput.markAsFinished()
+                            group.leave()
+                            return
+                        }
+                        if !audioInput.append(sample) {
+                            audioInput.markAsFinished()
+                            group.leave()
+                            return
+                        }
+                    }
+                }
+            }
+
+            group.wait()
+
             let semaphore = DispatchSemaphore(value: 0)
             writer.finishWriting { semaphore.signal() }
             semaphore.wait()
 
-            guard reader.status == .completed, writer.status == .completed else {
+            guard !videoFailed, reader.status != .failed, writer.status == .completed else {
                 try? FileManager.default.removeItem(at: outputURL)
                 return nil
             }
@@ -199,7 +298,7 @@ enum VideoExporter {
         ])
     }
 
-    private static func stampImage(_ stamp: String, side: CGFloat) -> CIImage? {
+    static func stampImage(_ stamp: String, side: CGFloat) -> CIImage? {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
         format.opaque = false

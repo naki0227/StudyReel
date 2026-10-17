@@ -145,7 +145,6 @@
 "動画を保存せずに閉じますか？" = "Close without saving the video?";
 "保存しない" = "Don't Save";
 "勉強時間の記録は、このあと保存できます。" = "You can still save your study time next.";
-"動画を確認" = "Review Video";
 "保存する動画" = "Videos to save";
 "隠し方" = "Hide with";
 "書き出し中… %d%%" = "Exporting… %d%%";
@@ -208,3 +207,9 @@
 "その他" = "Other";
 "設定" = "Settings";
 "ロゴなしで保存" = "Save without logo";
+"なし" = "None";
+"プレビュー" = "Preview";
+"カット" = "Trim";
+"フィルター" = "Filter";
+"音楽" = "Music";
+"使う範囲を選びます" = "Choose the part to keep";
