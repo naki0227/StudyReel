@@ -81,7 +81,9 @@ enum MediaStore {
         let size = CGSize(width: frame.width, height: frame.height)
         var image = CIImage(cgImage: frame)
         // サムネイルは常に顔を隠す。少し広めにとる
-        if let rect = result.track.rect(at: time) {
+        // 「この場面はモザイクなし」にしていても、アプリ内のサムネイルは顔を隠しておく
+        if let base = result.track.baseRect(at: time) {
+            let rect = FaceTrack.apply(result.track.adjustments[base.1] ?? FaceAdjustment(), to: base.0)
             let wider = FaceTrack.apply(FaceAdjustment(scale: 1.15), to: rect)
             image = VideoExporter.mosaic(image, in: VideoExporter.ciRect(for: wider, canvasSize: size), canvasSize: size)
         }

@@ -64,6 +64,8 @@ struct FaceAdjustment {
 struct FaceTrack {
     var samples: [FaceSample] = []
     var adjustments: [Int: FaceAdjustment] = [:]
+    // 確認画面で「この場面はモザイクなし」にした区間
+    var disabledSegments: Set<Int> = []
     // 全部録画は動画の秒と勉強時間が同じ速さで進む。タイムラプスは1フレームごとに記録してある
     var isRealTime = false
 
@@ -72,7 +74,7 @@ struct FaceTrack {
     }
 
     func rect(at time: Double) -> CGRect? {
-        guard let base = baseRect(at: time) else { return nil }
+        guard let base = baseRect(at: time), !disabledSegments.contains(base.1) else { return nil }
         return Self.apply(adjustments[base.1] ?? FaceAdjustment(), to: base.0)
     }
 

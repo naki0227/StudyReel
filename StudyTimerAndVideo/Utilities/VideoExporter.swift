@@ -35,7 +35,7 @@ enum VideoExporter {
     final class FrameRenderer {
         let result: RecordingResult
         let options: VideoExportOptions
-        private var overlayCache: (text: HourBlockText, image: CIImage)?
+        private var overlayCache: (text: OverlayText, image: CIImage)?
         private var stampCache: (side: Int, image: CIImage)?
 
         init(result: RecordingResult, options: VideoExportOptions) {
@@ -67,7 +67,11 @@ enum VideoExporter {
                 }
             }
 
-            let text = HourBlockText(sessionStart: result.sessionStart, elapsedSeconds: Int(result.track.elapsed(at: seconds)))
+            let text = OverlayText(
+                sessionStart: result.sessionStart,
+                elapsedSeconds: Int(result.track.elapsed(at: seconds)),
+                layout: options.overlay.layout
+            )
             if overlayCache?.text != text {
                 overlayCache = VideoOverlayRenderer.makeImage(text: text, style: options.overlay, canvasSize: canvasSize)
                     .map { (text, CIImage(cgImage: $0)) }

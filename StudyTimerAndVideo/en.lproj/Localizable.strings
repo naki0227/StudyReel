@@ -96,7 +96,6 @@
 "タイムラプス" = "Time-lapse";
 "全部録画" = "Full";
 "録画なし" = "Off";
-"標準" = "Standard";
 "タイプライター" = "Typewriter";
 "手書き風" = "Handwritten";
 "%d時間目" = "Hour %d";
@@ -134,7 +133,6 @@
 "動画を保存せずに閉じますか？" = "Close without saving the video?";
 "保存しない" = "Don't Save";
 "勉強時間の記録は、このあと保存できます。" = "You can still save your study time next.";
-"保存する動画" = "Videos to save";
 "隠し方" = "Hide with";
 "書き出し中… %d%%" = "Exporting… %d%%";
 "顔の隠し方" = "Hide Your Face";
@@ -208,3 +206,11 @@
 "撮影しなかった日の勉強も、ここから残せます。" = "Log study you didn't record here.";
 "カット・フィルター・BGM 2曲" = "Trim, filters & 2 BGM tracks";
 "BGM 全4曲" = "All 4 BGM tracks";
+"ワイド" = "Wide";
+"丸ゴシック" = "Rounded";
+"時刻だけ" = "Time only";
+"1時間ごと" = "Hour blocks";
+"真ん中に出す文字" = "Center text";
+"この場面にもモザイク" = "Mosaic in this scene";
+"再生している場面だけ、モザイクを外せます" = "Turn the mosaic off for just the current scene";
+"モザイクなしの動画も保存" = "Also save a version without mosaic";

@@ -3,12 +3,20 @@ import SwiftUI
 // 動画に焼き込む文字のフォントを選ぶ画面
 struct VideoStyleView: View {
     @EnvironmentObject private var storeKit: StoreKitManager
-    @AppStorage(OverlayFont.storageKey) private var overlayFontRaw = OverlayFont.standard.rawValue
+    @AppStorage(OverlayFont.storageKey) private var overlayFontRaw = OverlayFont.defaultFont.rawValue
     @AppStorage(FaceHideStyle.storageKey) private var hideStyleRaw = FaceHideStyle.mosaic.rawValue
     @AppStorage(FaceStamp.storageKey) private var stamp = FaceStamp.defaultStamp
     @State private var showPaywall = false
 
-    private let sample = HourBlockText(sessionStart: Date(), elapsedSeconds: 0)
+    @AppStorage(OverlayLayout.storageKey) private var layoutRaw = OverlayLayout.clock.rawValue
+
+    private var layout: OverlayLayout {
+        OverlayLayout(rawValue: layoutRaw) ?? .clock
+    }
+
+    private var sample: OverlayText {
+        OverlayText(sessionStart: Date(), elapsedSeconds: 0, layout: layout)
+    }
 
     private var selectedHideStyle: FaceHideStyle {
         FaceHideStyle.resolved(rawValue: hideStyleRaw, isPro: storeKit.isProUnlocked)
@@ -27,6 +35,16 @@ struct VideoStyleView: View {
                 if !storeKit.isProUnlocked {
                     Text(L10n.string("無料版の動画には右下に「StudyReel」の透かしが入ります。"))
                 }
+            }
+
+            Section(header: Text(L10n.string("真ん中に出す文字"))) {
+                Picker(L10n.string("真ん中に出す文字"), selection: $layoutRaw) {
+                    ForEach(OverlayLayout.allCases) { item in
+                        Text(item.title).tag(item.rawValue)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .listRowBackground(ReelTheme.card)
             }
 
             Section(header: Text(L10n.string("文字のフォント"))) {
@@ -126,18 +144,20 @@ struct VideoStyleView: View {
             )
 
             VStack(spacing: 4) {
-                Text(sample.range)
-                    .font(font.font(size: 34))
-                Text(sample.caption)
-                    .font(font.font(size: 17))
-                    .opacity(0.92)
+                Text(sample.primary)
+                    .font(font.font(size: layout == .clock ? 26 : 34))
+                if let secondary = sample.secondary {
+                    Text(secondary)
+                        .font(font.font(size: 17))
+                        .opacity(0.92)
+                }
             }
             .foregroundColor(.white)
             .shadow(color: .black.opacity(0.45), radius: 6)
 
             if !storeKit.isProUnlocked {
                 Text("StudyReel")
-                    .font(OverlayFont.standard.font(size: 12))
+                    .font(ReelTheme.serif(12))
                     .foregroundColor(.white.opacity(0.75))
                     .padding(12)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)

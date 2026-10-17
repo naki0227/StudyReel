@@ -5,7 +5,7 @@ import Photos
 // 03 プレビュー。録画後に動画を見ながら、カット・フィルター・モザイク・BGM を決めて保存する
 struct VideoReviewView: View {
     @EnvironmentObject private var storeKit: StoreKitManager
-    @AppStorage(OverlayFont.storageKey) private var overlayFontRaw = OverlayFont.standard.rawValue
+    @AppStorage(OverlayFont.storageKey) private var overlayFontRaw = OverlayFont.defaultFont.rawValue
     @AppStorage(FaceHideStyle.storageKey) private var hideStyleRaw = FaceHideStyle.mosaic.rawValue
     @AppStorage(FaceStamp.storageKey) private var stamp = FaceStamp.defaultStamp
 
@@ -307,14 +307,43 @@ struct VideoReviewView: View {
 
     private var mosaicPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Picker(L10n.string("保存する動画"), selection: $saveOption) {
-                ForEach(VideoSaveOption.allCases) { option in
-                    Text(option.title).tag(option)
-                }
+            // モザイクはいつでもオン・オフでき、場面ごとに外すこともできる
+            Toggle(isOn: Binding(
+                get: { saveOption != .plain },
+                set: { saveOption = $0 ? .hidden : .plain }
+            )) {
+                Text(L10n.string("顔にモザイク"))
+                    .font(ReelTheme.sans(14))
+                    .foregroundColor(ReelTheme.ink)
             }
-            .pickerStyle(.segmented)
+            .tint(ReelTheme.accent)
 
             if showsFaceBox {
+                Toggle(isOn: Binding(
+                    get: { !isCurrentSegmentDisabled },
+                    set: { setCurrentSegment(enabled: $0) }
+                )) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L10n.string("この場面にもモザイク"))
+                            .font(ReelTheme.sans(14))
+                            .foregroundColor(ReelTheme.ink)
+                        Text(L10n.string("再生している場面だけ、モザイクを外せます"))
+                            .font(ReelTheme.sans(11))
+                            .foregroundColor(ReelTheme.secondary)
+                    }
+                }
+                .tint(ReelTheme.accent)
+
+                Toggle(isOn: Binding(
+                    get: { saveOption == .both },
+                    set: { saveOption = $0 ? .both : .hidden }
+                )) {
+                    Text(L10n.string("モザイクなしの動画も保存"))
+                        .font(ReelTheme.sans(14))
+                        .foregroundColor(ReelTheme.ink)
+                }
+                .tint(ReelTheme.accent)
+
                 Picker(L10n.string("隠し方"), selection: Binding(
                     get: { hideStyle },
                     set: { newValue in
@@ -502,6 +531,21 @@ struct VideoReviewView: View {
             }
 
         return drag.simultaneously(with: pinch)
+    }
+
+    private var isCurrentSegmentDisabled: Bool {
+        guard let segment = result.track.segment(at: player.currentTime) else { return false }
+        return result.track.disabledSegments.contains(segment)
+    }
+
+    private func setCurrentSegment(enabled: Bool) {
+        guard let segment = result.track.segment(at: player.currentTime) else { return }
+        if enabled {
+            result.track.disabledSegments.remove(segment)
+        } else {
+            result.track.disabledSegments.insert(segment)
+        }
+        refreshLook()
     }
 
     private func commitAdjustment(offset: CGSize, scale: CGFloat) {
