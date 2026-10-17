@@ -41,7 +41,7 @@ struct VideoStyleView: View {
                         HStack {
                             Text(font.displayName)
                                 .font(font.font(size: 17))
-                                .foregroundColor(.primary)
+                                .foregroundColor(ReelTheme.ink)
                             Spacer()
                             if font.isPro && !storeKit.isProUnlocked {
                                 Text(L10n.string("Pro"))
@@ -49,7 +49,7 @@ struct VideoStyleView: View {
                                     .foregroundColor(.secondary)
                             } else if font == selectedFont {
                                 Image(systemName: "checkmark")
-                                    .foregroundColor(AppPalette.skyDeep)
+                                    .foregroundColor(ReelTheme.accentDeep)
                             }
                         }
                     }
@@ -67,7 +67,8 @@ struct VideoStyleView: View {
                     } label: {
                         HStack {
                             Text(style.title)
-                                .foregroundColor(.primary)
+                                .font(ReelTheme.sans(15))
+                                .foregroundColor(ReelTheme.ink)
                             Spacer()
                             if style.isPro && !storeKit.isProUnlocked {
                                 Text(L10n.string("Pro"))
@@ -75,7 +76,7 @@ struct VideoStyleView: View {
                                     .foregroundColor(.secondary)
                             } else if style == selectedHideStyle {
                                 Image(systemName: "checkmark")
-                                    .foregroundColor(AppPalette.skyDeep)
+                                    .foregroundColor(ReelTheme.accentDeep)
                             }
                         }
                     }
@@ -92,7 +93,7 @@ struct VideoStyleView: View {
                                     .frame(maxWidth: .infinity, minHeight: 40)
                                     .background(
                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .fill(option == stamp ? AppPalette.sky.opacity(0.3) : Color.clear)
+                                            .fill(option == stamp ? ReelTheme.accentSoft : Color.clear)
                                     )
                             }
                             .buttonStyle(.plain)
@@ -105,7 +106,11 @@ struct VideoStyleView: View {
                 Text(L10n.string("顔の位置は端末の中だけで検出し、保存も送信もしません。"))
             }
         }
-        .navigationTitle(L10n.string("動画"))
+        .scrollContentBackground(.hidden)
+        .background(ReelTheme.background.ignoresSafeArea())
+        .listRowBackground(ReelTheme.card)
+        .tint(ReelTheme.accentDeep)
+        .navigationTitle(L10n.string("文字と顔の隠し方"))
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showPaywall) {
             PaywallView()

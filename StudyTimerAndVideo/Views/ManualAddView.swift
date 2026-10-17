@@ -1,114 +1,132 @@
 import SwiftUI
 import SwiftData
 
-//MARK: - 手動追加ビュー
+//MARK: - 記録を手動で追加
 struct ManualAddView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
-    
+
     @ObservedObject var subjectManager: SubjectManager
-    
+
     @Query private var tags: [Tag]
     @State private var selectedTags: Set<Tag> = []
     @State private var showTagManager = false
     @State private var showSubjectManager = false
-    
+
     @State private var selectedSubject = ""
     @State private var hours = 0
-    @State private var minutes = 0
+    @State private var minutes = 30
     @State private var date = Date()
     @State private var showValidationAlert = false
     @State private var validationMessage = ""
-    
+
     var body: some View {
-        NavigationView {
-            Form {
-                Section(header: HStack {
-                    Text(L10n.string("教科"))
-                    Spacer()
-                    Button(L10n.string("管理")) { showSubjectManager = true }
-                        .font(.caption)
-                }) {
-                    Picker(L10n.string("教科を選択"), selection: $selectedSubject) {
-                        ForEach(subjectManager.subjects, id: \.self) { subject in
-                            Text(subject).tag(subject)
-                        }
-                    }
-                }
-                
-                Section(header: Text(L10n.string("時間"))) {
-                    HStack {
-                        Picker(L10n.string("時間"), selection: $hours) {
-                            ForEach(0..<24) { h in
-                                Text(L10n.format("%d時間", h)).tag(h)
-                            }
-                        }
-                        .pickerStyle(WheelPickerStyle())
-                        .frame(height: 100)
-                        
-                        Picker(L10n.string("分"), selection: $minutes) {
-                            ForEach(0..<60) { m in
-                                Text(L10n.format("%d分", m)).tag(m)
-                            }
-                        }
-                        .pickerStyle(WheelPickerStyle())
-                        .frame(height: 100)
-                    }
-                }
-                
-                Section(header: HStack {
-                    Text(L10n.string("タグ"))
-                    Spacer()
-                    Button(L10n.string("管理")) { showTagManager = true }
-                        .font(.caption)
-                }) {
-                    if tags.isEmpty {
-                        Text(L10n.string("タグがありません"))
-                            .foregroundColor(.gray)
-                    } else {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack {
-                                ForEach(tags) { tag in
-                                    Button(action: {
-                                        if selectedTags.contains(tag) {
-                                            selectedTags.remove(tag)
-                                        } else {
-                                            selectedTags.insert(tag)
-                                        }
-                                    }) {
-                                        HStack {
-                                            Circle()
-                                                .fill(tag.color)
-                                                .frame(width: 10, height: 10)
-                                            Text(tag.name)
-                                        }
-                                        .padding(.vertical, 6)
-                                        .padding(.horizontal, 12)
-                                        .background(selectedTags.contains(tag) ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
-                                        .cornerRadius(16)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .stroke(selectedTags.contains(tag) ? Color.blue : Color.clear, lineWidth: 1)
-                                        )
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 14) {
+                    VStack(spacing: 0) {
+                        ReelRow(systemImage: "book.closed", title: L10n.string("教科")) {
+                            Menu {
+                                ForEach(subjectManager.subjects, id: \.self) { subject in
+                                    Button(subject) { selectedSubject = subject }
                                 }
+                                Divider()
+                                Button(L10n.string("教科を編集")) { showSubjectManager = true }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Text(selectedSubject.isEmpty ? L10n.string("選択") : selectedSubject)
+                                    Image(systemName: "chevron.up.chevron.down").font(.caption2)
+                                }
+                                .font(ReelTheme.sans(14))
+                                .foregroundColor(ReelTheme.secondary)
                             }
-                            .padding(.vertical, 4)
+                        }
+                        Rectangle().fill(ReelTheme.line).frame(height: 1).padding(.leading, 50)
+                        ReelRow(systemImage: "calendar", title: L10n.string("日時")) {
+                            DatePicker("", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                                .labelsHidden()
+                                .tint(ReelTheme.accentDeep)
                         }
                     }
+                    .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
+
+                    VStack(alignment: .leading, spacing: 0) {
+                        ReelRow(systemImage: "clock", title: L10n.string("勉強した時間")) {
+                            Text(hours > 0 ? L10n.format("%d時間%d分", hours, minutes) : L10n.format("%d分", minutes))
+                                .font(ReelTheme.sans(14))
+                                .foregroundColor(ReelTheme.secondary)
+                        }
+                        HStack(spacing: 0) {
+                            Picker(L10n.string("時間"), selection: $hours) {
+                                ForEach(0..<24) { Text(L10n.format("%d時間", $0)).tag($0) }
+                            }
+                            Picker(L10n.string("分"), selection: $minutes) {
+                                ForEach(0..<60) { Text(L10n.format("%d分", $0)).tag($0) }
+                            }
+                        }
+                        .pickerStyle(.wheel)
+                        .frame(height: 120)
+                    }
+                    .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        ReelRow(systemImage: "tag", title: L10n.string("タグ")) {
+                            Button(L10n.string("編集")) { showTagManager = true }
+                                .font(ReelTheme.sans(13))
+                                .foregroundColor(ReelTheme.accentDeep)
+                        }
+                        if !tags.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(tags) { tag in
+                                        let isOn = selectedTags.contains(tag)
+                                        Button {
+                                            if isOn { selectedTags.remove(tag) } else { selectedTags.insert(tag) }
+                                        } label: {
+                                            Text("#\(tag.name)")
+                                                .font(ReelTheme.sans(12))
+                                                .padding(.horizontal, 10)
+                                                .padding(.vertical, 6)
+                                                .foregroundColor(isOn ? ReelTheme.accentDeep : ReelTheme.secondary)
+                                                .background(Capsule().fill(isOn ? ReelTheme.accentSoft : ReelTheme.background))
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                            }
+                            .padding(.bottom, 12)
+                        }
+                    }
+                    .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
+
+                    Text(L10n.string("撮影しなかった日の勉強も、ここから残せます。"))
+                        .font(ReelTheme.sans(11))
+                        .foregroundColor(ReelTheme.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 4)
                 }
-                
-                Section(header: Text(L10n.string("日付"))) {
-                    DatePicker(L10n.string("日付"), selection: $date, displayedComponents: [.date, .hourAndMinute])
+                .padding(16)
+            }
+            .background(ReelTheme.background.ignoresSafeArea())
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Text(L10n.string("手動追加"))
+                        .font(ReelTheme.serif(22))
+                        .foregroundColor(ReelTheme.ink)
                 }
-                
-                Button(L10n.string("保存")) {
-                    saveManualSession()
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 16) {
+                        Button(L10n.string("閉じる")) { dismiss() }
+                            .foregroundColor(ReelTheme.secondary)
+                        Button(L10n.string("保存")) { saveManualSession() }
+                            .font(ReelTheme.sans(15, weight: .semibold))
+                            .foregroundColor(ReelTheme.accentDeep)
+                            .disabled(selectedSubject.isEmpty)
+                    }
                 }
             }
-            .navigationTitle(L10n.string("手動追加"))
             .alert(L10n.string("保存できません"), isPresented: $showValidationAlert) {
                 Button(L10n.string("OK"), role: .cancel) {}
             } message: {

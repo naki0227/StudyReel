@@ -122,7 +122,7 @@ struct StartView: View {
                 GoalSettingView()
             }
             .sheet(isPresented: $showCalendar) {
-                CalendarView()
+                CalendarView(subjectManager: subjectManager)
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView(subjectManager: subjectManager)

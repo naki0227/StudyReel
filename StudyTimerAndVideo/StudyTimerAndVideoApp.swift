@@ -13,6 +13,7 @@ import SwiftData
 struct StudyTimerAndVideoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var storeKit = StoreKitManager()
+    @State private var showsSplash = true
     // Create container here to access context
     let container: ModelContainer
     
@@ -26,18 +27,31 @@ struct StudyTimerAndVideoApp: App {
     
     var body: some Scene {
         WindowGroup {
-            StartView()
-                .environmentObject(storeKit)
-                // 明るい見た目に固定する（ダークモードには切り替えない）
-                .preferredColorScheme(.light)
-                .onAppear {
-                    let context = container.mainContext
-                    let migrator = DataMigrator(modelContext: context)
-                    migrator.migrateIfNeeded()
-                    #if DEBUG
-                    DebugPreviewSeeder.seedIfNeeded(modelContext: context)
-                    #endif
+            ZStack {
+                StartView()
+                if showsSplash {
+                    SplashView()
+                        .transition(.opacity)
+                        .zIndex(1)
                 }
+            }
+            .environmentObject(storeKit)
+            // 明るい見た目に固定する（ダークモードには切り替えない）
+            .preferredColorScheme(.light)
+            .task {
+                try? await Task.sleep(nanoseconds: 1_200_000_000)
+                withAnimation(.easeOut(duration: 0.5)) {
+                    showsSplash = false
+                }
+            }
+            .onAppear {
+                let context = container.mainContext
+                let migrator = DataMigrator(modelContext: context)
+                migrator.migrateIfNeeded()
+                #if DEBUG
+                DebugPreviewSeeder.seedIfNeeded(modelContext: context)
+                #endif
+            }
         }
         .modelContainer(container)
     }

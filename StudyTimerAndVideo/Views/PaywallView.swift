@@ -14,9 +14,9 @@ struct PaywallView: View {
     @State private var selectedProductID: String?
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
-                AppPalette.paywallGradient(for: colorScheme)
+                ReelTheme.background
                 .ignoresSafeArea()
 
                 ScrollView {
@@ -34,13 +34,13 @@ struct PaywallView: View {
                     .frame(maxWidth: .infinity)
                 }
             }
-            .navigationTitle(L10n.string("StudyReel Pro"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(L10n.string("閉じる")) {
                         dismiss()
                     }
+                    .foregroundColor(ReelTheme.secondary)
                 }
             }
             .task {
@@ -61,29 +61,38 @@ struct PaywallView: View {
         }
     }
 
+    // 空の色のヘッダーに、明朝体のひとこと
     private var heroCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(L10n.string("StudyReel Pro"))
-                .font(.subheadline.weight(.bold))
-                .foregroundColor(AppPalette.accentText(for: colorScheme))
+            Text("StudyReel Pro")
+                .font(ReelTheme.serif(15))
+                .foregroundColor(ReelTheme.accentDeep)
 
             Text(L10n.string("勉強Vlogを、もっと自由に。"))
-                .font(.title2.weight(.bold))
+                .font(ReelTheme.serif(26))
+                .foregroundColor(ReelTheme.ink)
 
             Text(L10n.string("透かしなしの動画、フォント選び、全部録画が使えます。"))
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                .font(ReelTheme.sans(13))
+                .foregroundColor(ReelTheme.secondary)
 
             if storeKit.isProUnlocked {
-                Label(L10n.string("Proが有効です"), systemImage: "checkmark.seal.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.green)
+                Label(L10n.string("Proが有効です"), systemImage: "checkmark.seal")
+                    .font(ReelTheme.sans(13, weight: .medium))
+                    .foregroundColor(ReelTheme.accentDeep)
                     .padding(.top, 4)
             }
         }
         .padding(22)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(cardBackground)
+        .background(
+            RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous)
+                .fill(LinearGradient(
+                    colors: [Color(red: 0.918, green: 0.953, blue: 0.976), Color(red: 0.800, green: 0.882, blue: 0.945)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ))
+        )
     }
 
     private var comparisonCard: some View {
@@ -94,7 +103,7 @@ struct PaywallView: View {
                     .frame(width: 52)
                 Text(L10n.string("Pro"))
                     .frame(width: 52)
-                    .foregroundColor(AppPalette.accentText(for: colorScheme))
+                    .foregroundColor(ReelTheme.accentDeep)
             }
             .font(.caption.weight(.bold))
             .foregroundColor(.secondary)
@@ -104,6 +113,8 @@ struct PaywallView: View {
             Divider()
             comparisonRow(L10n.string("顔にモザイク"), free: true)
             Divider()
+            comparisonRow(L10n.string("カット・フィルター・BGM 2曲"), free: true)
+            Divider()
             comparisonRow(L10n.string("統計・カレンダー・推移グラフ"), free: true)
             Divider()
             comparisonRow(L10n.string("ロゴなしで保存"), free: false)
@@ -111,6 +122,8 @@ struct PaywallView: View {
             comparisonRow(L10n.string("動画のフォントを選ぶ"), free: false)
             Divider()
             comparisonRow(L10n.string("顔をスタンプで隠す"), free: false)
+            Divider()
+            comparisonRow(L10n.string("BGM 全4曲"), free: false)
             Divider()
             comparisonRow(L10n.string("全部録画（等速）"), free: false)
             Divider()
@@ -129,7 +142,7 @@ struct PaywallView: View {
                 .foregroundColor(free ? .primary : .secondary)
                 .frame(width: 52)
             Image(systemName: "checkmark")
-                .foregroundColor(AppPalette.accentText(for: colorScheme))
+                .foregroundColor(ReelTheme.accentDeep)
                 .frame(width: 52)
         }
         .font(.subheadline.weight(.semibold))
@@ -183,7 +196,7 @@ struct PaywallView: View {
             HStack(spacing: 12) {
                 Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
                     .font(.title3)
-                    .foregroundColor(isSelected ? AppPalette.accentText(for: colorScheme) : .secondary)
+                    .foregroundColor(isSelected ? ReelTheme.accentDeep : .secondary)
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
@@ -192,10 +205,10 @@ struct PaywallView: View {
                         if isRecommended(product) {
                             Text(L10n.string("おすすめ"))
                                 .font(.caption2.weight(.bold))
-                                .foregroundColor(AppPalette.ink)
+                                .foregroundColor(ReelTheme.accentDeep)
                                 .padding(.horizontal, 7)
                                 .padding(.vertical, 3)
-                                .background(AppPalette.orange)
+                                .background(ReelTheme.accentSoft)
                                 .clipShape(Capsule())
                         }
                     }
@@ -216,11 +229,11 @@ struct PaywallView: View {
             .padding(14)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(isSelected ? AppPalette.sky.opacity(colorScheme == .dark ? 0.16 : 0.22) : Color.primary.opacity(0.04))
+                    .fill(isSelected ? ReelTheme.accentSoft : ReelTheme.background)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(isSelected ? AppPalette.skyDeep : Color.clear, lineWidth: 1.5)
+                    .stroke(isSelected ? ReelTheme.accentDeep : Color.clear, lineWidth: 1.5)
             )
         }
         .buttonStyle(.plain)
@@ -234,12 +247,11 @@ struct PaywallView: View {
             }
         } label: {
             Text(purchaseButtonTitle)
-                .font(.headline)
+                .font(ReelTheme.sans(15, weight: .medium))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .foregroundColor(AppPalette.ink)
-                .background(AppPalette.sky)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .padding(.vertical, 15)
+                .foregroundColor(.white)
+                .background(Capsule().fill(ReelTheme.accentDeep))
         }
         .disabled(storeKit.isProUnlocked || selectedProduct == nil)
         .opacity(storeKit.isProUnlocked ? 0.6 : 1)
@@ -267,7 +279,7 @@ struct PaywallView: View {
 
     private var cardBackground: some View {
         RoundedRectangle(cornerRadius: 24, style: .continuous)
-            .fill(AppPalette.cardFill(for: colorScheme))
+            .fill(ReelTheme.card)
     }
 
     private var selectedProduct: Product? {
