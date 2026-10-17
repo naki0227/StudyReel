@@ -21,6 +21,7 @@ struct ContentView: View {
     @State private var showPaywall = false
     @State private var reviewResult: RecordingResult?
     @State private var reviewOutcome: Bool?
+    @State private var pendingMedia = SessionMedia()
     @State private var showSaveSheet = false
     @State private var showDiscardAlert = false
     @State private var pendingDuration = 0
@@ -104,8 +105,9 @@ struct ContentView: View {
             }
             reviewOutcome = nil
         }) { result in
-            VideoReviewView(result: result) { outcome in
+            VideoReviewView(result: result) { outcome, media in
                 reviewOutcome = outcome
+                pendingMedia = media
                 reviewResult = nil
             }
         }
@@ -118,7 +120,7 @@ struct ContentView: View {
             Text(L10n.string("ここまでの記録は保存されません。"))
         }
         .sheet(isPresented: $showSaveSheet, onDismiss: { finishSession() }) {
-            SessionSaveView(subjectManager: subjectManager, duration: pendingDuration)
+            SessionSaveView(subjectManager: subjectManager, duration: pendingDuration, media: pendingMedia)
         }
         .onChange(of: captureOrientationRaw) {
             OrientationLock.lock(captureOrientation.mask)

@@ -28,6 +28,8 @@ struct StudyTimerAndVideoApp: App {
         WindowGroup {
             StartView()
                 .environmentObject(storeKit)
+                // 明るい見た目に固定する（ダークモードには切り替えない）
+                .preferredColorScheme(.light)
                 .onAppear {
                     let context = container.mainContext
                     let migrator = DataMigrator(modelContext: context)

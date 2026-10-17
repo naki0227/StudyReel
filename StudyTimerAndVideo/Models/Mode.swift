@@ -1,6 +1,6 @@
 import Foundation
 
-enum Mode: Equatable {
+enum Mode: Hashable {
     case timer
     case stopwatch
 }

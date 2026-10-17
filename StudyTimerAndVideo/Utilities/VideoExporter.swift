@@ -93,13 +93,7 @@ enum VideoExporter {
 
                     switch options.hideStyle {
                     case .mosaic:
-                        let pixellated = image.clampedToExtent()
-                            .applyingFilter("CIPixellate", parameters: [
-                                kCIInputScaleKey: max(canvasSize.width, canvasSize.height) * 0.03,
-                                kCIInputCenterKey: CIVector(x: ciRect.midX, y: ciRect.midY)
-                            ])
-                            .cropped(to: ciRect)
-                        image = pixellated.composited(over: image)
+                        image = mosaic(image, in: ciRect, canvasSize: canvasSize)
                     case .stamp:
                         let side = Int(max(ciRect.width, ciRect.height) / 16) * 16 + 16
                         if stampCache?.side != side {
@@ -159,6 +153,26 @@ enum VideoExporter {
             try? FileManager.default.removeItem(at: outputURL)
             return nil
         }
+    }
+
+    // 動画の座標（左上原点・0〜1）を Core Image の座標（左下原点・ピクセル）に直す
+    static func ciRect(for rect: CGRect, canvasSize: CGSize) -> CGRect {
+        CGRect(
+            x: rect.minX * canvasSize.width,
+            y: (1 - rect.maxY) * canvasSize.height,
+            width: rect.width * canvasSize.width,
+            height: rect.height * canvasSize.height
+        ).integral
+    }
+
+    static func mosaic(_ image: CIImage, in ciRect: CGRect, canvasSize: CGSize) -> CIImage {
+        image.clampedToExtent()
+            .applyingFilter("CIPixellate", parameters: [
+                kCIInputScaleKey: max(canvasSize.width, canvasSize.height) * 0.03,
+                kCIInputCenterKey: CIVector(x: ciRect.midX, y: ciRect.midY)
+            ])
+            .cropped(to: ciRect)
+            .composited(over: image)
     }
 
     private static func stampImage(_ stamp: String, side: CGFloat) -> CIImage? {

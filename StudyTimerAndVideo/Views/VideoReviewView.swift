@@ -17,11 +17,12 @@ struct VideoReviewView: View {
     @State private var exportProgress: Double?
     @State private var showDiscardConfirm = false
     @State private var showPaywall = false
+    @State private var storedVideoName: String?
 
-    // 保存できたら true、保存しなかったら nil、失敗したら false
-    let onFinish: (Bool?) -> Void
+    // 写真への保存結果（保存できたら true、保存しなかったら nil、失敗したら false）と、アプリ内に残したサムネイル・動画
+    let onFinish: (Bool?, SessionMedia) -> Void
 
-    init(result: RecordingResult, onFinish: @escaping (Bool?) -> Void) {
+    init(result: RecordingResult, onFinish: @escaping (Bool?, SessionMedia) -> Void) {
         _result = State(initialValue: result)
         _player = StateObject(wrappedValue: ReviewPlayer(url: result.url))
         self.onFinish = onFinish
@@ -80,8 +81,7 @@ struct VideoReviewView: View {
         .alert(L10n.string("動画を保存せずに閉じますか？"), isPresented: $showDiscardConfirm) {
             Button(L10n.string("戻る"), role: .cancel) {}
             Button(L10n.string("保存しない"), role: .destructive) {
-                try? FileManager.default.removeItem(at: result.url)
-                onFinish(nil)
+                finish(outcome: nil)
             }
         } message: {
             Text(L10n.string("勉強時間の記録は、このあと保存できます。"))
@@ -293,9 +293,7 @@ struct VideoReviewView: View {
 
     private func runExports(_ jobs: [VideoExportOptions], index: Int, savedAll: Bool) {
         guard index < jobs.count else {
-            try? FileManager.default.removeItem(at: result.url)
-            exportProgress = nil
-            onFinish(savedAll)
+            finish(outcome: savedAll)
             return
         }
 
@@ -311,11 +309,24 @@ struct VideoReviewView: View {
                     runExports(jobs, index: index + 1, savedAll: false)
                     return
                 }
+                // 端末内にも残す設定なら、最初に書き出せた動画（モザイクありを優先）をコピーしておく
+                if storedVideoName == nil && MediaStore.keepsVideoInApp {
+                    storedVideoName = MediaStore.storeVideo(copying: url)
+                }
                 saveToPhotos(url) { success in
                     runExports(jobs, index: index + 1, savedAll: savedAll && success)
                 }
             }
         )
+    }
+
+    // サムネイルを作ってから素の録画を消し、呼び出し元に返す
+    private func finish(outcome: Bool?) {
+        MediaStore.makeThumbnail(from: result) { thumbnail in
+            try? FileManager.default.removeItem(at: result.url)
+            exportProgress = nil
+            onFinish(outcome, SessionMedia(thumbnailFileName: thumbnail, videoFileName: storedVideoName))
+        }
     }
 
     private func saveToPhotos(_ url: URL, completion: @escaping (Bool) -> Void) {

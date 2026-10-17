@@ -324,6 +324,7 @@ struct StudyStatsView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .contextMenu {
             Button(role: .destructive) {
+                MediaStore.delete(session.thumbnailFileName, session.videoFileName)
                 modelContext.delete(session)
             } label: {
                 Text(L10n.string("削除"))
