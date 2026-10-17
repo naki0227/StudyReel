@@ -9,7 +9,8 @@ struct StartView: View {
     @Query private var goals: [DailyGoal]
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
 
-    @State private var showTimerView = false
+    // 新しい記録シートが閉じきってから録画画面を開くための印
+    @State private var startAfterSheetCloses = false
     @State private var showStatsView = false
     @State private var showGoalSetting = false
     @State private var showCalendar = false
@@ -90,28 +91,27 @@ struct StartView: View {
             }
             .background(ReelTheme.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
-            .fullScreenCover(isPresented: $showTimerView) {
-                Group {
-                    if let sessionBootstrap {
-                        ContentView(
-                            subjectManager: subjectManager,
-                            totalSeconds: sessionBootstrap.totalSeconds,
-                            onFinish: {
-                                showTimerView = false
-                                self.sessionBootstrap = nil
-                            },
-                            mode: sessionBootstrap.mode,
-                            bootstrap: sessionBootstrap
-                        )
-                    } else {
-                        EmptyView()
-                    }
-                }
+            // 録画の設定そのものを渡して開く。設定が届く前に空の画面が出て真っ暗になるのを防ぐ
+            .fullScreenCover(item: $sessionBootstrap) { bootstrap in
+                ContentView(
+                    subjectManager: subjectManager,
+                    totalSeconds: bootstrap.totalSeconds,
+                    onFinish: {
+                        sessionBootstrap = nil
+                    },
+                    mode: bootstrap.mode,
+                    bootstrap: bootstrap
+                )
             }
-            .sheet(isPresented: $showNewSession) {
+            .sheet(isPresented: $showNewSession, onDismiss: {
+                // シートを閉じている途中に別の画面を出すと表示されないので、閉じきってから始める
+                guard startAfterSheetCloses else { return }
+                startAfterSheetCloses = false
+                beginSession()
+            }) {
                 NewSessionSheet(mode: $selectedMode, hours: $hours, minutes: $minutes, seconds: $seconds) {
+                    startAfterSheetCloses = true
                     showNewSession = false
-                    beginSession()
                 }
                 .presentationDetents([.medium, .large])
             }
@@ -358,11 +358,10 @@ struct StartView: View {
             initialRecordingEnabled: recordTimelapse,
             source: .app
         )
-        showTimerView = true
     }
 
     private func consumePendingSessionDraftIfNeeded() {
-        guard !showTimerView, let draft = draftStore.consumePendingDraft() else { return }
+        guard sessionBootstrap == nil, let draft = draftStore.consumePendingDraft() else { return }
 
         let canRecordTimelapse = permissionManager.cameraPermissionGranted && permissionManager.photoLibraryPermissionGranted
         sessionBootstrap = SessionBootstrap(
@@ -373,7 +372,6 @@ struct StartView: View {
             initialRecordingEnabled: draft.shouldRecordTimelapse && canRecordTimelapse,
             source: draft.source
         )
-        showTimerView = true
     }
 
     private func handleIncomingURL(_ url: URL) {
@@ -381,7 +379,7 @@ struct StartView: View {
 
         if url.host == "start" {
             consumePendingSessionDraftIfNeeded()
-            if showTimerView { return }
+            if sessionBootstrap != nil { return }
 
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
             let modeValue = components?.queryItems?.first(where: { $0.name == "mode" })?.value ?? "timer"
@@ -400,7 +398,6 @@ struct StartView: View {
                 initialRecordingEnabled: shouldRecord,
                 source: .widget
             )
-            showTimerView = true
         } else if url.host == "paywall" {
             showPaywall = true
         }

@@ -145,7 +145,7 @@ struct VideoStyleView: View {
 
             VStack(spacing: 4) {
                 Text(sample.primary)
-                    .font(font.font(size: layout == .clock ? 26 : 34))
+                    .font(font.font(size: layout == .hourBlock ? 34 : 26))
                 if let secondary = sample.secondary {
                     Text(secondary)
                         .font(font.font(size: 17))

@@ -89,6 +89,7 @@ enum FontRegistrar {
 // 動画の真ん中に出す内容
 enum OverlayLayout: String, CaseIterable, Identifiable {
     case clock
+    case elapsed
     case hourBlock
 
     static let storageKey = "overlay_layout"
@@ -97,7 +98,8 @@ enum OverlayLayout: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .clock: return L10n.string("時刻だけ")
+        case .clock: return L10n.string("時刻")
+        case .elapsed: return L10n.string("経過時間")
         case .hourBlock: return L10n.string("1時間ごと")
         }
     }
@@ -114,7 +116,8 @@ struct VideoOverlayStyle {
 }
 
 // 動画中央の文字。開始時刻は00分に切り捨て、そこから勉強した時間だけ進める
-//  - 時刻だけ：「09:12」
+//  - 時刻：「09:12」（1分ごとに進む）
+//  - 経過時間：「00:12:34」（動画の進みに合わせて1秒ごとに進む）
 //  - 1時間ごと：「14:00 → 15:00 / 1時間目」
 struct OverlayText: Equatable {
     let primary: String
@@ -142,6 +145,9 @@ struct OverlayText: Equatable {
         case .clock:
             primary = Self.clockFormatter.string(from: hourStart.addingTimeInterval(TimeInterval(elapsed)))
             secondary = nil
+        case .elapsed:
+            primary = String(format: "%02d:%02d:%02d", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60)
+            secondary = nil
         case .hourBlock:
             let block = elapsed / 3600
             let from = calendar.date(byAdding: .hour, value: block, to: hourStart) ?? hourStart
@@ -153,7 +159,7 @@ struct OverlayText: Equatable {
 }
 
 enum VideoOverlayRenderer {
-    // 背景が透明な、動画と同じサイズの画像を作る。文字は分単位でしか変わらないので呼び出し側でキャッシュする
+    // 背景が透明な、動画と同じサイズの画像を作る。文字が変わったときだけ作り直すよう呼び出し側でキャッシュする
     static func makeImage(text: OverlayText, style: VideoOverlayStyle, canvasSize: CGSize) -> CGImage? {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
@@ -171,7 +177,7 @@ enum VideoOverlayRenderer {
             paragraph.alignment = .center
 
             // 時刻だけのときは、参考の Vlog のように小さめにすっきり置く
-            let primarySize = style.layout == .clock ? base * 0.075 : base * 0.1
+            let primarySize = style.layout == .hourBlock ? base * 0.1 : base * 0.075
             let primaryAttributes: [NSAttributedString.Key: Any] = [
                 .font: style.font.uiFont(size: primarySize),
                 .foregroundColor: UIColor.white,

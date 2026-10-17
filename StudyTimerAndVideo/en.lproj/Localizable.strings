@@ -208,9 +208,10 @@
 "BGM 全4曲" = "All 4 BGM tracks";
 "ワイド" = "Wide";
 "丸ゴシック" = "Rounded";
-"時刻だけ" = "Time only";
 "1時間ごと" = "Hour blocks";
 "真ん中に出す文字" = "Center text";
 "この場面にもモザイク" = "Mosaic in this scene";
 "再生している場面だけ、モザイクを外せます" = "Turn the mosaic off for just the current scene";
 "モザイクなしの動画も保存" = "Also save a version without mosaic";
+"時刻" = "Clock";
+"経過時間" = "Elapsed";
