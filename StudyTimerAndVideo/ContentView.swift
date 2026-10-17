@@ -21,9 +21,6 @@ struct ContentView: View {
     @State private var showPaywall = false
     @State private var reviewResult: RecordingResult?
     @State private var reviewOutcome: Bool?
-    @State private var controlsVisible = true
-    @State private var hideControlsTask: Task<Void, Never>?
-    @State private var recBlink = false
     @State private var showSaveSheet = false
     @State private var showDiscardAlert = false
     @State private var pendingDuration = 0
@@ -58,24 +55,14 @@ struct ContentView: View {
                 CameraPreview(recorder: recorder, isLandscape: geometry.size.width > geometry.size.height)
             }
             .ignoresSafeArea()
-            .contentShape(Rectangle())
-            // 録画中は画面をタップすると操作ボタンを出し入れできる
-            .onTapGesture {
-                guard isRecording else { return }
-                if controlsVisible {
-                    withAnimation(.easeOut(duration: 0.25)) { controlsVisible = false }
-                } else {
-                    showControlsTemporarily()
-                }
-            }
 
-            // 文字の載る上下だけ、ごく薄く落とす
+            // 画面全体は暗くせず、文字の載る上下だけ薄く落として自分の姿を確認しやすくする
             VStack(spacing: 0) {
-                LinearGradient(colors: [Color.black.opacity(0.35), .clear], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 140)
+                LinearGradient(colors: [Color.black.opacity(0.45), .clear], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 160)
                 Spacer()
-                LinearGradient(colors: [.clear, Color.black.opacity(controlsVisible ? 0.4 : 0)], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 200)
+                LinearGradient(colors: [.clear, Color.black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 220)
             }
             .ignoresSafeArea()
             .allowsHitTesting(false)
@@ -87,12 +74,9 @@ struct ContentView: View {
 
                 Spacer()
 
-                if controlsVisible {
-                    bottomControls
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 16)
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
-                }
+                bottomControls
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
             }
         }
         .alert(videoSaved ? L10n.string("保存完了") : L10n.string("動画を保存できませんでした"), isPresented: $showSaveAlert) {
@@ -157,109 +141,110 @@ struct ContentView: View {
 
             Spacer()
 
-            if controlsVisible {
-                HStack(spacing: 10) {
-                    if !isRecording {
-                        Button {
-                            captureOrientationRaw = captureOrientation.toggled.rawValue
-                        } label: {
-                            Image(systemName: "rotate.right")
-                                .font(.headline.weight(.semibold))
-                                .foregroundColor(.white)
-                                .frame(width: 44, height: 44)
-                                .background(.ultraThinMaterial.opacity(0.6))
-                                .clipShape(Circle())
-                        }
-                        .accessibilityLabel(L10n.format("%@に切り替える", captureOrientation.toggled.title))
-                    }
-
-                    Button {
-                        showDiscardAlert = true
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.headline.weight(.bold))
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                            .background(.ultraThinMaterial.opacity(0.6))
-                            .clipShape(Circle())
-                    }
-                    .accessibilityLabel(L10n.string("中断"))
+            if !isRecording {
+                Button {
+                    captureOrientationRaw = captureOrientation.toggled.rawValue
+                } label: {
+                    Label(captureOrientation.toggled.title, systemImage: "rotate.right")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14)
+                        .frame(height: 44)
+                        .background(.ultraThinMaterial.opacity(0.7))
+                        .clipShape(Capsule())
                 }
-                .transition(.opacity)
+                .accessibilityLabel(L10n.format("%@に切り替える", captureOrientation.toggled.title))
             }
+
+            Button {
+                showDiscardAlert = true
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.headline.weight(.bold))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(.ultraThinMaterial.opacity(0.7))
+                    .clipShape(Circle())
+            }
+            .accessibilityLabel(L10n.string("中断"))
         }
     }
 
-    // 動画に入る文字と同じフォントで、カードを付けずに白文字＋影で出す
     private var timerBadge: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 Circle()
                     .fill(statusColor)
                     .frame(width: 8, height: 8)
-                    .opacity(isRecording && !isPaused && recBlink ? 0.25 : 1)
                 Text(statusText)
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
-                    .tracking(1.5)
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.white.opacity(0.9))
             }
 
+            // 動画に入る文字と同じフォントで表示する
             Text(displayedTime)
-                .font(badgeFont.font(size: 34))
+                .font(OverlayFont.resolved(rawValue: overlayFontRaw, isPro: storeKit.isProUnlocked).font(size: 30))
                 .monospacedDigit()
+                .foregroundColor(.white)
                 .lineLimit(1)
 
             Text(badgeCaption)
-                .font(.system(size: 11, weight: .medium))
-                .opacity(0.8)
+                .font(.caption2.weight(.medium))
+                .foregroundColor(.white.opacity(0.75))
                 .lineLimit(1)
         }
-        .foregroundColor(.white)
-        .shadow(color: .black.opacity(0.45), radius: 6, x: 0, y: 1)
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
-                recBlink = true
-            }
-        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.black.opacity(0.4))
+        )
     }
 
     private var bottomControls: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 10) {
             if recordingMode != .off && !recorder.canCaptureVideo {
                 Text(L10n.string("この端末では録画できません。"))
                     .font(.footnote)
-                    .foregroundColor(.white.opacity(0.85))
+                    .foregroundColor(.white.opacity(0.8))
             }
 
             if !isRecording {
-                VStack(spacing: 6) {
-                    modeChips
+                VStack(alignment: .leading, spacing: 8) {
+                    Picker(L10n.string("録画"), selection: $recordingMode) {
+                        ForEach(RecordingMode.allCases) { mode in
+                            Text(mode.isPro && !storeKit.isProUnlocked ? "\(mode.title) (Pro)" : mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
                     if recordingMode == .full {
                         Text(L10n.string("全部録画は1時間で約2GB使います。"))
                             .font(.caption)
                             .foregroundColor(.white.opacity(0.8))
                     }
                 }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color.black.opacity(0.35))
+                )
             }
 
-            ZStack {
-                // 中央：開始／終了。左：一時停止
-                HStack {
-                    if isRecording {
-                        Button {
-                            togglePause()
-                        } label: {
-                            Image(systemName: isPaused ? "play.fill" : "pause.fill")
-                                .font(.title3.weight(.semibold))
-                                .foregroundColor(.white)
-                                .frame(width: 56, height: 56)
-                                .background(.ultraThinMaterial.opacity(0.6))
-                                .clipShape(Circle())
-                        }
-                        .accessibilityLabel(L10n.string(isPaused ? "再開" : "一時停止"))
+            HStack(spacing: 10) {
+                if isRecording {
+                    Button {
+                        togglePause()
+                    } label: {
+                        Label(L10n.string(isPaused ? "再開" : "一時停止"), systemImage: isPaused ? "play.fill" : "pause.fill")
+                            .font(.headline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .foregroundColor(.white)
+                            .background(Color.white.opacity(0.18))
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                     }
-                    Spacer()
                 }
-                .frame(width: 240)
 
                 Button {
                     if isRecording {
@@ -268,77 +253,17 @@ struct ContentView: View {
                         startRecording()
                     }
                 } label: {
-                    recordButtonLabel
+                    Label(L10n.string(isRecording ? "終了して保存" : "開始"), systemImage: isRecording ? "stop.fill" : "record.circle")
+                        .font(.headline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .foregroundColor(AppPalette.ink)
+                        .background(isRecording ? Color.white : AppPalette.sky)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
-                .accessibilityLabel(L10n.string(isRecording ? "終了して保存" : "開始"))
             }
         }
         .frame(maxWidth: 520)
-    }
-
-    // カメラアプリのシャッターのような丸いボタン
-    private var recordButtonLabel: some View {
-        ZStack {
-            Circle()
-                .stroke(Color.white, lineWidth: 4)
-                .frame(width: 76, height: 76)
-            if isRecording {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Color.red)
-                    .frame(width: 28, height: 28)
-            } else {
-                Circle()
-                    .fill(isRecordingVideo ? Color.red : Color.white)
-                    .frame(width: 62, height: 62)
-            }
-        }
-        .shadow(color: .black.opacity(0.3), radius: 8)
-    }
-
-    private var modeChips: some View {
-        HStack(spacing: 6) {
-            ForEach(RecordingMode.allCases) { option in
-                Button {
-                    recordingMode = option
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(option.title)
-                        if option.isPro && !storeKit.isProUnlocked {
-                            Text("PRO")
-                                .font(.system(size: 9, weight: .heavy))
-                                .opacity(0.8)
-                        }
-                    }
-                    .font(.system(size: 13, weight: .semibold))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .foregroundColor(recordingMode == option ? AppPalette.ink : .white)
-                    .background(
-                        Capsule().fill(recordingMode == option ? Color.white : Color.black.opacity(0.3))
-                    )
-                }
-            }
-        }
-    }
-
-    private var badgeFont: OverlayFont {
-        OverlayFont.resolved(rawValue: overlayFontRaw, isPro: storeKit.isProUnlocked)
-    }
-
-    private func showControlsTemporarily() {
-        withAnimation(.easeOut(duration: 0.25)) { controlsVisible = true }
-        scheduleControlsHide()
-    }
-
-    // 録画中は4秒で操作ボタンを隠して、カメラの映像だけにする
-    private func scheduleControlsHide() {
-        hideControlsTask?.cancel()
-        guard isRecording else { return }
-        hideControlsTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 4_000_000_000)
-            guard !Task.isCancelled, isRecording, !isPaused else { return }
-            withAnimation(.easeOut(duration: 0.4)) { controlsVisible = false }
-        }
     }
 
     private var statusColor: Color {
@@ -348,9 +273,9 @@ struct ContentView: View {
     }
 
     private var statusText: String {
-        if isPaused { return "PAUSE" }
-        if isRecording { return isRecordingVideo ? "REC" : "FOCUS" }
-        return "READY"
+        if isPaused { return L10n.string("一時停止中") }
+        if isRecording { return L10n.string(isRecordingVideo ? "録画中" : "計測中") }
+        return L10n.string("開始前")
     }
 
     private var badgeCaption: String {
@@ -412,7 +337,6 @@ struct ContentView: View {
         isRecording = true
         isPaused = false
         UIApplication.shared.isIdleTimerDisabled = true
-        scheduleControlsHide()
     }
 
     private func togglePause() {
@@ -441,14 +365,6 @@ struct ContentView: View {
             }
             isPaused = true
         }
-
-        // 一時停止中は操作ボタンを出したままにする
-        if isPaused {
-            hideControlsTask?.cancel()
-            withAnimation(.easeOut(duration: 0.25)) { controlsVisible = true }
-        } else {
-            scheduleControlsHide()
-        }
     }
 
     private func stopAndSave() {
@@ -471,8 +387,6 @@ struct ContentView: View {
         stopwatchModel.stop()
         isRecording = false
         isPaused = false
-        hideControlsTask?.cancel()
-        controlsVisible = true
         sessionStartedAt = nil
         UIApplication.shared.isIdleTimerDisabled = false
         clearWidgetTimerState()
