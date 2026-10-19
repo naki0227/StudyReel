@@ -1,0 +1,37 @@
+{
+  "identifier" : "6A2F1C3E-8D4B-4E7A-9C11-5B3D2E8F4A10",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "4800",
+      "familyShareable" : false,
+      "internalID" : "6756177601",
+      "localizations" : [
+        {
+          "description" : "Proの機能をずっと使えます",
+          "displayName" : "StudyReel Pro（買い切り）",
+          "locale" : "ja"
+        }
+      ],
+      "productID" : "com.ni.StudyReel.pro.lifetime",
+      "referenceName" : "Pro Lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_locale" : "ja",
+    "_storefront" : "JPN",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

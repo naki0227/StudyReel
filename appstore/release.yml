@@ -9,7 +9,7 @@ app: com.ni.StudyTimerAndVideo
 version: "1.5"
 build: 219            # "latest" にすると、このバージョンで最後に上げたビルド
 release: manual       # manual: 承認されたら自分で公開 / after_approval: 承認されたらすぐ公開
-submit_for_review: false   # true にしてマージすると、反映したあと審査に出す
+submit_for_review: true    # true にしてマージすると、反映したあと審査に出す
 
 # Pro の課金アイテム（StoreKitManager.swift の productIDs と同じ）。
 # 状態を確かめて、まだ審査に出していないもの（READY_TO_SUBMIT）はバージョンと一緒に審査に出す
@@ -17,6 +17,25 @@ purchases:
   - com.ni.StudyReel.pro.monthly
   - com.ni.StudyReel.pro.yearly
   - com.ni.StudyReel.pro.lifetime
+
+# App Store Connect にまだない課金アイテムはここに書くと作られる。価格・表示名・販売地域・審査用スクリーンショットもそろえる
+create_purchases:
+  - product_id: com.ni.StudyReel.pro.lifetime
+    reference_name: Pro Lifetime
+    type: NON_CONSUMABLE
+    price_jpy: 4800          # 日本の価格。ほかの国は Apple が自動で換算する
+    family_sharable: false
+    review_screenshot: appstore/purchases/lifetime-review.png
+    review_note: |
+      One-time purchase that unlocks all Pro features (no watermark, video fonts, face stamps, all 4 BGM tracks, full-speed recording, per-subject stats).
+      Shown in Settings > StudyReel Pro alongside the monthly and yearly subscriptions.
+    localizations:
+      ja:
+        name: StudyReel Pro（買い切り）
+        description: 一度の購入でProの機能がずっと使えます
+      en-US:
+        name: StudyReel Pro Lifetime
+        description: Unlock every Pro feature with one purchase
 
 localizations:
   ja:
