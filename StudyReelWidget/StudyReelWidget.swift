@@ -97,9 +97,8 @@ struct WidgetSessionDraft: Codable {
     let requiresClassificationAfterFinish: Bool
 }
 
-@available(iOS 17.0, *)
 struct StopTimerIntent: AppIntent {
-    static var title: LocalizedStringResource = "Stop Timer"
+    static var title: LocalizedStringResource = "タイマーを止める"
 
     func perform() async throws -> some IntentResult {
         PomodoroData.stopTimer()
@@ -137,114 +136,139 @@ struct SimpleEntry: TimelineEntry {
     let endTime: Date?
 }
 
+// アプリと同じ、明るく透明感のある色
+enum WidgetTheme {
+    static let ink = Color(red: 0.180, green: 0.227, blue: 0.275)
+    static let secondary = Color(red: 0.557, green: 0.604, blue: 0.651)
+    static let accentSoft = Color(red: 0.882, green: 0.929, blue: 0.965)
+    static let accentDeep = Color(red: 0.369, green: 0.553, blue: 0.722)
+    static let rec = Color(red: 1.0, green: 0.36, blue: 0.33)
+
+    static let background = LinearGradient(
+        colors: [Color(red: 0.953, green: 0.965, blue: 0.976), Color(red: 0.882, green: 0.929, blue: 0.965)],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static func serif(_ size: CGFloat) -> Font {
+        .system(size: size, weight: .regular, design: .serif)
+    }
+}
+
 struct StudyReelWidgetEntryView: View {
     var entry: Provider.Entry
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
-        if #available(iOS 17.0, *) {
-            Group {
-                if let endTime = entry.endTime, endTime > Date() {
-                    runningView(endTime: endTime)
-                } else {
-                    idleView
-                }
+        Group {
+            if let endTime = entry.endTime, endTime > Date() {
+                runningView(endTime: endTime)
+            } else {
+                idleView
             }
-            .padding(family == .systemSmall ? 14 : 16)
-        } else {
-            Text("iOS 17+ Required")
         }
+        .padding(family == .systemSmall ? 14 : 16)
     }
 
+    // タイマーが動いているとき
     private func runningView(endTime: Date) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Focus Time")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            Text(endTime, style: .timer)
-                .font(.system(size: family == .systemSmall ? 28 : 36, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .minimumScaleFactor(0.6)
-
-            if family == .systemSmall {
-                Button(intent: StopTimerIntent()) {
-                    Label("Stop", systemImage: "stop.fill")
-                        .font(.caption.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                        .background(Color.red.opacity(0.12))
-                        .foregroundStyle(.red)
-                        .clipShape(Capsule())
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(WidgetTheme.rec)
+                        .frame(width: 6, height: 6)
+                    Text("集中しています")
+                        .font(.system(size: 11))
+                        .foregroundStyle(WidgetTheme.secondary)
                 }
-                .buttonStyle(.plain)
-            } else {
-                HStack(spacing: 10) {
+
+                Text(endTime, style: .timer)
+                    .font(WidgetTheme.serif(family == .systemSmall ? 30 : 38))
+                    .foregroundStyle(WidgetTheme.ink)
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+
+                if family == .systemSmall {
+                    Spacer(minLength: 0)
                     Button(intent: StopTimerIntent()) {
-                        widgetActionLabel("Stop", systemImage: "stop.fill", tint: .red)
+                        capsule("停止", systemImage: "stop.fill", filled: false)
                     }
                     .buttonStyle(.plain)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
+            if family != .systemSmall {
+                VStack(spacing: 8) {
+                    Button(intent: StopTimerIntent()) {
+                        capsule("停止", systemImage: "stop.fill", filled: false)
+                    }
+                    .buttonStyle(.plain)
                     Link(destination: URL(string: "studyreel://start")!) {
-                        widgetActionLabel("Open App", systemImage: "arrow.up.right", tint: .blue)
+                        capsule("アプリを開く", systemImage: "arrow.up.right", filled: true)
                     }
-                    .buttonStyle(.plain)
                 }
+                .frame(width: 140)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
+    // 何も動いていないとき。ここから録画を始められる
     private var idleView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("StudyReel")
-                .font(.headline.weight(.bold))
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("StudyReel")
+                    .font(WidgetTheme.serif(family == .systemSmall ? 18 : 22))
+                    .foregroundStyle(WidgetTheme.ink)
+                Text("今日も1本、撮ろう")
+                    .font(.system(size: 11))
+                    .foregroundStyle(WidgetTheme.secondary)
 
-            Text("すぐ始める")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            if family == .systemSmall {
-                VStack(spacing: 10) {
-                    Link(destination: PomodoroData.launchURL(mode: "timer", minutes: 25)) {
-                        widgetActionLabel("25m Focus", systemImage: "timer", tint: .blue)
-                    }
-
-                    Link(destination: PomodoroData.launchURL(mode: "stopwatch")) {
-                        widgetActionLabel("Stopwatch", systemImage: "record.circle", tint: .indigo)
-                    }
-                }
-            } else {
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                    Link(destination: PomodoroData.launchURL(mode: "timer", minutes: 25)) {
-                        widgetActionLabel("25m", systemImage: "timer", tint: .blue)
-                    }
-
-                    Link(destination: PomodoroData.launchURL(mode: "timer", minutes: 50)) {
-                        widgetActionLabel("50m", systemImage: "timer", tint: .teal)
-                    }
-
-                    Link(destination: PomodoroData.launchURL(mode: "timer", minutes: 90)) {
-                        widgetActionLabel("90m", systemImage: "timer", tint: .orange)
-                    }
-
-                    Link(destination: PomodoroData.launchURL(mode: "stopwatch")) {
-                        widgetActionLabel("Stopwatch", systemImage: "record.circle", tint: .indigo)
+                if family == .systemSmall {
+                    Spacer(minLength: 0)
+                    VStack(spacing: 6) {
+                        Link(destination: PomodoroData.launchURL(mode: "timer", minutes: 25)) {
+                            capsule("25分", systemImage: "timer", filled: true)
+                        }
+                        Link(destination: PomodoroData.launchURL(mode: "stopwatch")) {
+                            capsule("ストップウォッチ", systemImage: "record.circle", filled: false)
+                        }
                     }
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+
+            if family != .systemSmall {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                    Link(destination: PomodoroData.launchURL(mode: "timer", minutes: 25)) {
+                        capsule("25分", systemImage: "timer", filled: true)
+                    }
+                    Link(destination: PomodoroData.launchURL(mode: "timer", minutes: 50)) {
+                        capsule("50分", systemImage: "timer", filled: false)
+                    }
+                    Link(destination: PomodoroData.launchURL(mode: "timer", minutes: 90)) {
+                        capsule("90分", systemImage: "timer", filled: false)
+                    }
+                    Link(destination: PomodoroData.launchURL(mode: "stopwatch")) {
+                        capsule("自由に", systemImage: "record.circle", filled: false)
+                    }
+                }
+                .frame(width: 190)
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
-    private func widgetActionLabel(_ title: String, systemImage: String, tint: Color) -> some View {
+    private func capsule(_ title: LocalizedStringKey, systemImage: String, filled: Bool) -> some View {
         Label(title, systemImage: systemImage)
-            .font(.caption.weight(.semibold))
+            .font(.system(size: 12, weight: .medium))
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(tint.opacity(0.12))
-            .foregroundStyle(tint)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.vertical, 8)
+            .foregroundStyle(filled ? Color.white : WidgetTheme.accentDeep)
+            .background(Capsule().fill(filled ? WidgetTheme.accentDeep : Color.white.opacity(0.85)))
     }
 }
 
@@ -253,17 +277,13 @@ struct StudyReelWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            if #available(iOS 17.0, *) {
-                StudyReelWidgetEntryView(entry: entry)
-                    .containerBackground(.fill.tertiary, for: .widget)
-            } else {
-                StudyReelWidgetEntryView(entry: entry)
-                    .padding()
-                    .background()
-            }
+            StudyReelWidgetEntryView(entry: entry)
+                .containerBackground(for: .widget) {
+                    WidgetTheme.background
+                }
         }
-        .configurationDisplayName("StudyReel Quick Start")
-        .description("25/50/90分やストップウォッチをすぐ開始できます。")
+        .configurationDisplayName("StudyReel")
+        .description("25分・50分・90分のタイマーや、ストップウォッチをすぐに始められます。")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

@@ -1,135 +1,87 @@
 import SwiftUI
 import SwiftData
 
+// 録画後の保存画面（タイトル・日付・時間・教科・タグ・メモ）
 struct SessionSaveView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
-    
+
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
     @ObservedObject var subjectManager: SubjectManager
-    
+
     @Query private var tags: [Tag]
+    @Query private var materials: [StudyMaterial]
+    @State private var materialID: UUID?
     @State private var selectedTags: Set<Tag> = []
     @State private var showTagManager = false
     @State private var showSubjectManager = false
-    
+    @State private var showDiscardConfirm = false
+
+    @State private var title = ""
+    @State private var memo = ""
     @State private var selectedSubject: String = ""
     @State private var duration: Int
     @State private var date: Date = Date()
-    
-    init(subjectManager: SubjectManager, duration: Int) {
+    @State private var didSave = false
+
+    private let media: SessionMedia
+
+    init(subjectManager: SubjectManager, duration: Int, media: SessionMedia = SessionMedia(), date: Date = Date(), materialID: UUID? = nil) {
         self.subjectManager = subjectManager
+        self.media = media
         _duration = State(initialValue: duration)
+        _date = State(initialValue: date)
+        _materialID = State(initialValue: materialID)
     }
-    
+
     var body: some View {
-        NavigationView {
-            Form {
-                Section(header: HStack {
-                    Text(L10n.string("教科"))
-                    Spacer()
-                    Button(L10n.string("管理")) { showSubjectManager = true }
-                        .font(.caption)
-                }) {
-                    if !suggestedSubjects.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                ForEach(suggestedSubjects, id: \.self) { subject in
-                                    Button(action: {
-                                        selectedSubject = subject
-                                    }) {
-                                        Text(subject)
-                                            .font(.caption)
-                                            .padding(.vertical, 8)
-                                            .padding(.horizontal, 12)
-                                            .background(selectedSubject == subject ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
-                                            .foregroundColor(selectedSubject == subject ? .blue : .primary)
-                                            .cornerRadius(999)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                            .padding(.vertical, 4)
-                        }
-                    }
-
-                    Picker(L10n.string("教科を選択"), selection: $selectedSubject) {
-                        ForEach(subjectManager.subjects, id: \.self) { subject in
-                            Text(subject).tag(subject)
-                        }
-                    }
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 14) {
+                    titleCard
+                    MaterialChooserRow(selection: $materialID)
+                    detailCard
+                    tagCard
+                    memoCard
                 }
-                
-                Section(header: Text(L10n.string("時間"))) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(formatTime(duration))
-                            .font(.title2)
-                            .frame(maxWidth: .infinity, alignment: .center)
-
-                        if let recent = mostRecentSubject {
-                            Text(L10n.format("前回は「%@」を勉強していました", recent))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
+                .padding(16)
+            }
+            .background(ReelTheme.background.ignoresSafeArea())
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(L10n.string("保存しない")) {
+                        showDiscardConfirm = true
                     }
+                    .foregroundColor(ReelTheme.secondary)
                 }
-                
-                Section(header: HStack {
-                    Text(L10n.string("タグ"))
-                    Spacer()
-                    Button(L10n.string("管理")) { showTagManager = true }
-                        .font(.caption)
-                }) {
-                    if tags.isEmpty {
-                        Text(L10n.string("タグがありません"))
-                            .foregroundColor(.gray)
-                    } else {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack {
-                                ForEach(tags) { tag in
-                                    Button(action: {
-                                        if selectedTags.contains(tag) {
-                                            selectedTags.remove(tag)
-                                        } else {
-                                            selectedTags.insert(tag)
-                                        }
-                                    }) {
-                                        HStack {
-                                            Circle()
-                                                .fill(tag.color)
-                                                .frame(width: 10, height: 10)
-                                            Text(tag.name)
-                                        }
-                                        .padding(.vertical, 6)
-                                        .padding(.horizontal, 12)
-                                        .background(selectedTags.contains(tag) ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
-                                        .cornerRadius(16)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .stroke(selectedTags.contains(tag) ? Color.blue : Color.clear, lineWidth: 1)
-                                        )
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                            }
-                            .padding(.vertical, 4)
-                        }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(L10n.string("保存")) {
+                        save()
                     }
+                    .font(ReelTheme.sans(15, weight: .semibold))
+                    .foregroundColor(ReelTheme.accentDeep)
+                    .disabled(selectedSubject.isEmpty)
                 }
-                
-                Button(L10n.string("保存")) {
-                    let session = StudySession(date: date, duration: duration, subject: selectedSubject, tags: Array(selectedTags), recordedAt: Date())
-                    modelContext.insert(session)
-                    let updatedSessions = [session] + sessions
-                    Task {
-                        await StudyNotificationManager.shared.scheduleQuietReminderIfNeeded(with: updatedSessions)
-                    }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .interactiveDismissDisabled()
+            .alert(L10n.string("この記録を保存せずに閉じますか？"), isPresented: $showDiscardConfirm) {
+                Button(L10n.string("戻る"), role: .cancel) {}
+                Button(L10n.string("保存しない"), role: .destructive) {
                     dismiss()
                 }
             }
-            .navigationTitle(L10n.string("記録を保存"))
             .onAppear {
                 updateDefaultSubject()
+                applyMaterialSubject()
+            }
+            .onChange(of: materialID) {
+                applyMaterialSubject()
+            }
+            .onDisappear {
+                if !didSave {
+                    media.discard()
+                }
             }
             .onChange(of: subjectManager.subjects) {
                 let subjects = subjectManager.subjects
@@ -149,12 +101,161 @@ struct SessionSaveView: View {
             }
         }
     }
-    
-    private func formatTime(_ seconds: Int) -> String {
+
+    private var titleCard: some View {
+        HStack(spacing: 12) {
+            SessionThumbnail(fileName: media.thumbnailFileName, subject: selectedSubject)
+                .frame(width: 88, height: 64)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+            HStack {
+                TextField(L10n.string("タイトル（例：図書館で数学）"), text: $title)
+                    .font(ReelTheme.sans(15))
+                    .foregroundColor(ReelTheme.ink)
+                if !title.isEmpty {
+                    Button {
+                        title = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(ReelTheme.line)
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 44)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(ReelTheme.line, lineWidth: 1)
+            )
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
+    }
+
+    private var detailCard: some View {
+        VStack(spacing: 0) {
+            ReelRow(systemImage: "calendar", title: L10n.string("日時")) {
+                DatePicker("", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                    .labelsHidden()
+                    .tint(ReelTheme.accentDeep)
+            }
+            Divider().padding(.leading, 50)
+            ReelRow(systemImage: "clock", title: formattedDuration(duration)) {
+                EmptyView()
+            }
+            Divider().padding(.leading, 50)
+            ReelRow(systemImage: "book.closed", title: L10n.string("教科")) {
+                Menu {
+                    ForEach(subjectManager.subjects, id: \.self) { subject in
+                        Button(subject) { selectedSubject = subject }
+                    }
+                    Divider()
+                    Button(L10n.string("教科を編集")) { showSubjectManager = true }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(selectedSubject.isEmpty ? L10n.string("選択") : selectedSubject)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.caption2)
+                    }
+                    .font(ReelTheme.sans(14))
+                    .foregroundColor(ReelTheme.secondary)
+                }
+            }
+        }
+        .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
+    }
+
+    private var tagCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ReelRow(systemImage: "tag", title: L10n.string("タグ")) {
+                Button(L10n.string("編集")) { showTagManager = true }
+                    .font(ReelTheme.sans(13))
+                    .foregroundColor(ReelTheme.accentDeep)
+            }
+
+            if !tags.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(tags) { tag in
+                            let isOn = selectedTags.contains(tag)
+                            Button {
+                                if isOn {
+                                    selectedTags.remove(tag)
+                                } else {
+                                    selectedTags.insert(tag)
+                                }
+                            } label: {
+                                Text("#\(tag.name)")
+                                    .font(ReelTheme.sans(12))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .foregroundColor(isOn ? ReelTheme.accentDeep : ReelTheme.secondary)
+                                    .background(Capsule().fill(isOn ? ReelTheme.accentSoft : ReelTheme.background))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+                .padding(.bottom, 12)
+            }
+        }
+        .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
+    }
+
+    private var memoCard: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "pencil")
+                .font(.system(size: 15, weight: .light))
+                .foregroundColor(ReelTheme.secondary)
+                .frame(width: 22)
+                .padding(.top, 2)
+            TextField(L10n.string("メモ（任意）"), text: $memo, axis: .vertical)
+                .font(ReelTheme.sans(14))
+                .foregroundColor(ReelTheme.ink)
+                .lineLimit(4...10)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
+        .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
+    }
+
+    private func save() {
+        let trimmedMemo = memo.trimmingCharacters(in: .whitespacesAndNewlines)
+        let session = StudySession(
+            date: date,
+            duration: duration,
+            subject: selectedSubject,
+            tags: Array(selectedTags),
+            recordedAt: Date(),
+            title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+            memo: trimmedMemo.isEmpty ? nil : trimmedMemo,
+            thumbnailFileName: media.thumbnailFileName,
+            videoFileName: media.videoFileName,
+            materialID: materialID
+        )
+        modelContext.insert(session)
+        didSave = true
+        CloudBackup.markChanged()
+        CloudBackup.backupIfNeeded(context: modelContext)
+        let updatedSessions = [session] + sessions
+        Task {
+            await StudyNotificationManager.shared.scheduleQuietReminderIfNeeded(with: updatedSessions)
+        }
+        dismiss()
+    }
+
+    // 教材を選んだら、その教材の教科に合わせる
+    private func applyMaterialSubject() {
+        guard let materialID, let material = materials.first(where: { $0.id == materialID }) else { return }
+        subjectManager.add(material.subject)
+        selectedSubject = material.subject
+    }
+
+    private func formattedDuration(_ seconds: Int) -> String {
         let h = seconds / 3600
         let m = (seconds % 3600) / 60
-        let s = seconds % 60
-        return String(format: "%02d:%02d:%02d", h, m, s)
+        return h > 0 ? L10n.format("%d時間%d分", h, m) : L10n.format("%d分", m)
     }
 
     private var mostRecentSubject: String? {

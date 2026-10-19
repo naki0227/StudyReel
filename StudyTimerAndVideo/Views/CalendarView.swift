@@ -1,238 +1,237 @@
 import SwiftUI
 import SwiftData
 
+// カレンダー。勉強した日ほど濃い色で、日付をタップするとその日の記録が並ぶ
 struct CalendarView: View {
     @Environment(\.dismiss) var dismiss
-    @Query private var sessions: [StudySession]
-    
+    @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
+    @ObservedObject var subjectManager: SubjectManager
+
     @State private var currentMonth: Date = Date()
-    @State private var selectedDate: Date? = nil
-    
-    var calendar: Calendar {
+    @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
+
+    private var calendar: Calendar {
         var cal = Calendar.current
         cal.locale = .autoupdatingCurrent
         return cal
     }
-    
-    var daysInMonth: [Date] {
+
+    private var daysInMonth: [Date] {
         guard let monthInterval = calendar.dateInterval(of: .month, for: currentMonth) else { return [] }
-        
-        let days = calendar.generateDates(
-            inside: monthInterval,
-            matching: DateComponents(hour: 0, minute: 0, second: 0)
-        )
-        return days
+        return calendar.generateDates(inside: monthInterval, matching: DateComponents(hour: 0, minute: 0, second: 0))
     }
-    
-    var sessionsForSelectedDate: [StudySession] {
-        guard let date = selectedDate else { return [] }
-        return sessions.filter { calendar.isDate($0.date, inSameDayAs: date) }
+
+    private var leadingBlanks: Int {
+        guard let first = daysInMonth.first else { return 0 }
+        return (calendar.component(.weekday, from: first) - calendar.firstWeekday + 7) % 7
     }
-    
+
+    private var weekdaySymbols: [String] {
+        let symbols = calendar.veryShortWeekdaySymbols
+        let start = calendar.firstWeekday - 1
+        return Array(symbols[start...] + symbols[..<start])
+    }
+
+    private var sessionsForSelectedDate: [StudySession] {
+        sessions.filter { calendar.isDate($0.date, inSameDayAs: selectedDate) }
+    }
+
+    private var monthlyPeak: Int {
+        max(daysInMonth.map(totalSeconds(on:)).max() ?? 0, 1)
+    }
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             GeometryReader { geometry in
                 let isLandscape = geometry.size.width > geometry.size.height
-                
-                if isLandscape {
-                    HStack(spacing: 0) {
-                        // Left: Calendar
-                        VStack {
-                            calendarHeader
-                            daysOfWeekHeader
-                            ScrollView {
-                                calendarGrid
+                ScrollView {
+                    Group {
+                        if isLandscape {
+                            HStack(alignment: .top, spacing: 24) {
+                                monthCard
+                                dayList
                             }
-                        }
-                        .frame(width: geometry.size.width * 0.5)
-                        
-                        Divider()
-                        
-                        // Right: Details
-                        VStack {
-                            selectedDateHeader
-                            if let _ = selectedDate {
-                                sessionList
-                            } else {
-                                Spacer()
-                                Text(L10n.string("日付を選択してください"))
-                                    .foregroundColor(.gray)
-                                Spacer()
-                            }
-                        }
-                        .frame(width: geometry.size.width * 0.5)
-                    }
-                } else {
-                    // Portrait
-                    VStack {
-                        calendarHeader
-                        daysOfWeekHeader
-                        calendarGrid
-                        Divider()
-                        selectedDateHeader
-                        if let _ = selectedDate {
-                            sessionList
                         } else {
-                            Spacer()
-                            Text(L10n.string("日付を選択してください"))
-                                .foregroundColor(.gray)
-                            Spacer()
+                            VStack(alignment: .leading, spacing: 20) {
+                                monthCard
+                                dayList
+                            }
                         }
                     }
+                    .padding(20)
+                    .frame(maxWidth: 820)
+                    .frame(maxWidth: .infinity)
                 }
             }
-            .navigationTitle(L10n.string("カレンダー"))
+            .background(ReelTheme.background.ignoresSafeArea())
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(L10n.string("閉じる")) {
-                        dismiss()
-                    }
+                    Text(L10n.string("カレンダー"))
+                        .font(ReelTheme.serif(24))
+                        .foregroundColor(ReelTheme.ink)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(L10n.string("閉じる")) { dismiss() }
+                        .foregroundColor(ReelTheme.accentDeep)
                 }
             }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
     }
-    
+
     // MARK: - Subviews
-    
-    var calendarHeader: some View {
-        HStack {
-            Button(action: { changeMonth(by: -1) }) {
-                Image(systemName: "chevron.left")
+
+    private var monthCard: some View {
+        VStack(spacing: 14) {
+            HStack {
+                Button { changeMonth(by: -1) } label: { Image(systemName: "chevron.left") }
+                Spacer()
+                Text(monthTitle(currentMonth))
+                    .font(ReelTheme.sans(15))
+                    .foregroundColor(ReelTheme.ink)
+                Spacer()
+                Button { changeMonth(by: 1) } label: { Image(systemName: "chevron.right") }
             }
-            Spacer()
-            Text(monthFormatter.string(from: currentMonth))
-                .font(.title)
-                .fontWeight(.bold)
-            Spacer()
-            Button(action: { changeMonth(by: 1) }) {
-                Image(systemName: "chevron.right")
-            }
-        }
-        .padding()
-    }
-    
-    var daysOfWeekHeader: some View {
-        HStack {
-            ForEach(calendar.shortWeekdaySymbols, id: \.self) { day in
-                Text(day)
-                    .frame(maxWidth: .infinity)
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
-        }
-    }
-    
-    var calendarGrid: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7)) {
-            // Padding for start of month
-            if let first = daysInMonth.first {
-                let weekday = calendar.component(.weekday, from: first)
-                ForEach(0..<(weekday - 1), id: \.self) { _ in
-                    Text("")
+            .font(.system(size: 15, weight: .light))
+            .foregroundColor(ReelTheme.secondary)
+
+            HStack {
+                ForEach(Array(weekdaySymbols.enumerated()), id: \.offset) { _, day in
+                    Text(day)
+                        .font(ReelTheme.sans(11))
+                        .foregroundColor(ReelTheme.secondary)
+                        .frame(maxWidth: .infinity)
                 }
             }
-            
-            ForEach(daysInMonth, id: \.self) { date in
-                VStack {
-                    Text("\(calendar.component(.day, from: date))")
-                        .foregroundColor(calendar.isDate(date, inSameDayAs: Date()) ? .blue : .primary)
-                        .fontWeight(calendar.isDate(date, inSameDayAs: Date()) ? .bold : .regular)
-                    
-                    if hasSession(on: date) {
-                        Circle()
-                            .fill(Color.orange)
-                            .frame(width: 6, height: 6)
-                    } else {
-                        Circle()
-                            .fill(Color.clear)
-                            .frame(width: 6, height: 6)
-                    }
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 6) {
+                ForEach(0..<leadingBlanks, id: \.self) { _ in
+                    Color.clear.frame(height: 40)
                 }
-                .padding(8)
-                .background(isSelected(date) ? Color.gray.opacity(0.2) : Color.clear)
-                .cornerRadius(8)
-                .onTapGesture {
-                    selectedDate = date
+                ForEach(daysInMonth, id: \.self) { date in
+                    dayCell(date)
                 }
             }
         }
-        .padding()
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
     }
-    
-    var selectedDateHeader: some View {
-        Group {
-            if let date = selectedDate {
-                Text(dateFormatter.string(from: date))
-                    .font(.headline)
-                    .padding(.top)
-            }
+
+    private func dayCell(_ date: Date) -> some View {
+        let total = totalSeconds(on: date)
+        let isSelected = calendar.isDate(date, inSameDayAs: selectedDate)
+        let isToday = calendar.isDateInToday(date)
+        let intensity = total > 0 ? 0.25 + 0.75 * Double(total) / Double(monthlyPeak) : 0
+
+        return Button {
+            selectedDate = date
+        } label: {
+            Text("\(calendar.component(.day, from: date))")
+                .font(ReelTheme.sans(14, weight: isToday ? .semibold : .regular))
+                .foregroundColor(isSelected ? .white : ReelTheme.ink)
+                .frame(width: 36, height: 36)
+                .background(
+                    Circle().fill(isSelected ? ReelTheme.accentDeep : ReelTheme.accent.opacity(intensity))
+                )
+                .overlay(
+                    Circle().stroke(isToday && !isSelected ? ReelTheme.accentDeep : Color.clear, lineWidth: 1)
+                )
+                .frame(maxWidth: .infinity)
+                .frame(height: 40)
         }
+        .buttonStyle(.plain)
     }
-    
-    var sessionList: some View {
-        Group {
+
+    private var dayList: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(dayTitle(selectedDate))
+                    .font(ReelTheme.serif(18))
+                    .foregroundColor(ReelTheme.ink)
+                Spacer()
+                let total = totalSeconds(on: selectedDate)
+                if total > 0 {
+                    Text(compactDuration(total))
+                        .font(ReelTheme.sans(13))
+                        .foregroundColor(ReelTheme.secondary)
+                }
+            }
+
             if sessionsForSelectedDate.isEmpty {
                 Text(L10n.string("学習記録はありません"))
-                    .foregroundColor(.gray)
-                    .padding()
-                Spacer()
+                    .font(ReelTheme.sans(13))
+                    .foregroundColor(ReelTheme.secondary)
+                    .padding(.vertical, 8)
             } else {
-                List(sessionsForSelectedDate) { session in
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text(session.subject)
-                                .font(.headline)
-                            if let tags = session.tags, !tags.isEmpty {
-                                HStack {
-                                    ForEach(tags) { tag in
-                                        Text(tag.name)
-                                            .font(.caption2)
-                                            .foregroundColor(tag.color)
-                                    }
-                                }
+                ForEach(sessionsForSelectedDate) { session in
+                    NavigationLink {
+                        SessionDetailView(session: session, subjectManager: subjectManager)
+                    } label: {
+                        HStack(spacing: 12) {
+                            SessionThumbnail(fileName: session.thumbnailFileName, subject: session.subject)
+                                .frame(width: 72, height: 46)
+                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(session.displayTitle)
+                                    .font(ReelTheme.sans(14))
+                                    .foregroundColor(ReelTheme.ink)
+                                    .lineLimit(1)
+                                Text(timeRange(session))
+                                    .font(ReelTheme.sans(11))
+                                    .foregroundColor(ReelTheme.secondary)
                             }
+                            Spacer()
+                            Text(compactDuration(session.duration))
+                                .font(ReelTheme.sans(13))
+                                .foregroundColor(ReelTheme.secondary)
                         }
-                        Spacer()
-                        Text(formatTime(session.duration))
+                        .padding(10)
+                        .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
                     }
+                    .buttonStyle(.plain)
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
-    
+
+    // MARK: - Helpers
+
+    private func totalSeconds(on date: Date) -> Int {
+        sessions.filter { calendar.isDate($0.date, inSameDayAs: date) }.map(\.duration).reduce(0, +)
+    }
+
     private func changeMonth(by value: Int) {
         if let newMonth = calendar.date(byAdding: .month, value: value, to: currentMonth) {
             currentMonth = newMonth
         }
     }
-    
-    private func hasSession(on date: Date) -> Bool {
-        sessions.contains { calendar.isDate($0.date, inSameDayAs: date) }
-    }
-    
-    private func isSelected(_ date: Date) -> Bool {
-        guard let selected = selectedDate else { return false }
-        return calendar.isDate(date, inSameDayAs: selected)
-    }
-    
-    private var monthFormatter: DateFormatter {
+
+    private func monthTitle(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = .autoupdatingCurrent
         formatter.setLocalizedDateFormatFromTemplate("yMMMM")
-        return formatter
+        return formatter.string(from: date)
     }
-    
-    private var dateFormatter: DateFormatter {
+
+    private func dayTitle(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateStyle = .full
-        return formatter
+        formatter.locale = .autoupdatingCurrent
+        formatter.setLocalizedDateFormatFromTemplate("MMMdEEE")
+        return formatter.string(from: date)
     }
-    
-    private func formatTime(_ seconds: Int) -> String {
+
+    private func timeRange(_ session: StudySession) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = .autoupdatingCurrent
+        formatter.setLocalizedDateFormatFromTemplate("HHmm")
+        let end = session.date.addingTimeInterval(TimeInterval(session.duration))
+        return "\(formatter.string(from: session.date)) – \(formatter.string(from: end))"
+    }
+
+    private func compactDuration(_ seconds: Int) -> String {
         let h = seconds / 3600
         let m = (seconds % 3600) / 60
-        return L10n.format("%d時間%d分", h, m)
+        return h > 0 ? "\(h)h \(String(format: "%02d", m))m" : "\(m)m"
     }
 }
 

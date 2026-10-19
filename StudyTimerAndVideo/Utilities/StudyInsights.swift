@@ -121,13 +121,13 @@ enum StudyInsights {
         let shortfall = max(0, averageDaily - todayTotal)
 
         if shortfall > 0 {
-            return L10n.format("今日は平均まであと %@", compactDuration(shortfall))
+            return L10n.format("今日はいつもの平均まであと %@", compactDuration(shortfall))
         }
 
         guard preferredReminderDate(for: sessions, now: now) != nil else {
-            return L10n.string("最近のあなたはこの時間によく集中しています")
+            return L10n.string("最近はこの時間によく勉強しています")
         }
-        return L10n.string("最近のあなたはこの時間によく集中しています")
+        return L10n.string("最近はこの時間によく勉強しています")
     }
 
     static func averageDailyStudySeconds(for sessions: [StudySession]) -> Int {
@@ -170,7 +170,7 @@ enum StudyInsights {
             if comparison.thisWeek == 0 {
                 return L10n.string("比較データなし")
             }
-            return L10n.string("今週から記録が増えています")
+            return L10n.string("今週から記録あり")
         }
 
         let diff = comparison.thisWeek - comparison.lastWeek

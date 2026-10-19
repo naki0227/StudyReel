@@ -3,176 +3,149 @@ import SwiftData
 import UIKit
 import WidgetKit
 
-// MARK: - タイトル画面
+// MARK: - ホーム（勉強記録のギャラリー）
 struct StartView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.colorScheme) private var colorScheme
     @Query private var goals: [DailyGoal]
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
-    
-    @State private var showTimerView = false
+    @Query(filter: #Predicate<StudyMaterial> { $0.finishedAt == nil }, sort: \StudyMaterial.createdAt, order: .reverse)
+    private var studyingMaterials: [StudyMaterial]
+
+    // 新しい記録シートが閉じきってから録画画面を開くための印
+    @State private var startAfterSheetCloses = false
     @State private var showStatsView = false
     @State private var showGoalSetting = false
     @State private var showCalendar = false
     @State private var showSettings = false
     @State private var showPaywall = false
-    
+    @State private var showNewSession = false
+    @State private var showWeeklyVlog = false
+
     // タイマー設定値(時・分・秒)
     @State private var hours = 0
     @State private var minutes = 25
     @State private var seconds = 0
 
     @State private var selectedMode: Mode = .timer
-    
+
     @StateObject var subjectManager = SubjectManager()
     @StateObject var permissionManager = PermissionManager()
     @StateObject private var draftStore = CurrentSessionDraftStore()
-    
+
     @State private var showPermissionAlert = false
+    @State private var selectedMaterialID: UUID? = MaterialSelection.lastID
+    @State private var showShare = false
+    @State private var showMaterials = false
+    @AppStorage(OnboardingView.storageKey) private var hasSeenOnboarding = false
     @State private var sessionBootstrap: SessionBootstrap?
-    
+
     var today: Date {
         Calendar.current.startOfDay(for: Date())
     }
-    
+
     var todayGoal: DailyGoal? {
         goals.first { Calendar.current.isDate($0.date, inSameDayAs: today) }
     }
-    
+
     var todayStudyTime: Int {
         sessions.filter { Calendar.current.isDate($0.date, inSameDayAs: today) }
             .map { $0.duration }
             .reduce(0, +)
     }
-    
+
     var progress: Double {
         guard let goal = todayGoal, goal.targetDuration > 0 else { return 0 }
         return Double(todayStudyTime) / Double(goal.targetDuration)
     }
-    
-    var body: some View {
-        NavigationView {
-            ZStack {
-                AppPalette.homeGradient(for: colorScheme)
-                .ignoresSafeArea()
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: { showSettings = true }) {
-                            Image(systemName: "gearshape")
-                                .foregroundColor(.white)
-                        }
-                    }
-                }
-                
-                GeometryReader { geometry in
-                    let isLandscape = geometry.size.width > geometry.size.height
-                    let isIPad = UIDevice.current.userInterfaceIdiom == .pad
-                    
-                    ScrollView {
-                        if isLandscape {
-                            HStack(alignment: .center, spacing: 40) {
-                                Spacer()
-                                
-                                // Left Column: Info & Stats
-                                VStack(spacing: 20) {
-                                    goalRing
-                                    
-                                    HStack(spacing: 20) {
-                                        statsButton
-                                        calendarButton
-                                    }
-                                }
-                                .frame(width: isIPad ? 300 : geometry.size.width * 0.4)
-                                
-                                // Right Column: Controls
-                                VStack(spacing: 20) {
-                                    Text("StudyReel")
-                                        .font(.largeTitle)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(titleColor)
-                                    
-                                    modePicker
-                                    
-                                    if selectedMode == .timer {
-                                        timerPicker
-                                    }
-                                    
-                                    startButton
-                                    proButton
-                                }
-                                .frame(width: isIPad ? 400 : geometry.size.width * 0.5)
-                                
-                                Spacer()
-                            }
-                            .frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
-                            .padding()
-                        } else {
-                            // Portrait Layout
-                            VStack(spacing: 20) {
-                                Spacer()
-                                
-                                goalRing
-                                
-                                Text("StudyReel")
-                                    .font(.largeTitle)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(titleColor)
-                                
-                                modePicker
-                                
-                                if selectedMode == .timer {
-                                    timerPicker
-                                }
-                                
-                                startButton
 
-                                proButton
-                                
-                                HStack(spacing: 20) {
-                                    statsButton
-                                    calendarButton
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    header
+                        .padding(.bottom, 14)
+
+                    todayStrip
+                        .padding(.bottom, 12)
+                    weekShareRow
+                        .padding(.bottom, 18)
+                    materialsStrip
+                        .padding(.bottom, 22)
+
+                    if sessions.isEmpty {
+                        emptyState
+                    } else {
+                        ForEach(monthSections) { section in
+                            Text(monthTitle(section.month))
+                                .font(ReelTheme.sans(13))
+                                .foregroundColor(ReelTheme.secondary)
+                                .padding(.bottom, 10)
+                                .padding(.top, 6)
+
+                            ForEach(Array(section.sessions.enumerated()), id: \.element.id) { index, session in
+                                let showsDay = index == 0 || !Calendar.current.isDate(section.sessions[index - 1].date, inSameDayAs: session.date)
+                                NavigationLink {
+                                    SessionDetailView(session: session, subjectManager: subjectManager)
+                                } label: {
+                                    galleryRow(session, showsDay: showsDay)
                                 }
-                                
-                                Spacer()
+                                .buttonStyle(.plain)
+                                .padding(.bottom, 14)
                             }
-                            .padding()
-                            .frame(width: isIPad ? 500 : nil) // Limit width on iPad Portrait
-                            .frame(minWidth: geometry.size.width, minHeight: geometry.size.height)
                         }
                     }
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .frame(maxWidth: 640)
+                .frame(maxWidth: .infinity)
             }
-            .fullScreenCover(isPresented: $showTimerView) {
-                Group {
-                    if let sessionBootstrap {
-                        ContentView(
-                            subjectManager: subjectManager,
-                            totalSeconds: sessionBootstrap.totalSeconds,
-                            onFinish: {
-                                showTimerView = false
-                                self.sessionBootstrap = nil
-                            },
-                            mode: sessionBootstrap.mode,
-                            bootstrap: sessionBootstrap
-                        )
-                    } else {
-                        EmptyView()
-                    }
+            .background(ReelTheme.background.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
+            // 録画の設定そのものを渡して開く。設定が届く前に空の画面が出て真っ暗になるのを防ぐ
+            .fullScreenCover(item: $sessionBootstrap) { bootstrap in
+                ContentView(
+                    subjectManager: subjectManager,
+                    totalSeconds: bootstrap.totalSeconds,
+                    onFinish: {
+                        sessionBootstrap = nil
+                    },
+                    mode: bootstrap.mode,
+                    bootstrap: bootstrap
+                )
+            }
+            .sheet(isPresented: $showNewSession, onDismiss: {
+                // シートを閉じている途中に別の画面を出すと表示されないので、閉じきってから始める
+                guard startAfterSheetCloses else { return }
+                startAfterSheetCloses = false
+                beginSession()
+            }) {
+                NewSessionSheet(mode: $selectedMode, hours: $hours, minutes: $minutes, seconds: $seconds, materialID: $selectedMaterialID) {
+                    startAfterSheetCloses = true
+                    showNewSession = false
                 }
+                .presentationDetents([.medium, .large])
             }
             .sheet(isPresented: $showStatsView) {
-                StudyStatsView(
-                    subjectManager: subjectManager
-                )
+                StudyStatsView(subjectManager: subjectManager)
+            }
+            .sheet(isPresented: $showWeeklyVlog) {
+                WeeklyVlogView()
+            }
+            .sheet(isPresented: $showMaterials) {
+                MaterialsView()
+            }
+            .sheet(isPresented: $showShare) {
+                StudyShareView()
             }
             .sheet(isPresented: $showGoalSetting) {
                 GoalSettingView()
             }
             .sheet(isPresented: $showCalendar) {
-                CalendarView()
+                CalendarView(subjectManager: subjectManager)
             }
             .sheet(isPresented: $showSettings) {
-                SettingsView()
+                SettingsView(subjectManager: subjectManager)
             }
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
@@ -198,201 +171,272 @@ struct StartView: View {
             .onOpenURL { url in
                 handleIncomingURL(url)
             }
+            // 前回の勉強中にアプリが終了していたら、そこまでの記録を保存できるようにする
+            .sessionRecoveryPrompt(subjectManager: subjectManager, isEnabled: hasSeenOnboarding)
         }
-        .navigationViewStyle(StackNavigationViewStyle())
     }
-    
+
     // MARK: - Subviews
-    
-    var goalRing: some View {
-        Button(action: { showGoalSetting = true }) {
-            ZStack {
-                Circle()
-                    .stroke(lineWidth: 10)
-                    .opacity(0.3)
-                                .foregroundColor(.white)
-                
-                Circle()
-                    .trim(from: 0.0, to: min(progress, 1.0))
-                    .stroke(style: StrokeStyle(lineWidth: 10, lineCap: .round, lineJoin: .round))
-                    .foregroundColor(.white)
-                    .rotationEffect(Angle(degrees: 270.0))
-                    .animation(.linear, value: progress)
-                
-                VStack {
-                    Text(L10n.string("今日の目標"))
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.8))
-                    Text("\(formatTime(todayStudyTime)) / \(formatTime(todayGoal?.targetDuration ?? 0))")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                    Text("\(Int(progress * 100))%")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                }
+
+    private var header: some View {
+        HStack(alignment: .center, spacing: 16) {
+            Text("StudyReel")
+                .font(ReelTheme.serif(30))
+                .foregroundColor(ReelTheme.ink)
+
+            Spacer()
+
+            headerIcon("film.stack", label: L10n.string("1週間のVlog")) { showWeeklyVlog = true }
+            headerIcon("chart.bar", label: L10n.string("統計")) { showStatsView = true }
+            headerIcon("calendar", label: L10n.string("カレンダー")) { showCalendar = true }
+            headerIcon("gearshape", label: L10n.string("設定・情報")) { showSettings = true }
+
+            Button {
+                showNewSession = true
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundColor(ReelTheme.accentDeep)
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(ReelTheme.accentSoft))
             }
-            .frame(width: 150, height: 150)
-            .padding(.top, 20)
+            .accessibilityLabel(L10n.string("新しい記録"))
         }
     }
-    
-    var modePicker: some View {
-        HStack {
-            Button(L10n.string("タイマー")) { selectedMode = .timer }
-                .padding()
-                .background(AppPalette.controlFill(for: colorScheme, selected: selectedMode == .timer))
-                .foregroundColor(AppPalette.controlText(for: colorScheme, selected: selectedMode == .timer))
-                .cornerRadius(8)
-            
-            Button(L10n.string("ストップウォッチ")) { selectedMode = .stopwatch}
-                .padding()
-                .background(AppPalette.controlFill(for: colorScheme, selected: selectedMode == .stopwatch))
-                .foregroundColor(AppPalette.controlText(for: colorScheme, selected: selectedMode == .stopwatch))
-                .cornerRadius(8)
+
+    private func headerIcon(_ name: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: name)
+                .font(.system(size: 17, weight: .light))
+                .foregroundColor(ReelTheme.secondary)
         }
+        .accessibilityLabel(label)
     }
-    
-    var timerPicker: some View {
-        HStack {
-            Picker(L10n.string("時間"), selection: $hours) {
-                ForEach(0..<13) { value in
-                    Text(L10n.format("%d時間", value)).tag(value)
+
+    // 今日の勉強時間と目標。タップで目標を設定する
+    private var todayStrip: some View {
+        Button {
+            showGoalSetting = true
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(L10n.string("今日"))
+                        .font(ReelTheme.sans(12))
+                        .foregroundColor(ReelTheme.secondary)
+                    Text(compactDuration(todayStudyTime))
+                        .font(ReelTheme.serif(20))
+                        .foregroundColor(ReelTheme.ink)
+                    Spacer()
+                    Text(todayGoal.map { L10n.format("目標 %@", compactDuration($0.targetDuration)) } ?? L10n.string("目標を決める"))
+                        .font(ReelTheme.sans(12))
+                        .foregroundColor(ReelTheme.secondary)
                 }
-            }
-            .frame(width: 80)
-            .clipped()
-                
-            Picker(L10n.string("分"), selection: $minutes) {
-                ForEach(0..<60) { value in
-                    Text(L10n.format("%d分", value)).tag(value)
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(ReelTheme.line)
+                        Capsule().fill(ReelTheme.accent)
+                            .frame(width: geometry.size.width * min(progress, 1))
+                    }
                 }
+                .frame(height: 3)
             }
-            .frame(width: 80)
-            .clipped()
-            
-            Picker(L10n.string("秒"), selection: $seconds) {
-                ForEach(0..<60) { value in
-                    Text(L10n.format("%d秒", value)).tag(value)
-                }
-            }
-            .frame(width: 80)
-            .clipped()
         }
-        .pickerStyle(WheelPickerStyle())
-        .foregroundColor(.white)
-        .frame(height: 70)
-        .background(AppPalette.controlFill(for: colorScheme).opacity(0.9))
-        .cornerRadius(12)
+        .buttonStyle(.plain)
     }
-    
-    var startButton: some View {
-        Button(action: {
-            Task {
-                if permissionManager.hasRequiredPermissions {
-                    startSession(recordTimelapse: true)
-                    return
+
+    // 勉強中の教材を表紙で並べる。タップで教材の一覧へ
+    private var materialsStrip: some View {
+        Button {
+            showMaterials = true
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(L10n.string("教材"))
+                        .font(ReelTheme.sans(12))
+                        .foregroundColor(ReelTheme.secondary)
+                    Spacer()
+                    Text(studyingMaterials.isEmpty ? L10n.string("教材を追加") : L10n.string("すべて見る"))
+                        .font(ReelTheme.sans(12))
+                        .foregroundColor(ReelTheme.accentDeep)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(ReelTheme.accentDeep)
                 }
 
-                await permissionManager.requestRequiredPermissionsIfNeeded()
-
-                if permissionManager.hasRequiredPermissions {
-                    startSession(recordTimelapse: true)
-                } else if permissionManager.needsSettingsRedirect {
-                    showPermissionAlert = true
+                if studyingMaterials.isEmpty {
+                    Text(L10n.string("使っている参考書や問題集を入れると、教材ごとに勉強時間がたまります。"))
+                        .font(ReelTheme.sans(12))
+                        .foregroundColor(ReelTheme.secondary)
+                        .multilineTextAlignment(.leading)
                 } else {
-                    startSession(recordTimelapse: false)
+                    // ボタンの中なので横スクロールにはせず、新しい順に5冊まで並べる
+                    HStack(alignment: .top, spacing: 12) {
+                            ForEach(studyingMaterials.prefix(5)) { material in
+                                VStack(alignment: .leading, spacing: 5) {
+                                    MaterialCover(material: material)
+                                        .frame(width: 58, height: 80)
+                                    Text(material.name)
+                                        .font(ReelTheme.sans(10))
+                                        .foregroundColor(ReelTheme.ink)
+                                        .lineLimit(2)
+                                        .frame(width: 58, alignment: .leading)
+                                }
+                            }
+                    }
                 }
             }
-        }) {
-            Text(L10n.string("スタート"))
-                .font(.title2)
-                .padding()
-                .frame(width: 200)
-                .background(AppPalette.cardFillStrong(for: colorScheme))
-                .foregroundColor(colorScheme == .dark ? .white : .blue)
-                .cornerRadius(12)
         }
-    }
-    
-    var statsButton: some View {
-        Button(action: {
-            showStatsView = true
-        }) {
-            VStack {
-                Image(systemName: "chart.bar.xaxis")
-                    .font(.title)
-                Text(L10n.string("統計"))
-                    .font(.caption)
-            }
-            .frame(width: 100, height: 80)
-            .background(AppPalette.cardFillStrong(for: colorScheme))
-            .foregroundColor(colorScheme == .dark ? .white : .purple)
-            .cornerRadius(12)
-        }
+        .buttonStyle(.plain)
     }
 
-    var proButton: some View {
-        Button(action: {
-            showPaywall = true
-        }) {
-            HStack(spacing: 10) {
-                Image(systemName: "sparkles.rectangle.stack.fill")
-                    .font(.headline)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(L10n.string("StudyReel Pro"))
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    Text(L10n.string("詳細な学習分析を見る"))
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.85))
-                }
+    // 今週の合計と、共有ボタン（勉強垢のグループや SNS へ）
+    private var weekShareRow: some View {
+        let weekSeconds: Int = {
+            guard let interval = Calendar.current.dateInterval(of: .weekOfYear, for: Date()) else { return 0 }
+            return sessions.filter { interval.contains($0.date) }.reduce(0) { $0 + $1.duration }
+        }()
+        return Button {
+            showShare = true
+        } label: {
+            HStack(spacing: 6) {
+                Text(L10n.format("今週 %@", compactDuration(weekSeconds)))
+                    .foregroundColor(ReelTheme.secondary)
                 Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.bold))
-                    .foregroundColor(.white.opacity(0.85))
+                Image(systemName: "square.and.arrow.up")
+                Text(L10n.string("共有する"))
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 16)
-            .frame(maxWidth: 320)
-            .background(
-                LinearGradient(
-                    colors: [Color.orange, Color.pink],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .foregroundColor(.white)
-            .cornerRadius(16)
-            .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 8)
+            .font(ReelTheme.sans(12))
+            .foregroundColor(ReelTheme.accentDeep)
         }
+        .buttonStyle(.plain)
     }
-    
-    var calendarButton: some View {
-        Button(action: {
-            showCalendar = true
-        }) {
-            VStack {
-                Image(systemName: "calendar")
-                    .font(.title)
-                Text(L10n.string("カレンダー"))
-                    .font(.caption)
+
+    private func galleryRow(_ session: StudySession, showsDay: Bool) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            VStack(alignment: .leading, spacing: 2) {
+                if showsDay {
+                    Text(dayNumber(session.date))
+                        .font(ReelTheme.serif(20))
+                        .foregroundColor(ReelTheme.ink)
+                    Text(weekday(session.date))
+                        .font(ReelTheme.sans(11))
+                        .foregroundColor(ReelTheme.secondary)
+                }
             }
-            .frame(width: 100, height: 80)
-            .background(AppPalette.cardFillStrong(for: colorScheme))
-            .foregroundColor(colorScheme == .dark ? .white : .orange)
-            .cornerRadius(12)
+            .frame(width: 34, alignment: .leading)
+            .padding(.top, 4)
+
+            ZStack(alignment: .bottomTrailing) {
+                SessionThumbnail(fileName: session.thumbnailFileName, subject: session.subject)
+                    .aspectRatio(16 / 10, contentMode: .fit)
+
+                Text(compactDuration(session.duration))
+                    .font(ReelTheme.sans(12, weight: .medium))
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.35), radius: 4)
+                    .padding(8)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            Menu {
+                Button(role: .destructive) {
+                    deleteSession(session)
+                } label: {
+                    Label(L10n.string("削除"), systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 14))
+                    .foregroundColor(ReelTheme.secondary)
+                    .frame(width: 24, height: 24)
+            }
         }
     }
 
-    private var titleColor: Color {
-        colorScheme == .dark ? .white : .white
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            Text(L10n.string("勉強した時間が、ひとつのVlogになる。"))
+                .font(ReelTheme.serif(17))
+                .foregroundColor(ReelTheme.ink)
+                .multilineTextAlignment(.center)
+            Button {
+                showNewSession = true
+            } label: {
+                Text(L10n.string("はじめての記録をつける"))
+                    .font(ReelTheme.sans(14, weight: .medium))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 12)
+                    .background(Capsule().fill(ReelTheme.accentDeep))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 60)
     }
-    
-    private func formatTime(_ seconds: Int) -> String {
+
+    // MARK: - Helpers
+
+    private struct MonthSection: Identifiable {
+        let month: Date
+        let sessions: [StudySession]
+        var id: Date { month }
+    }
+
+    private var monthSections: [MonthSection] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: sessions) { calendar.dateInterval(of: .month, for: $0.date)?.start ?? $0.date }
+        return grouped.keys.sorted(by: >).map { month in
+            MonthSection(month: month, sessions: (grouped[month] ?? []).sorted { $0.date > $1.date })
+        }
+    }
+
+    private func monthTitle(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy.MM"
+        return formatter.string(from: date)
+    }
+
+    private func dayNumber(_ date: Date) -> String {
+        String(format: "%02d", Calendar.current.component(.day, from: date))
+    }
+
+    private func weekday(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "EEE"
+        return formatter.string(from: date)
+    }
+
+    private func compactDuration(_ seconds: Int) -> String {
         let h = seconds / 3600
         let m = (seconds % 3600) / 60
-        return String(format: "%d:%02d", h, m)
+        return h > 0 ? "\(h)h \(String(format: "%02d", m))m" : "\(m)m"
+    }
+
+    private func deleteSession(_ session: StudySession) {
+        MediaStore.delete(session.thumbnailFileName, session.videoFileName)
+        modelContext.delete(session)
+    }
+
+    // 撮影の許可を確認してから録画画面を開く
+    private func beginSession() {
+        Task {
+            if permissionManager.hasRequiredPermissions {
+                startSession(recordTimelapse: true)
+                return
+            }
+
+            await permissionManager.requestRequiredPermissionsIfNeeded()
+
+            if permissionManager.hasRequiredPermissions {
+                startSession(recordTimelapse: true)
+            } else if permissionManager.needsSettingsRedirect {
+                showPermissionAlert = true
+            } else {
+                startSession(recordTimelapse: false)
+            }
+        }
     }
 
     private func startSession(recordTimelapse: Bool) {
@@ -402,13 +446,13 @@ struct StartView: View {
             startedAt: nil,
             autoStart: false,
             initialRecordingEnabled: recordTimelapse,
-            source: .app
+            source: .app,
+            materialID: selectedMaterialID
         )
-        showTimerView = true
     }
 
     private func consumePendingSessionDraftIfNeeded() {
-        guard !showTimerView, let draft = draftStore.consumePendingDraft() else { return }
+        guard sessionBootstrap == nil, let draft = draftStore.consumePendingDraft() else { return }
 
         let canRecordTimelapse = permissionManager.cameraPermissionGranted && permissionManager.photoLibraryPermissionGranted
         sessionBootstrap = SessionBootstrap(
@@ -419,7 +463,6 @@ struct StartView: View {
             initialRecordingEnabled: draft.shouldRecordTimelapse && canRecordTimelapse,
             source: draft.source
         )
-        showTimerView = true
     }
 
     private func handleIncomingURL(_ url: URL) {
@@ -427,7 +470,7 @@ struct StartView: View {
 
         if url.host == "start" {
             consumePendingSessionDraftIfNeeded()
-            if showTimerView { return }
+            if sessionBootstrap != nil { return }
 
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
             let modeValue = components?.queryItems?.first(where: { $0.name == "mode" })?.value ?? "timer"
@@ -446,7 +489,6 @@ struct StartView: View {
                 initialRecordingEnabled: shouldRecord,
                 source: .widget
             )
-            showTimerView = true
         } else if url.host == "paywall" {
             showPaywall = true
         }

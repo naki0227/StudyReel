@@ -1,62 +1,89 @@
 import SwiftUI
 import SwiftData
 
+// タグの編集。色はデザインに合うやわらかい色から選ぶ
 struct TagManagerView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query private var tags: [Tag]
-    
+
     @State private var newTagName = ""
-    @State private var selectedColor = Color.blue
-    
+    @State private var selectedColor = TagManagerView.palette[0]
+
+    static let palette = ["5E8DB8", "7FB3A8", "D9A066", "C98B9B", "9B8EC4", "8E9AA6"]
+
+    private var trimmed: String {
+        newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
-                Section(header: Text(L10n.string("新しいタグを追加"))) {
+                Section {
                     HStack {
                         TextField(L10n.string("タグ名"), text: $newTagName)
-                        ColorPicker("", selection: $selectedColor)
-                            .labelsHidden()
-                        Button(action: addTag) {
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundColor(.blue)
-                        }
-                        .disabled(newTagName.isEmpty)
+                            .font(ReelTheme.sans(15))
+                            .onSubmit(addTag)
+                        Button(L10n.string("追加"), action: addTag)
+                            .font(ReelTheme.sans(14, weight: .medium))
+                            .foregroundColor(trimmed.isEmpty ? ReelTheme.secondary : ReelTheme.accentDeep)
+                            .disabled(trimmed.isEmpty)
                     }
+                    HStack(spacing: 12) {
+                        ForEach(Self.palette, id: \.self) { hex in
+                            Circle()
+                                .fill(Color(hex: hex) ?? ReelTheme.accent)
+                                .frame(width: 24, height: 24)
+                                .overlay(Circle().stroke(Color.white, lineWidth: selectedColor == hex ? 3 : 0))
+                                .overlay(Circle().stroke(ReelTheme.line, lineWidth: selectedColor == hex ? 1 : 0).padding(-2))
+                                .onTapGesture { selectedColor = hex }
+                        }
+                    }
+                    .padding(.vertical, 4)
                 }
-                
-                Section(header: Text(L10n.string("既存のタグ"))) {
+                .listRowBackground(ReelTheme.card)
+
+                Section {
                     ForEach(tags) { tag in
-                        HStack {
+                        HStack(spacing: 10) {
                             Circle()
                                 .fill(tag.color)
-                                .frame(width: 12, height: 12)
-                            Text(tag.name)
+                                .frame(width: 10, height: 10)
+                            Text("#\(tag.name)")
+                                .font(ReelTheme.sans(15))
+                                .foregroundColor(ReelTheme.ink)
                         }
+                        .listRowBackground(ReelTheme.card)
                     }
                     .onDelete(perform: deleteTags)
+                } footer: {
+                    Text(L10n.string("左にスワイプで削除できます。"))
+                        .font(ReelTheme.sans(11))
+                        .foregroundColor(ReelTheme.secondary)
                 }
             }
-            .navigationTitle(L10n.string("タグ管理"))
+            .scrollContentBackground(.hidden)
+            .background(ReelTheme.background.ignoresSafeArea())
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Text(L10n.string("タグ"))
+                        .font(ReelTheme.serif(22))
+                        .foregroundColor(ReelTheme.ink)
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(L10n.string("完了")) {
-                        dismiss()
-                    }
+                    Button(L10n.string("完了")) { dismiss() }
+                        .foregroundColor(ReelTheme.accentDeep)
                 }
             }
         }
     }
-    
+
     private func addTag() {
-        guard !newTagName.isEmpty else { return }
-        let colorHex = selectedColor.toHex() ?? "0000FF"
-        let newTag = Tag(name: newTagName, colorHex: colorHex)
-        modelContext.insert(newTag)
+        guard !trimmed.isEmpty else { return }
+        modelContext.insert(Tag(name: trimmed, colorHex: selectedColor))
         newTagName = ""
-        selectedColor = .blue
     }
-    
+
     private func deleteTags(at offsets: IndexSet) {
         for index in offsets {
             modelContext.delete(tags[index])

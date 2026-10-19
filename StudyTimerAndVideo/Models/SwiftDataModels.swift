@@ -9,17 +9,47 @@ class StudySession {
     var duration: Int
     var subject: String
     var recordedAt: Date?
+    // 1.5 で追加。既存の記録は nil のまま
+    var title: String?
+    var memo: String?
+    var thumbnailFileName: String?
+    var videoFileName: String?
+    // 1.6 で追加。使った教材（StudyMaterial.id）
+    var materialID: UUID?
     
     @Relationship(inverse: \Tag.sessions)
     var tags: [Tag]? = []
     
-    init(id: UUID = UUID(), date: Date = Date(), duration: Int, subject: String, tags: [Tag] = [], recordedAt: Date? = nil) {
+    init(
+        id: UUID = UUID(),
+        date: Date = Date(),
+        duration: Int,
+        subject: String,
+        tags: [Tag] = [],
+        recordedAt: Date? = nil,
+        title: String? = nil,
+        memo: String? = nil,
+        thumbnailFileName: String? = nil,
+        videoFileName: String? = nil,
+        materialID: UUID? = nil
+    ) {
         self.id = id
         self.date = date
         self.duration = duration
         self.subject = subject
         self.tags = tags
         self.recordedAt = recordedAt
+        self.title = title
+        self.memo = memo
+        self.thumbnailFileName = thumbnailFileName
+        self.videoFileName = videoFileName
+        self.materialID = materialID
+    }
+
+    // タイトルが空なら教科名を見出しにする
+    var displayTitle: String {
+        let trimmed = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? subject : trimmed
     }
 }
 
@@ -37,6 +67,43 @@ class Tag {
     var color: Color {
         Color(hex: colorHex) ?? .blue
     }
+}
+
+// 勉強に使う教材（参考書・問題集・教科書など）。記録とは id でつなぐ
+@Model
+class StudyMaterial {
+    var id: UUID
+    var name: String
+    var subject: String
+    var isbn: String?
+    var author: String?
+    // 表紙の画像（MediaStore に保存したファイル名）
+    var coverFileName: String?
+    var createdAt: Date
+    // 「やり終えた」を押した日
+    var finishedAt: Date?
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        subject: String,
+        isbn: String? = nil,
+        author: String? = nil,
+        coverFileName: String? = nil,
+        createdAt: Date = Date(),
+        finishedAt: Date? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.subject = subject
+        self.isbn = isbn
+        self.author = author
+        self.coverFileName = coverFileName
+        self.createdAt = createdAt
+        self.finishedAt = finishedAt
+    }
+
+    var isFinished: Bool { finishedAt != nil }
 }
 
 @Model

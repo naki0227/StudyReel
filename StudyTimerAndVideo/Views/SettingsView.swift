@@ -1,98 +1,315 @@
 import SwiftUI
 import SwiftData
 
+// 08 設定。必要な項目だけを、撮影・モザイク・保存先・学習の順に並べる
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var storeKit: StoreKitManager
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
+    @ObservedObject var subjectManager: SubjectManager
+
+    @AppStorage(RecordingSettings.intervalKey) private var interval: Double = 5
+    @AppStorage(RecordingSettings.cameraKey) private var cameraRaw = CameraPosition.front.rawValue
+    @AppStorage(RecordingSettings.qualityKey) private var qualityRaw = VideoQuality.hd1080.rawValue
+    @AppStorage(RecordingSettings.showLogoKey) private var showLogo = false
+    @AppStorage(RecordingSettings.autoMosaicKey) private var autoMosaic = true
+    @AppStorage(RecordingSettings.saveToPhotosKey) private var saveToPhotos = true
+    @AppStorage(MediaStore.keepVideoKey) private var keepInApp = true
+    @AppStorage(CloudBackup.autoBackupKey) private var autoBackup = true
+    @ObservedObject private var cloudBackup = CloudBackup.shared
+    @State private var showRestoreConfirm = false
+    @State private var backupMessage: String?
 
     @State private var quietReminderEnabled = StudyNotificationManager.shared.isQuietReminderEnabled
     @State private var showPaywall = false
-    
-    // 実際のURLやテキストに合わせて変更してください
-    let privacyPolicyURL = URL(string: "https://garrulous-court-1b7.notion.site/2bea705256988039b6fdd92ffb57a410")!
-    let termsOfServiceURL = URL(string: "https://garrulous-court-1b7.notion.site/2bea705256988039b6fdd92ffb57a410")!
-    
-    var body: some View {
-        NavigationView {
-            List {
-                Section(header: Text(L10n.string("アプリについて"))) {
-                    HStack {
-                        Text(L10n.string("バージョン"))
-                        Spacer()
-                        Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
-                            .foregroundColor(.gray)
-                    }
-                }
+    @State private var showSubjects = false
+    @State private var showTags = false
 
-                Section(header: Text(L10n.string("通知"))) {
-                    Toggle(L10n.string("静かな開始リマインド"), isOn: $quietReminderEnabled)
-                        .onChange(of: quietReminderEnabled) { _, enabled in
-                            Task {
-                                let resolved = await StudyNotificationManager.shared.setQuietReminderEnabled(enabled, sessions: sessions)
-                                await MainActor.run {
-                                    quietReminderEnabled = resolved
+    let privacyPolicyURL = URL(string: "https://enludus.com/products/studyreel-privacy")!
+    let termsOfServiceURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    sectionTitle(L10n.string("撮影設定"))
+                    card {
+                        ReelRow(systemImage: "timer", title: L10n.string("撮影間隔")) {
+                            Menu {
+                                ForEach(RecordingSettings.intervalOptions, id: \.self) { value in
+                                    Button(L10n.format("%d秒", Int(value))) { interval = value }
+                                }
+                            } label: {
+                                valueLabel(L10n.format("%d秒", Int(RecordingSettings.intervalOptions.contains(interval) ? interval : 5)))
+                            }
+                        }
+                        divider
+                        ReelRow(systemImage: "textformat", title: L10n.string("ロゴの表示")) {
+                            if storeKit.isProUnlocked {
+                                Toggle("", isOn: $showLogo).labelsHidden().tint(ReelTheme.accent)
+                            } else {
+                                Button {
+                                    showPaywall = true
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Text("Pro").font(ReelTheme.sans(11, weight: .semibold)).foregroundColor(ReelTheme.accentDeep)
+                                        Toggle("", isOn: .constant(true)).labelsHidden().tint(ReelTheme.accent).disabled(true)
+                                    }
                                 }
                             }
                         }
-
-                    Text(L10n.string("オンにすると、過去の学習時間に合わせて1日1回だけ静かな開始通知を出します。"))
-                        .font(.caption)
-                        .foregroundColor(.gray)
-
-                    if quietReminderEnabled, let nextReminderDate = StudyInsights.preferredReminderDate(for: sessions) {
-                        HStack {
-                            Text(L10n.string("次回予定"))
-                            Spacer()
-                            Text(nextReminderDate.formatted(date: .abbreviated, time: .shortened))
-                                .foregroundColor(.gray)
+                        divider
+                        ReelRow(systemImage: "camera", title: L10n.string("カメラ")) {
+                            Menu {
+                                ForEach(CameraPosition.allCases) { item in
+                                    Button(item.title) { cameraRaw = item.rawValue }
+                                }
+                            } label: {
+                                valueLabel((CameraPosition(rawValue: cameraRaw) ?? .front).title)
+                            }
+                        }
+                        divider
+                        ReelRow(systemImage: "sparkles.tv", title: L10n.string("画質")) {
+                            Menu {
+                                ForEach(VideoQuality.allCases) { item in
+                                    Button(item.title) { qualityRaw = item.rawValue }
+                                }
+                            } label: {
+                                valueLabel((VideoQuality(rawValue: qualityRaw) ?? .hd1080).title)
+                            }
+                        }
+                        divider
+                        NavigationLink {
+                            VideoStyleView()
+                        } label: {
+                            ReelRow(systemImage: "character.cursor.ibeam", title: L10n.string("文字と顔の隠し方")) {
+                                chevron
+                            }
                         }
                     }
-                }
 
-                Section(header: Text(L10n.string("StudyReel Pro"))) {
-                    HStack {
-                        Text(L10n.string("Proの状態"))
-                        Spacer()
-                        Text(storeKit.isProUnlocked ? L10n.string("有効") : L10n.string("未加入"))
-                            .foregroundColor(storeKit.isProUnlocked ? .green : .secondary)
+                    sectionTitle(L10n.string("モザイク設定"))
+                    card {
+                        ReelRow(systemImage: "face.dashed", title: L10n.string("人の顔を自動でモザイク")) {
+                            Toggle("", isOn: $autoMosaic).labelsHidden().tint(ReelTheme.accent)
+                        }
+                    }
+                    note(L10n.string("※ 顔の検出は端末内で処理されます"))
+
+                    sectionTitle(L10n.string("保存先"))
+                    card {
+                        ReelRow(systemImage: "photo.on.rectangle", title: L10n.string("写真フォルダに保存")) {
+                            Toggle("", isOn: $saveToPhotos).labelsHidden().tint(ReelTheme.accent)
+                                .disabled(saveToPhotos && !keepInApp)
+                        }
+                        divider
+                        ReelRow(systemImage: "internaldrive", title: L10n.string("端末内にも保存")) {
+                            Toggle("", isOn: $keepInApp).labelsHidden().tint(ReelTheme.accent)
+                                .disabled(keepInApp && !saveToPhotos)
+                        }
+                    }
+                    note(L10n.string("アプリ内に残すと、写真アプリから消しても見返せます（オフラインで閲覧可能）。"))
+
+                    sectionTitle(L10n.string("学習"))
+                    card {
+                        Button { showSubjects = true } label: {
+                            ReelRow(systemImage: "book.closed", title: L10n.string("教科の編集")) { chevron }
+                        }
+                        divider
+                        Button { showTags = true } label: {
+                            ReelRow(systemImage: "tag", title: L10n.string("タグの編集")) { chevron }
+                        }
+                        divider
+                        ReelRow(systemImage: "bell", title: L10n.string("勉強リマインダー")) {
+                            Toggle("", isOn: $quietReminderEnabled).labelsHidden().tint(ReelTheme.accent)
+                        }
+                    }
+                    if quietReminderEnabled, let next = StudyInsights.preferredReminderDate(for: sessions) {
+                        note(L10n.format("次回 %@", next.formatted(date: .abbreviated, time: .shortened)))
+                    } else {
+                        note(L10n.string("いつも勉強している時間に、1日1回だけお知らせします。"))
                     }
 
-                    Button(storeKit.isProUnlocked ? L10n.string("Proを見る") : L10n.string("Proを始める")) {
-                        showPaywall = true
+                    sectionTitle(L10n.string("iCloudバックアップ"))
+                    backupCard
+                    note(backupNote)
+
+                    sectionTitle(L10n.string("StudyReel Pro"))
+                    card {
+                        Button { showPaywall = true } label: {
+                            ReelRow(systemImage: "star", title: storeKit.isProUnlocked ? L10n.string("Proは有効です") : L10n.string("Proを始める")) {
+                                chevron
+                            }
+                        }
                     }
-                }
-                
-                Section(header: Text(L10n.string("法的情報"))) {
-                    Link(L10n.string("プライバシーポリシー"), destination: privacyPolicyURL)
-                    Link(L10n.string("利用規約"), destination: termsOfServiceURL)
-                    
-                    NavigationLink(destination: DisclaimerView()) {
-                        Text(L10n.string("免責事項"))
+
+                    sectionTitle(L10n.string("その他"))
+                    card {
+                        Link(destination: privacyPolicyURL) {
+                            ReelRow(systemImage: "hand.raised", title: L10n.string("プライバシーポリシー")) { chevron }
+                        }
+                        divider
+                        Link(destination: termsOfServiceURL) {
+                            ReelRow(systemImage: "doc.text", title: L10n.string("利用規約")) { chevron }
+                        }
+                        divider
+                        NavigationLink(destination: DisclaimerView()) {
+                            ReelRow(systemImage: "exclamationmark.circle", title: L10n.string("免責事項")) { chevron }
+                        }
+                        divider
+                        ReelRow(systemImage: "info.circle", title: L10n.string("バージョン")) {
+                            valueLabel(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
+                        }
                     }
+                    note(L10n.string("長時間の撮影はバッテリーを多く使います。充電しながらの利用がおすすめです。"))
                 }
-                
-                Section(header: Text(L10n.string("注意事項"))) {
-                    Text(L10n.string("・本アプリは学習中の様子を撮影しますが、映像は端末内にのみ保存され、外部サーバーへ送信されることはありません。"))
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                    Text(L10n.string("・長時間の撮影はバッテリーを消費します。充電しながらの使用を推奨します。"))
-                        .font(.caption)
-                        .foregroundColor(.gray)
+                .padding(16)
+                .frame(maxWidth: 640)
+                .frame(maxWidth: .infinity)
+            }
+            .background(ReelTheme.background.ignoresSafeArea())
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Text(L10n.string("設定"))
+                        .font(ReelTheme.serif(24))
+                        .foregroundColor(ReelTheme.ink)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(L10n.string("閉じる")) { dismiss() }
+                        .foregroundColor(ReelTheme.accentDeep)
                 }
             }
-            .navigationTitle(L10n.string("設定・情報"))
+            .onChange(of: quietReminderEnabled) { _, enabled in
+                Task {
+                    let resolved = await StudyNotificationManager.shared.setQuietReminderEnabled(enabled, sessions: sessions)
+                    await MainActor.run {
+                        quietReminderEnabled = resolved
+                    }
+                }
+            }
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(L10n.string("閉じる")) {
-                        dismiss()
+            .alert(L10n.string("バックアップから戻しますか？"), isPresented: $showRestoreConfirm) {
+                Button(L10n.string("キャンセル"), role: .cancel) {}
+                Button(L10n.string("戻す")) { restoreBackup() }
+            } message: {
+                Text(L10n.string("今ある記録は消さずに、バックアップにだけある記録を足します。"))
+            }
+            .alert(
+                backupMessage ?? "",
+                isPresented: Binding(get: { backupMessage != nil }, set: { if !$0 { backupMessage = nil } })
+            ) {
+                Button(L10n.string("OK")) {}
+            }
+            .sheet(isPresented: $showSubjects) {
+                SubjectEditView(subjectManager: subjectManager)
+            }
+            .sheet(isPresented: $showTags) {
+                TagManagerView()
+            }
+        }
+    }
+
+    // MARK: - iCloudバックアップ
+
+    private var backupCard: some View {
+        card {
+            ReelRow(systemImage: "icloud", title: L10n.string("自動でバックアップ")) {
+                Toggle("", isOn: $autoBackup).labelsHidden().tint(ReelTheme.accent)
+            }
+            divider
+            Button { backupNow() } label: {
+                ReelRow(systemImage: "arrow.up.to.line", title: L10n.string("今すぐバックアップ")) {
+                    if cloudBackup.isWorking {
+                        ProgressView()
+                    } else {
+                        chevron
                     }
                 }
             }
+            .disabled(cloudBackup.isWorking)
+            divider
+            Button { showRestoreConfirm = true } label: {
+                ReelRow(systemImage: "arrow.down.to.line", title: L10n.string("バックアップから戻す")) { chevron }
+            }
+            .disabled(cloudBackup.isWorking)
         }
+    }
+
+    private var backupNote: String {
+        if let last = cloudBackup.lastBackupDate {
+            return L10n.format("最後のバックアップ %@", last.formatted(date: .abbreviated, time: .shortened))
+        }
+        return L10n.string("記録と動画をiCloudに残します。ファイルアプリの「StudyReel」フォルダから家族にも共有できます。")
+    }
+
+    private func backupNow() {
+        Task {
+            do {
+                try await cloudBackup.backupNow(context: modelContext)
+                backupMessage = L10n.string("バックアップしました。")
+            } catch {
+                backupMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func restoreBackup() {
+        Task {
+            do {
+                let count = try await cloudBackup.restore(context: modelContext)
+                backupMessage = L10n.format("%d件の記録を戻しました。", count)
+            } catch {
+                backupMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func sectionTitle(_ text: String) -> some View {
+        Text(text)
+            .font(ReelTheme.sans(12))
+            .foregroundColor(ReelTheme.secondary)
+            .padding(.top, 14)
+            .padding(.leading, 4)
+    }
+
+    private func note(_ text: String) -> some View {
+        Text(text)
+            .font(ReelTheme.sans(11))
+            .foregroundColor(ReelTheme.secondary)
+            .padding(.horizontal, 4)
+    }
+
+    private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        VStack(spacing: 0) {
+            content()
+        }
+        .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(ReelTheme.line)
+            .frame(height: 1)
+            .padding(.leading, 50)
+    }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .font(.system(size: 12))
+            .foregroundColor(ReelTheme.secondary)
+    }
+
+    private func valueLabel(_ text: String) -> some View {
+        HStack(spacing: 6) {
+            Text(text)
+                .font(ReelTheme.sans(13))
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12))
+        }
+        .foregroundColor(ReelTheme.secondary)
     }
 }
 
@@ -115,7 +332,3 @@ struct DisclaimerView: View {
     }
 }
 
-#Preview {
-    SettingsView()
-        .environmentObject(StoreKitManager())
-}
