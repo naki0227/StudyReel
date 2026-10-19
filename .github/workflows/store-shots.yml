@@ -1,0 +1,98 @@
+name: Store screenshots
+
+# App Store のスクリーンショットの素材を撮る。デモ表示のアプリを UI テスト（StoreScreenshotTests）で動かし、
+# iPhone 6.9 インチと iPad 13 インチで、日本語と英語の画面を撮って成果物に残す。
+# Actions の画面から手動で動かすか、コミットメッセージに [store-shots] を入れて push する
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+
+concurrency:
+  group: store-shots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shoot:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[store-shots]')
+    runs-on: macos-15
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - device: iphone
+            names: "iPhone 17 Pro Max,iPhone 16 Pro Max"
+          - device: ipad
+            names: "iPad Pro 13-inch (M5),iPad Pro 13-inch (M4)"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -v -i beta | sort -V | tail -1 || true)
+          if [ -z "$xcode" ]; then echo "::error::Xcode 26 が見つかりません"; exit 1; fi
+          sudo xcode-select -s "$xcode"
+          xcodebuild -version
+
+      - name: Boot simulator
+        id: sim
+        timeout-minutes: 14
+        run: |
+          udid=$(WANTED="${{ matrix.names }}" xcrun simctl list devices available -j | python3 -c '
+          import json, os, sys
+          data = json.load(sys.stdin)["devices"]
+          wanted = os.environ["WANTED"].split(",")
+          found = {}
+          for runtime, devices in data.items():
+              if "iOS" not in runtime:
+                  continue
+              for d in devices:
+                  found.setdefault(d["name"], d["udid"])
+          for name in wanted:
+              if name in found:
+                  print(found[name]); break
+          ')
+          if [ -z "$udid" ]; then echo "::error::シミュレータが見つかりません: ${{ matrix.names }}"; xcrun simctl list devices available; exit 1; fi
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+          for attempt in 1 2; do
+            xcrun simctl boot "$udid" || true
+            if perl -e "alarm 300; exec @ARGV" xcrun simctl bootstatus "$udid" -b; then break; fi
+            echo "boot timed out, retrying"
+            xcrun simctl shutdown "$udid" || true
+          done
+          xcrun simctl status_bar "$udid" override --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3
+          xcrun simctl ui "$udid" appearance light
+
+      - name: Build for testing
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing \
+            -project StudyTimerAndVideo.xcodeproj \
+            -scheme StudyTimerAndVideo \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tail -20
+
+      - name: Take screenshots
+        run: |
+          for lang in ja en; do
+            TEST_RUNNER_SHOT_LANG=$lang xcodebuild test-without-building \
+              -project StudyTimerAndVideo.xcodeproj \
+              -scheme StudyTimerAndVideo \
+              -destination "id=${{ steps.sim.outputs.udid }}" \
+              -derivedDataPath build \
+              -only-testing:StudyTimerAndVideoUITests/StoreScreenshotTests \
+              -resultBundlePath "Shots-$lang.xcresult" 2>&1 | tail -15 || true
+            mkdir -p "shots/$lang"
+            xcrun xcresulttool export attachments --path "Shots-$lang.xcresult" --output-path "shots/$lang" || true
+          done
+          ls -laR shots | head -60
+
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: store-shots-${{ matrix.device }}
+          path: shots
+          if-no-files-found: warn
