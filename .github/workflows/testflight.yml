@@ -4,7 +4,7 @@ name: TestFlight
 # 必要な Secrets（Settings → Secrets and variables → Actions）:
 #   ASC_KEY_ID      App Store Connect API キーの Key ID
 #   ASC_ISSUER_ID   同じ画面の Issuer ID
-#   ASC_KEY_P8      ダウンロードした AuthKey_XXXX.p8 の中身（テキストをそのまま貼る）
+#   ASC_KEY_P8      ダウンロードした AuthKey_XXXX.p8 の中身（そのままでも base64 でもよい）
 # キーは「Admin」権限で作る（署名用の証明書とプロファイルを自動で作るため）
 on:
   workflow_dispatch:
@@ -40,7 +40,13 @@ jobs:
             exit 1
           fi
           mkdir -p "$RUNNER_TEMP/keys"
-          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          # 中身をそのまま貼っても、base64 にして貼ってもよい
+          if printf '%s' "$ASC_KEY_P8" | grep -q "BEGIN PRIVATE KEY"; then
+            printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          else
+            printf '%s' "$ASC_KEY_P8" | base64 --decode > "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          fi
+          chmod 600 "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
 
       - name: Decide build number
         id: build
