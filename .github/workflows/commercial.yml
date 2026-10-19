@@ -28,6 +28,7 @@ jobs:
 
       - name: Boot simulator
         id: sim
+        timeout-minutes: 14
         run: |
           udid=$(xcrun simctl list devices available -j | python3 -c '
           import json, sys
@@ -44,8 +45,13 @@ jobs:
                   print(found[name]); break
           ')
           echo "udid=$udid" >> "$GITHUB_OUTPUT"
-          xcrun simctl boot "$udid"
-          xcrun simctl bootstatus "$udid" -b
+          # 起動が固まるランナーがあるので、時間を区切って1回だけやり直す
+          for attempt in 1 2; do
+            xcrun simctl boot "$udid" || true
+            if timeout 300 xcrun simctl bootstatus "$udid" -b; then break; fi
+            echo "boot timed out, retrying"
+            xcrun simctl shutdown "$udid" || true
+          done
           xcrun simctl status_bar "$udid" override --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3
           xcrun simctl ui "$udid" appearance light
 
