@@ -25,6 +25,11 @@ enum DemoMode {
     // 確認画面で最初に開く道具（-StudyReelDemoTool mosaic など）
     static var reviewTool: String? { value(after: "-StudyReelDemoTool") }
 
+    // 撮影の向き（-StudyReelDemoOrientation landscape）。書かなければ縦向き
+    static var orientation: CaptureOrientation {
+        value(after: "-StudyReelDemoOrientation").flatMap(CaptureOrientation.init(rawValue:)) ?? .portrait
+    }
+
     private static func value(after flag: String) -> String? {
         let args = ProcessInfo.processInfo.arguments
         guard isActive, let i = args.firstIndex(of: flag), i + 1 < args.count else { return nil }
@@ -270,7 +275,7 @@ enum DemoSeeder {
         defaults.set(true, forKey: CoachTour.recordingKey)
         defaults.set(false, forKey: RecordingSettings.saveToPhotosKey)
         defaults.set(true, forKey: MediaStore.keepVideoKey)
-        defaults.set(CaptureOrientation.portrait.rawValue, forKey: CaptureOrientation.storageKey)
+        defaults.set(DemoMode.orientation.rawValue, forKey: CaptureOrientation.storageKey)
         defaults.set(true, forKey: "debug_preview_seeded_v1")
     }
 
