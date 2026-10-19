@@ -320,7 +320,7 @@ struct GoalShareCard: View {
             HStack {
                 Spacer()
                 Polaroid(image: content.photo, caption: "day 1 ✎", badge: "", tape: GoalTheme.tapePink, angle: 3)
-                    .frame(width: 136)
+                    .frame(width: 118)
             }
             .padding(.top, 20)
         }
@@ -362,7 +362,8 @@ struct GoalShareCard: View {
                         ForEach(Array(progress.lastSevenDays.enumerated()), id: \.offset) { index, studied in
                             Circle()
                                 .fill(index == 6 && studied ? theme.deep : studied ? theme.accent : theme.soft)
-                                .aspectRatio(1, contentMode: .fit)
+                                .frame(width: 30, height: 30)
+                                .frame(maxWidth: .infinity)
                                 .overlay(
                                     Text(weekdayLetter(daysAgo: 6 - index))
                                         .font(ReelTheme.sans(9, weight: .medium))
@@ -480,13 +481,13 @@ struct GoalShareCard: View {
                         .foregroundColor(isLast ? theme.deep : ReelTheme.ink)
                     UnevenRoundedRectangle(topLeadingRadius: 14, bottomLeadingRadius: 6, bottomTrailingRadius: 6, topTrailingRadius: 14, style: .continuous)
                         .fill(isLast ? theme.accent : theme.soft)
-                        .frame(height: 120 * ratio)
+                        .frame(height: 96 * ratio)
                     GoalScript(text: ordinal(offset + index + 1) + (isLast ? " ✦" : ""), size: 12)
                 }
                 .frame(maxWidth: .infinity)
             }
         }
-        .frame(height: 190, alignment: .bottom)
+        .frame(height: 160, alignment: .bottom)
     }
 
     private func ordinal(_ number: Int) -> String {

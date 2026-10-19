@@ -81,10 +81,12 @@ final class GoalFeatureTests: XCTestCase {
         pause(1.5)
         shot("goal-06-card-declaration")
         tap(app.navigationBars["カードで共有"].buttons["閉じる"])
-        pause(1.5)
+        // 共有画面が閉じきってから押す
+        pause(3)
 
         tap(app.buttons["home.goal.edit"])
-        pause(2)
+        XCTAssert(app.navigationBars["目標"].waitForExistence(timeout: 5), "目標の編集画面が開きません")
+        pause(1)
         shot("goal-07-edit")
         assertInsideScreen(app, "目標の編集")
     }
