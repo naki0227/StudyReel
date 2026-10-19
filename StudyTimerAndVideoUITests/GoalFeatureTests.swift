@@ -22,6 +22,18 @@ final class GoalFeatureTests: XCTestCase {
         }
     }
 
+    // 閉じたことを確かめる。1回目の「閉じる」が効かなかったときだけ、もう一度押す
+    private func close(_ app: XCUIApplication, _ title: String) {
+        let bar = app.navigationBars[title]
+        for attempt in 0..<2 where bar.exists {
+            if attempt > 0 { print("「\(title)」: 1回目の「閉じる」で閉じませんでした") }
+            tap(bar.buttons["閉じる"])
+            let gone = NSPredicate(format: "exists == false")
+            if XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: gone, object: bar)], timeout: 4) == .completed { return }
+        }
+        XCTAssertFalse(bar.exists, "「\(title)」の画面が閉じません")
+    }
+
     private func shot(_ name: String) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name
@@ -74,9 +86,8 @@ final class GoalFeatureTests: XCTestCase {
         pause(2.5)
         shot("goal-04-card-scoreup")
         // 共有画面が過去問の画面に重なるので、閉じるボタンはそれぞれの画面のものを押す
-        tap(app.navigationBars["カードで共有"].buttons["閉じる"])
-        pause(1)
-        tap(app.navigationBars["過去問・模試"].buttons["閉じる"])
+        close(app, "カードで共有")
+        close(app, "過去問・模試")
         pause(1.5)
 
         tap(app.buttons["home.goal.share"])
@@ -85,9 +96,8 @@ final class GoalFeatureTests: XCTestCase {
         tap(app.buttons["宣言"])
         pause(1.5)
         shot("goal-06-card-declaration")
-        tap(app.navigationBars["カードで共有"].buttons["閉じる"])
-        // 共有画面が閉じきってから押す
-        pause(3)
+        close(app, "カードで共有")
+        pause(1)
 
         tap(app.buttons["home.goal.edit"])
         XCTAssert(app.navigationBars["目標"].waitForExistence(timeout: 5), "目標の編集画面が開きません")
