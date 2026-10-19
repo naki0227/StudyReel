@@ -22,6 +22,11 @@ enum DemoMode {
     // スクショ用に、起動したらすぐ開く画面（-StudyReelDemoScreen share / materials）
     static var screen: String? { value(after: "-StudyReelDemoScreen") }
 
+    // 目標と過去問のデモも入れる（-StudyReelDemoGoal）。ストアのスクショには出さない
+    static var showsGoal: Bool {
+        isActive && ProcessInfo.processInfo.arguments.contains("-StudyReelDemoGoal")
+    }
+
     // 確認画面で最初に開く道具（-StudyReelDemoTool mosaic など）
     static var reviewTool: String? { value(after: "-StudyReelDemoTool") }
 
@@ -282,6 +287,16 @@ enum DemoSeeder {
     static func prepare(context: ModelContext) {
         applyDefaults()
         let defaults = UserDefaults.standard
+        // 目標のデモは、ほかのデモの記録がもう入っていても足す。目標なしで起動したら、前の目標と過去問は消す
+        if !DemoMode.showsGoal {
+            try? context.delete(model: StudyGoal.self)
+            try? context.delete(model: PastPaperResult.self)
+            try? context.save()
+        } else if (try? context.fetchCount(FetchDescriptor<StudyGoal>())) ?? 0 == 0 {
+            let materialID = (try? context.fetch(FetchDescriptor<StudyMaterial>()))?.first?.id
+            insertGoalDemo(context: context, today: Calendar.current.startOfDay(for: Date()), materialID: materialID)
+            try? context.save()
+        }
         guard (try? context.fetchCount(FetchDescriptor<StudySession>())) ?? 0 == 0 else { return }
 
         let subjects = ["数学", "英語", "物理", "国語"]
@@ -336,7 +351,42 @@ enum DemoSeeder {
         }
 
         context.insert(DailyGoal(date: today, targetDuration: 3 * 60 * 60))
+        if DemoMode.showsGoal, (try? context.fetchCount(FetchDescriptor<StudyGoal>())) ?? 0 == 0 {
+            insertGoalDemo(context: context, today: today, materialID: materials[1].id)
+        }
         try? context.save()
+    }
+
+    // TOEIC 800点を目指して、公式問題集を何回か解いた例
+    private static func insertGoalDemo(context: ModelContext, today: Date, materialID: UUID?) {
+        let calendar = Calendar.current
+        func day(_ offset: Int) -> Date { calendar.date(byAdding: .day, value: offset, to: today) ?? today }
+        context.insert(StudyGoal(
+            title: L10n.string("TOEIC 800点"),
+            deadline: day(56),
+            targetScore: 800,
+            maxScore: 990,
+            targetHours: 300,
+            materialIDs: materialID.map { [$0] } ?? [],
+            note: L10n.string("毎朝1時間、寝る前に単語30分。"),
+            createdAt: day(-12)
+        ))
+        let parts = [L10n.string("リスニング"), L10n.string("リーディング")]
+        let results: [(String, Int, Int, Int, Int)] = [
+            ("Test 1", -56, 610, 330, 280), ("Test 2", -42, 640, 345, 295), ("Test 3", -35, 630, 340, 290),
+            ("Test 1", -21, 685, 365, 320), ("Test 2", -14, 700, 370, 330), ("Test 1", -1, 715, 380, 335)
+        ]
+        for (name, offset, score, listening, reading) in results {
+            context.insert(PastPaperResult(
+                paperName: L10n.format("公式問題集10 %@", name),
+                date: day(offset),
+                score: score,
+                maxScore: 990,
+                durationSeconds: 2 * 3600,
+                memo: offset == -1 ? L10n.string("Part 7 で時間切れ → 次は1問1分で解く！") : "",
+                parts: [ScorePart(name: parts[0], score: listening, maxScore: 495), ScorePart(name: parts[1], score: reading, maxScore: 495)]
+            ))
+        }
     }
 
     // 録画を止めたとき、確認画面に渡すデモの動画

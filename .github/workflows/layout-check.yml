@@ -10,6 +10,8 @@ on:
       - "StudyTimerAndVideo/Views/**"
       - "StudyTimerAndVideo/ContentView.swift"
       - "StudyTimerAndVideoUITests/LandscapeLayoutTests.swift"
+      - "StudyTimerAndVideoUITests/GoalFeatureTests.swift"
+      - "StudyTimerAndVideo/Models/**"
       - ".github/workflows/layout-check.yml"
 
 jobs:
@@ -86,11 +88,25 @@ jobs:
             -only-testing:StudyTimerAndVideoUITests/LandscapeLayoutTests \
             -resultBundlePath Layout.xcresult 2>&1 | grep -E "error|failed|passed|セーフエリア|Test Case" | tail -60
 
+      - name: Test goal screens
+        if: always()
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building \
+            -project StudyTimerAndVideo.xcodeproj \
+            -scheme StudyTimerAndVideo \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            -only-testing:StudyTimerAndVideoUITests/GoalFeatureTests \
+            -resultBundlePath Goal.xcresult 2>&1 | grep -E "error|failed|passed|はみ出し|Test Case" | tail -60
+
       - name: Export screens
         if: always()
         run: |
           mkdir -p screens
           xcrun xcresulttool export attachments --path Layout.xcresult --output-path screens || true
+          mkdir -p screens/goal
+          xcrun xcresulttool export attachments --path Goal.xcresult --output-path screens/goal || true
           ls -la screens
 
       - name: Upload

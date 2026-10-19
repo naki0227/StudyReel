@@ -131,6 +131,36 @@ struct BackupSnapshot: Codable {
         let targetDuration: Int
     }
 
+    // 1.6 で追加。長い目標
+    struct StudyGoalRecord: Codable {
+        let id: UUID
+        let title: String
+        let deadline: Date
+        let targetScore: Int?
+        let maxScore: Int?
+        let targetHours: Int?
+        let materialIDsRaw: String
+        let note: String
+        let createdAt: Date
+        let achievedAt: Date?
+        let achievedScore: Int?
+        let archivedAt: Date?
+    }
+
+    // 1.6 で追加。過去問・模試の結果
+    struct PaperRecord: Codable {
+        let id: UUID
+        let paperName: String
+        let date: Date
+        let score: Int?
+        let maxScore: Int?
+        let outcomeRaw: String
+        let durationSeconds: Int?
+        let memo: String
+        let partsJSON: String
+        let materialID: UUID?
+    }
+
     var version = 1
     var createdAt = Date()
     var sessions: [SessionRecord]
@@ -138,6 +168,8 @@ struct BackupSnapshot: Codable {
     var goals: [GoalRecord]
     // 古いバックアップにはないので省略できるようにしておく
     var materials: [MaterialRecord]?
+    var studyGoals: [StudyGoalRecord]?
+    var papers: [PaperRecord]?
 
     var mediaFileNames: [String] {
         sessions.flatMap { [$0.thumbnailFileName, $0.videoFileName].compactMap { $0 } }
@@ -150,6 +182,8 @@ struct BackupSnapshot: Codable {
         let tags = try context.fetch(FetchDescriptor<Tag>())
         let goals = try context.fetch(FetchDescriptor<DailyGoal>())
         let materials = try context.fetch(FetchDescriptor<StudyMaterial>())
+        let studyGoals = try context.fetch(FetchDescriptor<StudyGoal>())
+        let papers = try context.fetch(FetchDescriptor<PastPaperResult>())
 
         self.sessions = sessions.map {
             SessionRecord(
@@ -178,6 +212,20 @@ struct BackupSnapshot: Codable {
                 coverFileName: $0.coverFileName,
                 createdAt: $0.createdAt,
                 finishedAt: $0.finishedAt
+            )
+        }
+        self.studyGoals = studyGoals.map {
+            StudyGoalRecord(
+                id: $0.id, title: $0.title, deadline: $0.deadline, targetScore: $0.targetScore, maxScore: $0.maxScore,
+                targetHours: $0.targetHours, materialIDsRaw: $0.materialIDsRaw, note: $0.note, createdAt: $0.createdAt,
+                achievedAt: $0.achievedAt, achievedScore: $0.achievedScore, archivedAt: $0.archivedAt
+            )
+        }
+        self.papers = papers.map {
+            PaperRecord(
+                id: $0.id, paperName: $0.paperName, date: $0.date, score: $0.score, maxScore: $0.maxScore,
+                outcomeRaw: $0.outcomeRaw, durationSeconds: $0.durationSeconds, memo: $0.memo,
+                partsJSON: $0.partsJSON, materialID: $0.materialID
             )
         }
     }
@@ -213,6 +261,29 @@ struct BackupSnapshot: Codable {
                 createdAt: record.createdAt,
                 finishedAt: record.finishedAt
             ))
+        }
+
+        let goalIDs = try Set(context.fetch(FetchDescriptor<StudyGoal>()).map(\.id))
+        for record in studyGoals ?? [] where !goalIDs.contains(record.id) {
+            let goal = StudyGoal(
+                id: record.id, title: record.title, deadline: record.deadline, targetScore: record.targetScore,
+                maxScore: record.maxScore, targetHours: record.targetHours, note: record.note, createdAt: record.createdAt,
+                achievedAt: record.achievedAt, achievedScore: record.achievedScore, archivedAt: record.archivedAt
+            )
+            goal.materialIDsRaw = record.materialIDsRaw
+            context.insert(goal)
+        }
+
+        let paperIDs = try Set(context.fetch(FetchDescriptor<PastPaperResult>()).map(\.id))
+        for record in papers ?? [] where !paperIDs.contains(record.id) {
+            let paper = PastPaperResult(
+                id: record.id, paperName: record.paperName, date: record.date, score: record.score,
+                maxScore: record.maxScore, durationSeconds: record.durationSeconds, memo: record.memo,
+                materialID: record.materialID
+            )
+            paper.outcomeRaw = record.outcomeRaw
+            paper.partsJSON = record.partsJSON
+            context.insert(paper)
         }
 
         let existingIDs = try Set(context.fetch(FetchDescriptor<StudySession>()).map(\.id))

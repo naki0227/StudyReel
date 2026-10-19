@@ -20,6 +20,12 @@ struct StartView: View {
     @State private var showPaywall = false
     @State private var showNewSession = false
     @State private var showWeeklyVlog = false
+    // 長い目標と過去問
+    @State private var showNewGoal = false
+    @State private var editingGoal: StudyGoal?
+    @State private var sharingGoal: StudyGoal?
+    @State private var showScoreRecord = false
+    @State private var showPapers = false
 
     // タイマー設定値(時・分・秒)
     @State private var hours = 0
@@ -66,6 +72,17 @@ struct StartView: View {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     header
                         .padding(.bottom, 14)
+
+                    HomeGoalCard(
+                        sessions: sessions,
+                        onCreate: { showNewGoal = true },
+                        onEdit: { editingGoal = $0 },
+                        onRecordScore: { showScoreRecord = true },
+                        onPapers: { showPapers = true },
+                        onShare: { sharingGoal = $0 }
+                    )
+                    .padding(.top, 6)
+                    .padding(.bottom, 16)
 
                     todayStrip
                         .coachMark("home.today")
@@ -157,6 +174,24 @@ struct StartView: View {
             .sheet(isPresented: $showGoalSetting) {
                 GoalSettingView()
             }
+            .sheet(isPresented: $showNewGoal) {
+                // 作ったらすぐ宣言カードを開く
+                GoalEditView(goal: nil) { created in
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { sharingGoal = created }
+                }
+            }
+            .sheet(item: $editingGoal) { goal in
+                GoalEditView(goal: goal)
+            }
+            .sheet(item: $sharingGoal) { goal in
+                GoalShareView(goal: goal, initialKind: goal.isAchieved ? .achieved : (goal.dayNumber() <= 1 ? .declaration : .progress))
+            }
+            .sheet(isPresented: $showScoreRecord) {
+                ScoreRecordSheet(result: nil, paperName: nil)
+            }
+            .sheet(isPresented: $showPapers) {
+                PastPapersView()
+            }
             .sheet(isPresented: $showCalendar) {
                 CalendarView(subjectManager: subjectManager)
             }
@@ -240,6 +275,8 @@ struct StartView: View {
             switch screen {
             case "share": showShare = true
             case "materials": showMaterials = true
+            case "papers": showPapers = true
+            case "goalShare": sharingGoal = try? modelContext.fetch(FetchDescriptor<StudyGoal>()).first
             default: break
             }
         }
