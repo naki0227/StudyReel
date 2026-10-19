@@ -462,6 +462,11 @@ struct StartView: View {
 
     // 撮影の許可を確認してから録画画面を開く
     private func beginSession() {
+        // 紹介動画用のデモ表示ではカメラを使わないので、許可を求めずに始める
+        if DemoMode.isActive {
+            startSession(recordTimelapse: true)
+            return
+        }
         Task {
             if permissionManager.hasRequiredPermissions {
                 startSession(recordTimelapse: true)

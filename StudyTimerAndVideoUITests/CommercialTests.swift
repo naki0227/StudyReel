@@ -84,7 +84,7 @@ final class CommercialTests: XCTestCase {
         pause(1.2)
         tap(app.buttons["撮影をはじめる"])
         pause(2)
-        tap(app.buttons["開始"])
+        tap(app.buttons["開始"], timeout: 15)
         pause(4.5)
 
         // 画面を暗くする
