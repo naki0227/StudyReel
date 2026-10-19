@@ -48,7 +48,7 @@ jobs:
           # 起動が固まるランナーがあるので、時間を区切って1回だけやり直す
           for attempt in 1 2; do
             xcrun simctl boot "$udid" || true
-            if timeout 300 xcrun simctl bootstatus "$udid" -b; then break; fi
+            if perl -e "alarm 300; exec @ARGV" xcrun simctl bootstatus "$udid" -b; then break; fi
             echo "boot timed out, retrying"
             xcrun simctl shutdown "$udid" || true
           done
