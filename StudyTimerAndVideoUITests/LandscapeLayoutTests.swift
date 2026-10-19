@@ -1,7 +1,7 @@
 import XCTest
 
 // 横向きの録画画面と確認画面で、ボタンやスイッチが左右のセーフエリアの内側に収まっているかを確かめる。
-// Dynamic Island のある iPhone で動かす（layout-check.yml）。画面は成果物にも残す
+// Dynamic Island のある iPhone で動かす（layout-check.yml）。横幅の狭い Pro（874pt）ではみ出しやすい。画面は成果物にも残す
 final class LandscapeLayoutTests: XCTestCase {
     // 横向きのときの左右のセーフエリアの幅。Dynamic Island のある iPhone でいちばん狭いもの（59pt）に合わせる
     private let sideInset: CGFloat = 59
@@ -50,13 +50,26 @@ final class LandscapeLayoutTests: XCTestCase {
         let window = app.windows.firstMatch.frame
         XCTAssertGreaterThan(window.width, window.height, "\(screen): 横向きになっていません")
         let safe = window.insetBy(dx: sideInset, dy: 0)
+        // スクロールする欄は、欄そのものがセーフエリアに収まっていればよい（中身は欄の端で切れて、スクロールで出てくる）
+        let scrollFrames = app.scrollViews.allElementsBoundByIndex.map(\.frame).filter { !$0.isEmpty }
+        for frame in scrollFrames {
+            XCTAssert(
+                frame.minX >= safe.minX - 0.5 && frame.maxX <= safe.maxX + 0.5,
+                "\(screen): スクロールする欄がセーフエリアの外にあります: \(frame)（画面 \(window.width)pt、内側 \(safe.minX)〜\(safe.maxX)）"
+            )
+        }
         let kinds: [(String, XCUIElementQuery)] = [
             ("button", app.buttons), ("switch", app.switches), ("slider", app.sliders)
         ]
         for (kind, query) in kinds {
             for element in query.allElementsBoundByIndex where element.exists {
-                let frame = element.frame
-                guard !frame.isEmpty else { continue }
+                var frame = element.frame
+                // スクロールする欄の中なら、見えている部分だけを確かめる
+                let center = CGPoint(x: frame.midX, y: frame.midY)
+                for scroll in scrollFrames where scroll.contains(center) {
+                    frame = frame.intersection(scroll)
+                }
+                guard !frame.isNull, !frame.isEmpty else { continue }
                 XCTAssert(
                     frame.minX >= safe.minX - 0.5 && frame.maxX <= safe.maxX + 0.5,
                     "\(screen): \(kind) 「\(element.label)」(\(element.identifier)) がセーフエリアの外にあります: \(frame)（画面 \(window.width)pt、内側 \(safe.minX)〜\(safe.maxX)）"

@@ -23,7 +23,7 @@ jobs:
       matrix:
         include:
           - device: iphone
-            names: "iPhone 17 Pro Max,iPhone 16 Pro Max"
+            names: "iPhone 17 Pro,iPhone 16 Pro"
     steps:
       - uses: actions/checkout@v4
 
