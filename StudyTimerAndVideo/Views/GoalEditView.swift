@@ -66,6 +66,7 @@ struct GoalEditView: View {
                                     }
                                 }
                             }
+                            .accessibilityIdentifier("goal.title.chips")
                         }
                     }
                     .padding(.top, 8)
@@ -133,6 +134,7 @@ struct GoalEditView: View {
                                         }
                                     }
                                 }
+                                .accessibilityIdentifier("goal.materials.chips")
                             }
                             .padding(.vertical, 12)
                             .padding(.horizontal, 16)

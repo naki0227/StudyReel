@@ -77,6 +77,7 @@ struct ScoreRecordSheet: View {
                                         }
                                     }
                                 }
+                                .accessibilityIdentifier("record.paper.chips")
                             }
                         }
                         .padding(16)

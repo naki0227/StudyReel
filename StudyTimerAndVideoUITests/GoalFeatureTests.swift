@@ -31,9 +31,14 @@ final class GoalFeatureTests: XCTestCase {
 
     private func assertInsideScreen(_ app: XCUIApplication, _ screen: String) {
         let window = app.windows.firstMatch.frame
+        // 横にスクロールする候補の列（〜.chips）は、画面の外まで続くのが正しい
+        let chips = NSPredicate(format: "identifier ENDSWITH '.chips'")
+        let scrolling = app.scrollViews.matching(chips).allElementsBoundByIndex
+            .flatMap { $0.buttons.allElementsBoundByIndex.map(\.frame) }
         for element in app.buttons.allElementsBoundByIndex where element.exists && element.isHittable {
             let frame = element.frame
             guard !frame.isEmpty, frame.width < window.width else { continue }
+            guard !element.identifier.hasSuffix(".chips"), !scrolling.contains(frame) else { continue }
             XCTAssert(frame.minX >= window.minX - 0.5 && frame.maxX <= window.maxX + 0.5,
                       "\(screen): 「\(element.label)」が画面の外にはみ出しています: \(frame)")
         }
