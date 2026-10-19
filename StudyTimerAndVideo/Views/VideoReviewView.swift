@@ -429,12 +429,12 @@ struct VideoReviewView: View {
 
     private func filmstripView(height: CGFloat) -> some View {
         HStack(spacing: 0) {
+            // 画像の大きさで列の幅が広がらないよう、枠を先に決めてから画像を重ねる
             ForEach(Array(filmstrip.enumerated()), id: \.offset) { _, image in
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
+                Color.clear
                     .frame(maxWidth: .infinity)
                     .frame(height: height)
+                    .overlay(Image(uiImage: image).resizable().scaledToFill())
                     .clipped()
             }
         }
@@ -675,11 +675,10 @@ private struct TrimBar: View {
             ZStack(alignment: .leading) {
                 HStack(spacing: 0) {
                     ForEach(Array(frames.enumerated()), id: \.offset) { _, image in
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFill()
+                        Color.clear
                             .frame(maxWidth: .infinity)
                             .frame(height: geometry.size.height)
+                            .overlay(Image(uiImage: image).resizable().scaledToFill())
                             .clipped()
                     }
                 }
