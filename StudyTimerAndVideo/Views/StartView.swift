@@ -31,7 +31,7 @@ struct StartView: View {
     @StateObject private var draftStore = CurrentSessionDraftStore()
 
     @State private var showPermissionAlert = false
-    @State private var showWeeklyReport = false
+    @State private var showShare = false
     @AppStorage(OnboardingView.storageKey) private var hasSeenOnboarding = false
     @State private var sessionBootstrap: SessionBootstrap?
 
@@ -126,8 +126,8 @@ struct StartView: View {
             .sheet(isPresented: $showWeeklyVlog) {
                 WeeklyVlogView()
             }
-            .sheet(isPresented: $showWeeklyReport) {
-                WeeklyReportView()
+            .sheet(isPresented: $showShare) {
+                StudyShareView()
             }
             .sheet(isPresented: $showGoalSetting) {
                 GoalSettingView()
@@ -235,21 +235,21 @@ struct StartView: View {
         .buttonStyle(.plain)
     }
 
-    // 今週の合計と、家族に送るボタン
+    // 今週の合計と、共有ボタン（勉強垢のグループや SNS へ）
     private var weekShareRow: some View {
         let weekSeconds: Int = {
             guard let interval = Calendar.current.dateInterval(of: .weekOfYear, for: Date()) else { return 0 }
             return sessions.filter { interval.contains($0.date) }.reduce(0) { $0 + $1.duration }
         }()
         return Button {
-            showWeeklyReport = true
+            showShare = true
         } label: {
             HStack(spacing: 6) {
                 Text(L10n.format("今週 %@", compactDuration(weekSeconds)))
                     .foregroundColor(ReelTheme.secondary)
                 Spacer()
-                Image(systemName: "paperplane")
-                Text(L10n.string("家族に送る"))
+                Image(systemName: "square.and.arrow.up")
+                Text(L10n.string("共有する"))
             }
             .font(ReelTheme.sans(12))
             .foregroundColor(ReelTheme.accentDeep)
