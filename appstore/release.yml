@@ -10,6 +10,7 @@ version: "1.5"
 build: 219            # "latest" にすると、このバージョンで最後に上げたビルド
 release: manual       # manual: 承認されたら自分で公開 / after_approval: 承認されたらすぐ公開
 submit_for_review: true    # true にしてマージすると、反映したあと審査に出す
+withdraw_to_update: true   # 審査待ちのときにスクリーンショットが変わっていたら、取り下げて差し替えてから出し直す
 
 # Pro の課金アイテム（StoreKitManager.swift の productIDs と同じ）。
 # 状態を確かめて、まだ審査に出していないもの（READY_TO_SUBMIT）はバージョンと一緒に審査に出す
@@ -75,3 +76,38 @@ review:
 previews:
   ja:
     IPHONE_67: appstore/previews/ja-iphone67.mp4
+
+# ストアのスクリーンショット。書いた順に並ぶ（1〜3枚目が検索結果に出る）
+# 素材は store-shots.yml で撮り、tools/appstore/frames/compose.js で見出しをつける
+# APP_IPHONE_67 は「6.9インチ」（1320x2868）、APP_IPAD_PRO_3GEN_129 は「13インチ」（2064x2752）の枠
+screenshots:
+  ja:
+    APP_IPHONE_67:
+      - appstore/screenshots/ja/iphone-01.png
+      - appstore/screenshots/ja/iphone-02.png
+      - appstore/screenshots/ja/iphone-03.png
+      - appstore/screenshots/ja/iphone-04.png
+      - appstore/screenshots/ja/iphone-05.png
+      - appstore/screenshots/ja/iphone-06.png
+    APP_IPAD_PRO_3GEN_129:
+      - appstore/screenshots/ja/ipad-01.png
+      - appstore/screenshots/ja/ipad-02.png
+      - appstore/screenshots/ja/ipad-03.png
+      - appstore/screenshots/ja/ipad-04.png
+      - appstore/screenshots/ja/ipad-05.png
+      - appstore/screenshots/ja/ipad-06.png
+  en-US:
+    APP_IPHONE_67:
+      - appstore/screenshots/en/iphone-01.png
+      - appstore/screenshots/en/iphone-02.png
+      - appstore/screenshots/en/iphone-03.png
+      - appstore/screenshots/en/iphone-04.png
+      - appstore/screenshots/en/iphone-05.png
+      - appstore/screenshots/en/iphone-06.png
+    APP_IPAD_PRO_3GEN_129:
+      - appstore/screenshots/en/ipad-01.png
+      - appstore/screenshots/en/ipad-02.png
+      - appstore/screenshots/en/ipad-03.png
+      - appstore/screenshots/en/ipad-04.png
+      - appstore/screenshots/en/ipad-05.png
+      - appstore/screenshots/en/ipad-06.png
