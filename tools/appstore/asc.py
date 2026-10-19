@@ -283,6 +283,43 @@ def wait_previews(ids, minutes=20):
             time.sleep(30)
 
 
+def check_purchases(app_id, wanted_ids):
+    """Pro の課金アイテムが App Store Connect にあって、審査に出せる状態かを確かめる"""
+    if not wanted_ids:
+        return []
+    found = {}
+    for item in api("GET", f"/v1/apps/{app_id}/inAppPurchasesV2", params={"limit": 200})["data"]:
+        found[item["attributes"]["productId"]] = ("inAppPurchaseSubmissions", "inAppPurchaseV2", item)
+    groups = api("GET", f"/v1/apps/{app_id}/subscriptionGroups", params={"limit": 50})["data"]
+    for group in groups:
+        for item in api("GET", f"/v1/subscriptionGroups/{group['id']}/subscriptions", params={"limit": 50})["data"]:
+            found[item["attributes"]["productId"]] = ("subscriptionSubmissions", "subscription", item)
+    to_submit, ok = [], True
+    for pid in wanted_ids:
+        if pid not in found:
+            print(f"::error::課金アイテム {pid} が App Store Connect にありません")
+            ok = False
+            continue
+        kind, rel, item = found[pid]
+        state = item["attributes"].get("state")
+        print(f"課金アイテム {pid}: {state}")
+        if state == "READY_TO_SUBMIT":
+            to_submit.append((kind, rel, item["id"]))
+        elif state in ("MISSING_METADATA", "DEVELOPER_ACTION_NEEDED", "REJECTED"):
+            print(f"::warning::{pid} は {state}。App Store Connect で説明・価格・審査用スクリーンショットを埋めてください")
+            ok = False
+    if not ok:
+        print("::warning::課金アイテムに直すところがあります（上を見てください）")
+    return to_submit
+
+
+def submit_purchases(items):
+    for kind, rel, item_id in items:
+        api("POST", f"/v1/{kind}", {"data": {
+            "type": kind, "relationships": {rel: {"data": {"type": rel + "s", "id": item_id}}}}}, allow=(409,))
+        print(f"課金アイテム {item_id} を審査に出しました")
+
+
 def submit(app_id, version_id):
     subs = api("GET", "/v1/reviewSubmissions", params={
         "filter[app]": app_id, "filter[platform]": "IOS",
@@ -311,6 +348,7 @@ def main():
         print("dry run: App Store Connect は読むだけで、何も変えません")
 
     app_id = find_app(cfg["app"])
+    purchases = check_purchases(app_id, cfg.get("purchases") or [])
     version, versions = find_or_create_version(app_id, str(cfg["version"]))
     state = state_of(version)
     print(f"バージョン {version['attributes']['versionString']}: {state}")
@@ -334,6 +372,7 @@ def main():
             print("submit_for_review: true なので、マージすると審査に出します")
             return
         wait_previews(previews)
+        submit_purchases(purchases)
         submit(app_id, version["id"])
     else:
         print("submit_for_review: false なので、審査には出していません")

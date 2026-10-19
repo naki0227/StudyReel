@@ -11,6 +11,13 @@ build: 219            # "latest" にすると、このバージョンで最後�
 release: manual       # manual: 承認されたら自分で公開 / after_approval: 承認されたらすぐ公開
 submit_for_review: false   # true にしてマージすると、反映したあと審査に出す
 
+# Pro の課金アイテム（StoreKitManager.swift の productIDs と同じ）。
+# 状態を確かめて、まだ審査に出していないもの（READY_TO_SUBMIT）はバージョンと一緒に審査に出す
+purchases:
+  - com.ni.StudyReel.pro.monthly
+  - com.ni.StudyReel.pro.yearly
+  - com.ni.StudyReel.pro.lifetime
+
 localizations:
   ja:
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
