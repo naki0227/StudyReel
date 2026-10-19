@@ -137,6 +137,11 @@ struct OnboardingView: View {
     }
 
     private func requestAndFinish() {
+        // 紹介動画を撮るときは、許可のダイアログを出さずに進める
+        if DemoMode.isActive {
+            onFinish()
+            return
+        }
         isRequesting = true
         Task {
             await permissionManager.requestRequiredPermissionsIfNeeded()

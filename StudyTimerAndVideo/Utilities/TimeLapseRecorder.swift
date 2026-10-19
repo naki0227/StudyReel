@@ -92,6 +92,13 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     }
 
     private func setupSession() {
+        // 紹介動画用のデモ表示ではカメラを使わない（許可のダイアログも出さない）
+        if DemoMode.isActive {
+            DispatchQueue.main.async {
+                self.canCaptureVideo = false
+            }
+            return
+        }
         session.sessionPreset = .high
 
         // 設定で選んだカメラ（既定は前面）

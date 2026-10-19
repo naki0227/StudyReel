@@ -12,3 +12,4 @@ xcuserdata/
 # Workspace user data
 *.xcodeproj/project.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
+__pycache__/

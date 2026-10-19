@@ -1,0 +1,92 @@
+name: Commercial
+
+# 紹介動画（CM）の素材を撮る。シミュレータでデモ表示のアプリを UI テストで操作し、その画面を録画する。
+# Actions の画面から手動で動かすか、コミットメッセージに [commercial] を入れて push する
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+
+concurrency:
+  group: commercial-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  record:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[commercial]')
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -v -i beta | sort -V | tail -1 || true)
+          if [ -z "$xcode" ]; then echo "::error::Xcode 26 が見つかりません"; exit 1; fi
+          sudo xcode-select -s "$xcode"
+          xcodebuild -version
+
+      - name: Boot simulator
+        id: sim
+        timeout-minutes: 14
+        run: |
+          udid=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)["devices"]
+          wanted = ["iPhone 17 Pro", "iPhone 17", "iPhone 16 Pro", "iPhone 16"]
+          found = {}
+          for runtime, devices in data.items():
+              if "iOS" not in runtime:
+                  continue
+              for d in devices:
+                  found.setdefault(d["name"], d["udid"])
+          for name in wanted:
+              if name in found:
+                  print(found[name]); break
+          ')
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+          # 起動が固まるランナーがあるので、時間を区切って1回だけやり直す
+          for attempt in 1 2; do
+            xcrun simctl boot "$udid" || true
+            if perl -e "alarm 300; exec @ARGV" xcrun simctl bootstatus "$udid" -b; then break; fi
+            echo "boot timed out, retrying"
+            xcrun simctl shutdown "$udid" || true
+          done
+          xcrun simctl status_bar "$udid" override --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3
+          xcrun simctl ui "$udid" appearance light
+
+      - name: Build for testing
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing \
+            -project StudyTimerAndVideo.xcodeproj \
+            -scheme StudyTimerAndVideo \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tail -20
+
+      - name: Record
+        run: |
+          udid="${{ steps.sim.outputs.udid }}"
+          xcrun simctl io "$udid" recordVideo --codec=h264 --force raw.mp4 &
+          recorder=$!
+          sleep 3
+          xcodebuild test-without-building \
+            -project StudyTimerAndVideo.xcodeproj \
+            -scheme StudyTimerAndVideo \
+            -destination "id=$udid" \
+            -derivedDataPath build \
+            -only-testing:StudyTimerAndVideoUITests/CommercialTests \
+            -resultBundlePath Commercial.xcresult 2>&1 | tail -40 || true
+          sleep 2
+          kill -INT $recorder
+          wait $recorder || true
+          ls -la raw.mp4
+
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commercial-raw
+          path: raw.mp4
+          if-no-files-found: warn
