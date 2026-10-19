@@ -62,7 +62,8 @@ final class StoreScreenshotTests: XCTestCase {
         pause(6)
         shot("01-home")
 
-        tap(button(app, containing: label("共有する", "Share")))
+        // 「共有する」だけのボタンを押す（ラベルに含むだけだと、今週の欄全体を押してしまう）
+        tap(app.buttons[label("共有する", "Share")].firstMatch)
         pause(2)
         tap(app.buttons[label("今週", "This week")])
         pause(2.5)
@@ -70,7 +71,7 @@ final class StoreScreenshotTests: XCTestCase {
         tap(app.buttons[label("閉じる", "Close")])
         pause(1.5)
 
-        tap(button(app, containing: label("すべて見る", "See All")))
+        tap(app.buttons[label("すべて見る", "See All")].firstMatch)
         pause(3)
         shot("05-materials")
         tap(app.buttons[label("閉じる", "Close")])
@@ -92,12 +93,23 @@ final class StoreScreenshotTests: XCTestCase {
         pause(2)
         tap(app.buttons[label("開始", "Start")], timeout: 15)
         pause(4)
-        tap(app.buttons[label("勉強中の音", "Study Sounds")])
+        // 雨の音を選んでから、もう一度メニューを開いて選んだところを撮る
+        let sounds = app.buttons[label("勉強中の音", "Study Sounds")]
+        tap(sounds)
         pause(1.5)
         tap(app.buttons[label("雨の音", "Rain")])
-        pause(2.5)
+        pause(1.5)
+        if !app.buttons[label("集中ノイズ", "Focus Noise")].exists {
+            tap(sounds)
+        }
+        pause(1.5)
         shot("02-recording")
 
+        // メニューを閉じてから終了する（iPad ではメニューが開いたままになる）
+        if app.buttons[label("集中ノイズ", "Focus Noise")].exists {
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            pause(1.2)
+        }
         tap(app.buttons[label("終了して保存", "Stop & Save")])
         pause(4)
         tap(button(app, containing: label("モザイク", "Mosaic")), timeout: 15)
