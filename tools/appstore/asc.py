@@ -582,10 +582,17 @@ def main():
     version, versions = find_or_create_version(app_id, str(cfg["version"]))
     state = state_of(version)
     print(f"バージョン {version['attributes']['versionString']}: {state}")
-    # 審査待ちでも、スクリーンショットを入れ替えたいときは取り下げてから直す（withdraw_to_update: true のとき）
+    # 審査待ちでも、スクリーンショットやビルドを入れ替えたいときは取り下げてから直す（withdraw_to_update: true のとき）
     if state == "WAITING_FOR_REVIEW" and cfg.get("withdraw_to_update"):
         locs = api("GET", f"/v1/appStoreVersions/{version['id']}/appStoreVersionLocalizations")["data"]
-        if screenshot_changes({l["attributes"]["locale"]: l for l in locs}, cfg, root):
+        shots_changed = screenshot_changes({l["attributes"]["locale"]: l for l in locs}, cfg, root)
+        # 新しいビルドは処理が終わってから取り下げる（使えないビルドのために審査を止めない）
+        build = find_build(app_id, cfg, wait_minutes=0 if DRY else 30)
+        current = api("GET", f"/v1/appStoreVersions/{version['id']}/relationships/build")
+        build_changed = (current.get("data") or {}).get("id") != build["id"]
+        if build_changed:
+            print(f"ビルドを {build['attributes']['version']} に差し替えます")
+        if shots_changed or build_changed:
             withdraw(app_id, version)
             state = "DEVELOPER_REJECTED"
             # 一緒に取り下がった課金アイテムも、もう一度出せるように数え直す
