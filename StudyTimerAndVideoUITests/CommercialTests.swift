@@ -6,6 +6,14 @@ final class CommercialTests: XCTestCase {
     override func setUpWithError() throws {
         // 途中のボタンが見つからなくても、残りの場面は撮り続ける
         continueAfterFailure = true
+        // 権限などのダイアログが出たら閉じて先に進む
+        addUIInterruptionMonitor(withDescription: "System alert") { alert in
+            for title in ["Allow", "許可", "OK", "Allow While Using App", "Don’t Allow"] where alert.buttons[title].exists {
+                alert.buttons[title].tap()
+                return true
+            }
+            return false
+        }
     }
 
     private func launch(_ extra: [String]) -> XCUIApplication {

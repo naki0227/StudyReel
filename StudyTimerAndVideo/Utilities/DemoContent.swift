@@ -98,12 +98,16 @@ enum DemoArt {
         }
 
         // 体と頭
-        ctx.setFillColor(p.shirt.cgColor)
-        ctx.fillEllipse(in: CGRect(x: w * 0.5 - base * 0.30, y: h * 0.56, width: base * 0.60, height: base * 0.55))
-        ctx.setFillColor(UIColor(red: 0.80, green: 0.64, blue: 0.53, alpha: 1).cgColor)
-        ctx.fill(CGRect(x: w * 0.5 - base * 0.04, y: h * 0.48, width: base * 0.08, height: h * 0.10))
         let face = faceRect(for: size)
         let faceFrame = CGRect(x: face.minX * w, y: face.minY * h, width: face.width * w, height: face.height * h)
+        // 首は短く、肩は広めに（机の下に隠れるので下はそのまま）
+        ctx.setFillColor(UIColor(red: 0.80, green: 0.64, blue: 0.53, alpha: 1).cgColor)
+        ctx.fill(CGRect(x: w * 0.5 - base * 0.045, y: faceFrame.maxY - faceFrame.height * 0.12, width: base * 0.09, height: base * 0.08))
+        ctx.setFillColor(p.shirt.cgColor)
+        let shoulders = CGRect(x: w * 0.5 - base * 0.36, y: faceFrame.maxY + base * 0.03, width: base * 0.72, height: base * 0.9)
+        ctx.addPath(UIBezierPath(roundedRect: shoulders, cornerRadius: base * 0.22).cgPath)
+        ctx.fillPath()
+        ctx.setFillColor(UIColor(red: 0.80, green: 0.64, blue: 0.53, alpha: 1).cgColor)
         ctx.fillEllipse(in: faceFrame.insetBy(dx: faceFrame.width * 0.05, dy: faceFrame.height * 0.04))
         ctx.setFillColor(UIColor(red: 0.20, green: 0.15, blue: 0.12, alpha: 1).cgColor)
         ctx.fillEllipse(in: CGRect(x: faceFrame.minX, y: faceFrame.minY - faceFrame.height * 0.06, width: faceFrame.width, height: faceFrame.height * 0.48))
@@ -180,7 +184,7 @@ enum DemoArt {
     }
 
     // 短い動画（タイムラプス風）を書き出す。顔にはモザイクをかけた状態で作る
-    static func writeVideo(to url: URL, palette: Palette, size: CGSize = CGSize(width: 720, height: 1280), frames: Int = 60, mosaic: Bool) -> Bool {
+    static func writeVideo(to url: URL, palette: Palette, size: CGSize = CGSize(width: 540, height: 960), frames: Int = 40, mosaic: Bool) -> Bool {
         try? FileManager.default.removeItem(at: url)
         guard let writer = try? AVAssetWriter(outputURL: url, fileType: .mov) else { return false }
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [

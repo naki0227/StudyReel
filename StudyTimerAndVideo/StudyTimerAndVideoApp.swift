@@ -77,7 +77,7 @@ struct StudyTimerAndVideoApp: App {
                     DemoSeeder.prepare(context: context)
                 }
                 // すでに使っている人には案内を出さない
-                if !hasSeenOnboarding, (try? context.fetchCount(FetchDescriptor<StudySession>())) ?? 0 > 0 {
+                if !hasSeenOnboarding, !DemoMode.showsOnboarding, (try? context.fetchCount(FetchDescriptor<StudySession>())) ?? 0 > 0 {
                     hasSeenOnboarding = true
                 }
                 let migrator = DataMigrator(modelContext: context)
