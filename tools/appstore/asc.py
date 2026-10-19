@@ -384,7 +384,8 @@ def ensure_purchase(app_id, spec, root):
         attrs = old["attributes"]
         delivery = attrs.get("assetDeliveryState") or {}
         print(f"{pid}: 今の審査用スクリーンショット {attrs.get('fileName')} {attrs.get('fileSize')} bytes, {delivery}")
-        if attrs.get("fileName") == name and attrs.get("fileSize") == len(blob) and delivery.get("state") != "FAILED":
+        # Apple は受け取ったファイルの名前を "SOURCE" に変えるので、大きさで同じものかを見る
+        if attrs.get("fileSize") == len(blob) and delivery.get("state") != "FAILED":
             return
     if old:
         api("DELETE", f"/v1/inAppPurchaseAppStoreReviewScreenshots/{old['id']}")
