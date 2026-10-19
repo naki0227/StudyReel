@@ -1,0 +1,118 @@
+import XCTest
+
+// App Store に載せるスクリーンショット用に、デモ表示のアプリの画面を順に撮る。
+// 言語は環境変数 SHOT_LANG（ja / en）で選ぶ。store-shots.yml が TEST_RUNNER_SHOT_LANG で渡す
+final class StoreScreenshotTests: XCTestCase {
+    private var isEnglish: Bool {
+        ProcessInfo.processInfo.environment["SHOT_LANG"] == "en"
+    }
+
+    override func setUpWithError() throws {
+        continueAfterFailure = true
+        addUIInterruptionMonitor(withDescription: "System alert") { alert in
+            for title in ["Allow", "許可", "OK", "Allow While Using App"] where alert.buttons[title].exists {
+                alert.buttons[title].tap()
+                return true
+            }
+            return false
+        }
+    }
+
+    private func launch(_ extra: [String] = []) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = ["-StudyReelDemo"] + extra + (isEnglish
+            ? ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+            : ["-AppleLanguages", "(ja)", "-AppleLocale", "ja_JP"])
+        app.launch()
+        return app
+    }
+
+    private func label(_ ja: String, _ en: String) -> String { isEnglish ? en : ja }
+
+    private func pause(_ seconds: Double) {
+        Thread.sleep(forTimeInterval: seconds)
+    }
+
+    @discardableResult
+    private func tap(_ element: XCUIElement, timeout: Double = 10) -> Bool {
+        guard element.waitForExistence(timeout: timeout) else { return false }
+        if element.isHittable {
+            element.tap()
+        } else {
+            element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        }
+        return true
+    }
+
+    private func shot(_ name: String) {
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    // 共有と教材は、ボタンを押す代わりに起動引数で直接開く（ホームのボタンはテストから押しにくい）
+    @MainActor
+    func test3Share() throws {
+        let app = launch(["-StudyReelDemoScreen", "share"])
+        pause(6)
+        tap(app.buttons[label("今週", "This week")])
+        pause(2.5)
+        shot("04-share")
+    }
+
+    @MainActor
+    func test4Materials() throws {
+        _ = launch(["-StudyReelDemoScreen", "materials"])
+        pause(7)
+        shot("05-materials")
+    }
+
+    // ホームと1週間のVlog
+    @MainActor
+    func test1Home() throws {
+        let app = launch()
+        pause(6)
+        shot("01-home")
+
+        tap(app.buttons[label("1週間のVlog", "Weekly Vlog")])
+        pause(3.5)
+        shot("06-vlog")
+    }
+
+    // 録画中（勉強中の音を選ぶところ）と、終わったあとの仕上げ
+    @MainActor
+    func test2Recording() throws {
+        let app = launch(["-StudyReelDemoTool", "mosaic"])
+        pause(5)
+        tap(app.buttons[label("新しい記録", "New Session")])
+        pause(1.5)
+        tap(app.buttons[label("撮影をはじめる", "Start Recording")])
+        pause(2)
+        tap(app.buttons[label("開始", "Start")], timeout: 15)
+        pause(4)
+        // 雨の音を選んでから、もう一度メニューを開いて選んだところを撮る
+        let sounds = app.buttons[label("勉強中の音", "Study Sounds")]
+        tap(sounds)
+        pause(1.5)
+        tap(app.buttons[label("雨の音", "Rain")])
+        pause(1.5)
+        if !app.buttons[label("集中ノイズ", "Focus Noise")].exists {
+            tap(sounds)
+        }
+        pause(1.5)
+        shot("02-recording")
+
+        // メニューを閉じてから終了する（iPad ではメニューが開いたままになる）
+        if app.buttons[label("集中ノイズ", "Focus Noise")].exists {
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            pause(1.2)
+        }
+        tap(app.buttons[label("終了して保存", "Stop & Save")])
+        pause(4)
+        // 確認画面はモザイクの道具を開いた状態で出る
+        _ = app.buttons["review.tool.mosaic"].waitForExistence(timeout: 15)
+        pause(2.5)
+        shot("03-review")
+    }
+}

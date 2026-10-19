@@ -9,13 +9,13 @@ on:
   push:
     branches: ["claude/**"]
 
-concurrency:
-  group: review-shot-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   shoot:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[review-shot]')
+    concurrency:
+      group: review-shot-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: macos-15
     timeout-minutes: 45
     steps:

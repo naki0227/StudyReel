@@ -1,0 +1,46 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:Mincho;src:url(fonts/ShipporiMincho-SemiBold.ttf)}
+@font-face{font-family:Zen;src:url(fonts/ZenKakuGothicNew-Medium.ttf)}
+@font-face{font-family:Corm;src:url(fonts/CormorantGaramond.ttf)}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{overflow:hidden}
+body{position:relative;background:radial-gradient(120% 80% at 15% 5%,#FFFFFF 0,#F3F6F9 45%,#DCE8F2 100%);color:#2E3A46}
+.cloud{position:absolute;border-radius:50%;background:rgba(255,255,255,.8);filter:blur(60px)}
+.cap{position:absolute;left:0;right:0;text-align:center}
+.no{font-family:Corm;color:#8DB4D6;letter-spacing:.3em}
+.title{font-family:Mincho;letter-spacing:.06em;line-height:1.35}
+.en .title{font-family:Corm;font-weight:600;letter-spacing:.01em;line-height:1.15}
+.sub{font-family:Zen;color:#6F7F8E;letter-spacing:.04em}
+.shot{position:absolute;left:50%;transform:translateX(-50%);overflow:hidden;
+  box-shadow:0 40px 90px rgba(46,58,70,.22),0 0 0 1px rgba(46,58,70,.06)}
+.shot img{display:block;width:100%;height:auto}
+</style></head><body>
+<div class="cloud" id="c1"></div><div class="cloud" id="c2"></div>
+<div class="cap" id="cap"><div class="no" id="no"></div><div class="title" id="title"></div><div class="sub" id="sub"></div></div>
+<div class="shot" id="shot"><img id="img"></div>
+<script>
+window.setup = ({w, h, no, title, sub, src, lang, ipad}) => {
+  document.body.style.width = w + 'px'; document.body.style.height = h + 'px';
+  document.body.className = lang;
+  const u = w / 1320;
+  const cap = document.getElementById('cap');
+  cap.style.top = (ipad ? 150 : 190) * u + 'px';
+  const label = document.getElementById('no');
+  label.textContent = no;
+  label.style.fontSize = 46 * u + 'px';
+  label.style.marginBottom = 30 * u + 'px';
+  const t = document.getElementById('title'); t.innerHTML = title;
+  t.style.fontSize = (lang === 'en' ? 112 : 92) * u * (ipad ? 0.85 : 1) + 'px';
+  const s = document.getElementById('sub'); s.textContent = sub;
+  s.style.fontSize = 44 * u * (ipad ? 0.85 : 1) + 'px'; s.style.marginTop = 34 * u + 'px';
+  const scale = ipad ? 0.74 : 0.76;
+  const shot = document.getElementById('shot');
+  shot.style.width = w * scale + 'px';
+  shot.style.top = (ipad ? 640 : 700) * u + 'px';
+  shot.style.borderRadius = (ipad ? 60 : 120) * u + 'px';
+  document.getElementById('img').src = src;
+  const c1 = document.getElementById('c1'); Object.assign(c1.style, {width: w*0.9+'px', height: w*0.35+'px', left: -w*0.25+'px', top: h*0.82+'px'});
+  const c2 = document.getElementById('c2'); Object.assign(c2.style, {width: w*0.6+'px', height: w*0.25+'px', left: w*0.55+'px', top: h*0.05+'px'});
+  return document.fonts.ready.then(() => new Promise(r => { const i = document.getElementById('img'); i.complete ? r() : i.onload = r; }));
+};
+</script></body></html>

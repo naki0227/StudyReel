@@ -7,13 +7,13 @@ on:
   push:
     branches: ["claude/**"]
 
-concurrency:
-  group: commercial-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   record:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[commercial]')
+    concurrency:
+      group: commercial-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: macos-15
     timeout-minutes: 60
     steps:
