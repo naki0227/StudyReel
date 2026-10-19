@@ -112,7 +112,10 @@ struct StartView: View {
             .coachTour(homeTourSteps, isPresented: $showHomeTour) {
                 hasSeenHomeTour = true
             }
-            .onAppear { startHomeTourIfNeeded() }
+            .onAppear {
+                startHomeTourIfNeeded()
+                openDemoScreenIfNeeded()
+            }
             .onChange(of: hasSeenOnboarding) { startHomeTourIfNeeded() }
             .onChange(of: hasSeenHomeTour) { startHomeTourIfNeeded() }
             // 録画の設定そのものを渡して開く。設定が届く前に空の画面が出て真っ暗になるのを防ぐ
@@ -228,6 +231,18 @@ struct StartView: View {
                 .foregroundColor(ReelTheme.secondary)
         }
         .accessibilityLabel(label)
+    }
+
+    // スクショ用のデモ表示で、指定された画面をすぐ開く
+    private func openDemoScreenIfNeeded() {
+        guard let screen = DemoMode.screen else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            switch screen {
+            case "share": showShare = true
+            case "materials": showMaterials = true
+            default: break
+            }
+        }
     }
 
     // 今日の勉強時間と目標。タップで目標を設定する

@@ -11,7 +11,7 @@ struct VideoReviewView: View {
 
     @StateObject private var player: ReviewPlayer
     @State private var result: RecordingResult
-    @State private var tool: EditTool = .cut
+    @State private var tool: EditTool = DemoMode.reviewTool.flatMap(EditTool.init(rawValue:)) ?? .cut
     @State private var saveOption: VideoSaveOption = RecordingSettings.autoMosaic ? .hidden : .plain
     @State private var filter: VideoFilter = .none
     @State private var bgm: BGMTrack = .none

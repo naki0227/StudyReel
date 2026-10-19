@@ -18,9 +18,9 @@ final class StoreScreenshotTests: XCTestCase {
         }
     }
 
-    private func launch() -> XCUIApplication {
+    private func launch(_ extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-StudyReelDemo"] + (isEnglish
+        app.launchArguments = ["-StudyReelDemo"] + extra + (isEnglish
             ? ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
             : ["-AppleLanguages", "(ja)", "-AppleLocale", "ja_JP"])
         app.launch()
@@ -51,26 +51,29 @@ final class StoreScreenshotTests: XCTestCase {
         add(attachment)
     }
 
-    // ホーム・共有・教材・1週間のVlog
+    // 共有と教材は、ボタンを押す代わりに起動引数で直接開く（ホームのボタンはテストから押しにくい）
+    @MainActor
+    func test3Share() throws {
+        let app = launch(["-StudyReelDemoScreen", "share"])
+        pause(6)
+        tap(app.buttons[label("今週", "This week")])
+        pause(2.5)
+        shot("04-share")
+    }
+
+    @MainActor
+    func test4Materials() throws {
+        _ = launch(["-StudyReelDemoScreen", "materials"])
+        pause(7)
+        shot("05-materials")
+    }
+
+    // ホームと1週間のVlog
     @MainActor
     func test1Home() throws {
         let app = launch()
         pause(6)
         shot("01-home")
-
-        tap(app.buttons["home.share"])
-        pause(2)
-        tap(app.buttons[label("今週", "This week")])
-        pause(2.5)
-        shot("04-share")
-        tap(app.buttons[label("閉じる", "Close")])
-        pause(1.5)
-
-        tap(app.buttons["home.materials"])
-        pause(3)
-        shot("05-materials")
-        tap(app.buttons[label("閉じる", "Close")])
-        pause(1.5)
 
         tap(app.buttons[label("1週間のVlog", "Weekly Vlog")])
         pause(3.5)
@@ -80,7 +83,7 @@ final class StoreScreenshotTests: XCTestCase {
     // 録画中（勉強中の音を選ぶところ）と、終わったあとの仕上げ
     @MainActor
     func test2Recording() throws {
-        let app = launch()
+        let app = launch(["-StudyReelDemoTool", "mosaic"])
         pause(5)
         tap(app.buttons[label("新しい記録", "New Session")])
         pause(1.5)
@@ -107,7 +110,8 @@ final class StoreScreenshotTests: XCTestCase {
         }
         tap(app.buttons[label("終了して保存", "Stop & Save")])
         pause(4)
-        tap(app.buttons["review.tool.mosaic"], timeout: 15)
+        // 確認画面はモザイクの道具を開いた状態で出る
+        _ = app.buttons["review.tool.mosaic"].waitForExistence(timeout: 15)
         pause(2.5)
         shot("03-review")
     }

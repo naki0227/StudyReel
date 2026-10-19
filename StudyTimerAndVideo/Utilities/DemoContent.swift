@@ -18,6 +18,18 @@ enum DemoMode {
     static var showsOnboarding: Bool {
         ProcessInfo.processInfo.arguments.contains("-StudyReelDemoOnboarding")
     }
+
+    // スクショ用に、起動したらすぐ開く画面（-StudyReelDemoScreen share / materials）
+    static var screen: String? { value(after: "-StudyReelDemoScreen") }
+
+    // 確認画面で最初に開く道具（-StudyReelDemoTool mosaic など）
+    static var reviewTool: String? { value(after: "-StudyReelDemoTool") }
+
+    private static func value(after flag: String) -> String? {
+        let args = ProcessInfo.processInfo.arguments
+        guard isActive, let i = args.firstIndex(of: flag), i + 1 < args.count else { return nil }
+        return args[i + 1]
+    }
 }
 
 // 机で勉強している人のイラスト。t（0〜1）でペンや窓の光が少しずつ動く
