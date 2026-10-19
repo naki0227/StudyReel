@@ -8,13 +8,13 @@ on:
   push:
     branches: ["claude/**"]
 
-concurrency:
-  group: store-shots-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   shoot:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[store-shots]')
+    concurrency:
+      group: store-shots-${{ github.ref }}-${{ matrix.device }}
+      cancel-in-progress: true
     runs-on: macos-15
     timeout-minutes: 60
     strategy:
