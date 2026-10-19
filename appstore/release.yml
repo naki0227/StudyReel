@@ -80,6 +80,8 @@ previews:
 # ストアのスクリーンショット。書いた順に並ぶ（1〜3枚目が検索結果に出る）
 # 素材は store-shots.yml で撮り、tools/appstore/frames/compose.js で見出しをつける
 # APP_IPHONE_67 は「6.9インチ」（1320x2868）、APP_IPAD_PRO_3GEN_129 は「13インチ」（2064x2752）の枠
+# ほかのサイズの iPhone・iPad には、この2つの枠の画像が自動で使われる
+remove_other_screenshots: true   # ここに書いていない枠（古い 6.5 インチなど）の画像は消す
 screenshots:
   ja:
     APP_IPHONE_67:
