@@ -35,6 +35,7 @@ struct HomeGoalCard: View {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .strokeBorder(ReelTheme.accent.opacity(0.6), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                 )
+                .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("home.goal.create")
@@ -65,6 +66,8 @@ struct HomeGoalCard: View {
                             .multilineTextAlignment(.trailing)
                     }
                     .padding(.top, 8)
+                    // 文字のあいだの余白も押せるようにする
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("home.goal.edit")

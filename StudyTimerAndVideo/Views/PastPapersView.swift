@@ -227,6 +227,7 @@ struct PastPapersView: View {
                                 .foregroundColor(ReelTheme.secondary)
                         }
                         .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
