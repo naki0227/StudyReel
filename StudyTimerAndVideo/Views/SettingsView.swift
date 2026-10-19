@@ -146,6 +146,14 @@ struct SettingsView: View {
 
                     sectionTitle(L10n.string("その他"))
                     card {
+                        Button {
+                            // 閉じてホームに戻ると、ホームの案内から出し直す
+                            CoachTour.reset()
+                            dismiss()
+                        } label: {
+                            ReelRow(systemImage: "questionmark.circle", title: L10n.string("使い方をもう一度見る")) { chevron }
+                        }
+                        divider
                         Link(destination: privacyPolicyURL) {
                             ReelRow(systemImage: "hand.raised", title: L10n.string("プライバシーポリシー")) { chevron }
                         }

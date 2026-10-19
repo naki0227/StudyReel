@@ -35,6 +35,8 @@ struct ContentView: View {
     @State private var isDimmed = false
     @State private var brightnessBeforeDim: CGFloat?
     @State private var tickCount = 0
+    @AppStorage(CoachTour.recordingKey) private var hasSeenRecordingTour = false
+    @State private var showRecordingTour = false
 
     var subjectManager: SubjectManager
     var totalSeconds: Int
@@ -98,6 +100,9 @@ struct ContentView: View {
         }
         .animation(.easeOut(duration: 0.25), value: isDimmed)
         .animation(.easeOut(duration: 0.25), value: showResumeCard)
+        .coachTour(recordingTourSteps, isPresented: $showRecordingTour) {
+            hasSeenRecordingTour = true
+        }
         .alert(videoSaved ? L10n.string("保存完了") : L10n.string("動画を保存できませんでした"), isPresented: $showSaveAlert) {
             Button(L10n.string("OK")) {
                 showSaveSheet = true
@@ -166,6 +171,11 @@ struct ContentView: View {
             // Pro が切れていたら、覚えていた撮り方をタイムラプスに戻す
             if recordingMode.isPro && !storeKit.isProUnlocked {
                 recordingMode = .timelapse
+            }
+            if !hasSeenRecordingTour && bootstrap?.autoStart != true {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    if !isRecording { showRecordingTour = true }
+                }
             }
             guard bootstrap?.autoStart == true, !didAutoStart else { return }
             didAutoStart = true
@@ -268,6 +278,7 @@ struct ContentView: View {
                     .frame(height: 38)
                     .background(Capsule().fill(Color.white.opacity(0.22)))
                 }
+                .coachMark("rec.orientation")
                 .accessibilityLabel(L10n.format("%@に切り替える", captureOrientation.toggled.title))
             }
 
@@ -298,6 +309,7 @@ struct ContentView: View {
         }
         .foregroundColor(.white)
         .shadow(color: .black.opacity(0.4), radius: 6, x: 0, y: 1)
+        .coachMark("rec.timer")
     }
 
     // カメラのシャッターのような丸いボタン。開始前は丸、録画中は四角
@@ -325,6 +337,7 @@ struct ContentView: View {
             }
             .shadow(color: .black.opacity(0.25), radius: 8)
         }
+        .coachMark("rec.shutter")
         .accessibilityLabel(L10n.string(isRecording ? "終了して保存" : "開始"))
     }
 
@@ -339,6 +352,15 @@ struct ContentView: View {
                 .background(Circle().fill(Color.white.opacity(0.22)))
         }
         .accessibilityLabel(L10n.string(isPaused ? "再開" : "一時停止"))
+    }
+
+    private var recordingTourSteps: [CoachStep] {
+        [
+            CoachStep(id: "rec.shutter", title: L10n.string("ここで開始"), message: L10n.string("押すとタイマーと撮影が始まります。もう一度押すと終了して、確認画面に進みます。")),
+            CoachStep(id: "rec.mode", title: L10n.string("撮り方を選ぶ"), message: L10n.string("タイムラプスは数秒に1枚撮ってつなげます。全部録画（Pro）はずっと動画で残します。")),
+            CoachStep(id: "rec.orientation", title: L10n.string("縦か横か"), message: L10n.string("縦向きはリール向け、横向きは机全体が入ります。")),
+            CoachStep(id: "rec.timer", title: L10n.string("残り時間"), message: L10n.string("録画中は🌙ボタンで画面を暗くできます。録画は続いたままです。"))
+        ]
     }
 
     private var dimButton: some View {
@@ -416,6 +438,11 @@ struct ContentView: View {
     }
 
     private var modeChips: some View {
+        modeChipRow
+            .coachMark("rec.mode")
+    }
+
+    private var modeChipRow: some View {
         HStack(spacing: 6) {
             ForEach(RecordingMode.allCases) { option in
                 Button {

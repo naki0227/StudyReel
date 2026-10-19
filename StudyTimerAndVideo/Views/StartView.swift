@@ -37,6 +37,8 @@ struct StartView: View {
     @State private var showShare = false
     @State private var showMaterials = false
     @AppStorage(OnboardingView.storageKey) private var hasSeenOnboarding = false
+    @AppStorage(CoachTour.homeKey) private var hasSeenHomeTour = false
+    @State private var showHomeTour = false
     @State private var sessionBootstrap: SessionBootstrap?
 
     var today: Date {
@@ -66,14 +68,18 @@ struct StartView: View {
                         .padding(.bottom, 14)
 
                     todayStrip
+                        .coachMark("home.today")
                         .padding(.bottom, 12)
                     weekShareRow
+                        .coachMark("home.share")
                         .padding(.bottom, 18)
                     materialsStrip
+                        .coachMark("home.materials")
                         .padding(.bottom, 22)
 
                     if sessions.isEmpty {
                         emptyState
+                            .coachMark("home.gallery")
                     } else {
                         ForEach(monthSections) { section in
                             Text(monthTitle(section.month))
@@ -89,6 +95,7 @@ struct StartView: View {
                                 } label: {
                                     galleryRow(session, showsDay: showsDay)
                                 }
+                                .coachMarkIf(session.id == sessions.first?.id, "home.gallery")
                                 .buttonStyle(.plain)
                                 .padding(.bottom, 14)
                             }
@@ -102,6 +109,12 @@ struct StartView: View {
             }
             .background(ReelTheme.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
+            .coachTour(homeTourSteps, isPresented: $showHomeTour) {
+                hasSeenHomeTour = true
+            }
+            .onAppear { startHomeTourIfNeeded() }
+            .onChange(of: hasSeenOnboarding) { startHomeTourIfNeeded() }
+            .onChange(of: hasSeenHomeTour) { startHomeTourIfNeeded() }
             // 録画の設定そのものを渡して開く。設定が届く前に空の画面が出て真っ暗になるのを防ぐ
             .fullScreenCover(item: $sessionBootstrap) { bootstrap in
                 ContentView(
@@ -186,10 +199,13 @@ struct StartView: View {
 
             Spacer()
 
-            headerIcon("film.stack", label: L10n.string("1週間のVlog")) { showWeeklyVlog = true }
-            headerIcon("chart.bar", label: L10n.string("統計")) { showStatsView = true }
-            headerIcon("calendar", label: L10n.string("カレンダー")) { showCalendar = true }
-            headerIcon("gearshape", label: L10n.string("設定・情報")) { showSettings = true }
+            HStack(spacing: 16) {
+                headerIcon("film.stack", label: L10n.string("1週間のVlog")) { showWeeklyVlog = true }
+                headerIcon("chart.bar", label: L10n.string("統計")) { showStatsView = true }
+                headerIcon("calendar", label: L10n.string("カレンダー")) { showCalendar = true }
+                headerIcon("gearshape", label: L10n.string("設定・情報")) { showSettings = true }
+            }
+            .coachMark("home.tools")
 
             Button {
                 showNewSession = true
@@ -201,6 +217,7 @@ struct StartView: View {
                     .background(Circle().fill(ReelTheme.accentSoft))
             }
             .accessibilityLabel(L10n.string("新しい記録"))
+            .coachMark("home.new")
         }
     }
 
@@ -242,6 +259,30 @@ struct StartView: View {
             }
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - 初回の案内
+
+    private var homeTourSteps: [CoachStep] {
+        [
+            CoachStep(id: "home.new", title: L10n.string("ここから記録を始めます"), message: L10n.string("時間と教材を選んで「撮影をはじめる」を押すだけです。")),
+            CoachStep(id: "home.today", title: L10n.string("今日の勉強時間"), message: L10n.string("タップすると、1日の目標を決められます。")),
+            CoachStep(id: "home.share", title: L10n.string("記録を共有"), message: L10n.string("今日や今週の勉強を、画像にして勉強垢やグループに送れます。")),
+            CoachStep(id: "home.materials", title: L10n.string("教材ごとに記録"), message: L10n.string("参考書を登録すると、教材ごとに時間がたまります。バーコードでも登録できます。")),
+            CoachStep(id: "home.tools", title: L10n.string("Vlog・統計・カレンダー・設定"), message: L10n.string("左から、1週間のVlog作り、統計、カレンダー、設定です。")),
+            CoachStep(id: "home.gallery", title: L10n.string("撮った記録が並びます"), message: L10n.string("タップすると動画を見返したり、メモを書き足したりできます。"))
+        ]
+    }
+
+    private func startHomeTourIfNeeded() {
+        guard hasSeenOnboarding, !hasSeenHomeTour, !showHomeTour, SessionRecovery.pendingSession == nil else { return }
+        // 初回の案内やスプラッシュが消えてから出す
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+            guard !hasSeenHomeTour, sessionBootstrap == nil else { return }
+            withAnimation(.easeOut(duration: 0.3)) {
+                showHomeTour = true
+            }
+        }
     }
 
     // 勉強中の教材を表紙で並べる。タップで教材の一覧へ
