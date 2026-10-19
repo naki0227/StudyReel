@@ -342,7 +342,8 @@ enum DemoSeeder {
     // 録画を止めたとき、確認画面に渡すデモの動画
     static func recordingResult(sessionStart: Date) -> RecordingResult? {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("demo-recording.mov")
-        let size = CGSize(width: 720, height: 1280)
+        // 撮影の向きに合わせる（横向きなら横長の動画）
+        let size = DemoMode.orientation.isLandscape ? CGSize(width: 1280, height: 720) : CGSize(width: 720, height: 1280)
         guard DemoArt.writeVideo(to: url, palette: DemoArt.palettes[0], size: size, frames: 80, mosaic: false) else { return nil }
         let face = DemoArt.faceRect(for: size).insetBy(dx: -0.04, dy: -0.03)
         var track = FaceTrack()

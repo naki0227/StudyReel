@@ -51,7 +51,9 @@ final class LandscapeLayoutTests: XCTestCase {
         XCTAssertGreaterThan(window.width, window.height, "\(screen): 横向きになっていません")
         let safe = window.insetBy(dx: sideInset, dy: 0)
         // スクロールする欄は、欄そのものがセーフエリアに収まっていればよい（中身は欄の端で切れて、スクロールで出てくる）
-        let scrollFrames = app.scrollViews.allElementsBoundByIndex.map(\.frame).filter { !$0.isEmpty }
+        // 画面いっぱいのもの（画面全体を包む入れ物）は除く
+        let scrollFrames = app.scrollViews.allElementsBoundByIndex.map(\.frame)
+            .filter { !$0.isEmpty && $0.width < window.width - 1 }
         for frame in scrollFrames {
             XCTAssert(
                 frame.minX >= safe.minX - 0.5 && frame.maxX <= safe.maxX + 0.5,
