@@ -67,10 +67,12 @@ jobs:
             -derivedDataPath build \
             -only-testing:StudyTimerAndVideoUITests/ReviewScreenshotTests \
             -resultBundlePath Review.xcresult \
-            CODE_SIGNING_ALLOWED=NO 2>&1 | tail -40
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tail -40 && status=0 || status=$?
+          # 失敗しても、そのときの画面を見られるようにスクリーンショットは取り出す
           mkdir -p shots
           xcrun xcresulttool export attachments --path Review.xcresult --output-path shots
           ls -la shots
+          exit $status
 
       - name: Upload
         if: always()

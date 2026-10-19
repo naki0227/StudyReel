@@ -17,7 +17,8 @@ final class ReviewScreenshotTests: XCTestCase {
         XCTAssertTrue(pro.waitForExistence(timeout: 10))
         pro.tap()
 
-        let price = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "4,800")).firstMatch
+        // 商品の行はボタンなので、値段の文字はボタンのラベルにまとまっている
+        let price = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "4,800")).firstMatch
         XCTAssertTrue(price.waitForExistence(timeout: 30), "買い切りの商品が課金画面に出ていません")
         Thread.sleep(forTimeInterval: 1.5)
 
