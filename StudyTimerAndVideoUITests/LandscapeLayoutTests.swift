@@ -66,9 +66,9 @@ final class LandscapeLayoutTests: XCTestCase {
         for (kind, query) in kinds {
             for element in query.allElementsBoundByIndex where element.exists {
                 var frame = element.frame
-                // スクロールする欄の中なら、見えている部分だけを確かめる
-                let center = CGPoint(x: frame.midX, y: frame.midY)
-                for scroll in scrollFrames where scroll.contains(center) {
+                // スクロールする欄の中（欄の端からはみ出した候補も含む）なら、見えている部分だけを確かめる
+                for scroll in scrollFrames
+                where frame.minY >= scroll.minY - 0.5 && frame.maxY <= scroll.maxY + 0.5 && frame.intersects(scroll) {
                     frame = frame.intersection(scroll)
                 }
                 guard !frame.isNull, !frame.isEmpty else { continue }
@@ -101,8 +101,9 @@ final class LandscapeLayoutTests: XCTestCase {
         assertInsideSafeArea(app, "録画画面")
 
         tap(app.buttons["終了して保存"])
-        pause(4)
         XCTAssert(app.buttons["review.tool.mosaic"].waitForExistence(timeout: 15))
+        // 動画とコマ送りの帯が読み込まれてから確かめる（帯の画像で幅が変わることがあるため）
+        pause(8)
         for tool in ["cut", "filter", "mosaic", "music"] {
             tap(app.buttons["review.tool.\(tool)"])
             pause(1.5)
