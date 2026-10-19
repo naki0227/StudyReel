@@ -380,14 +380,21 @@ def ensure_purchase(app_id, spec, root):
     name = os.path.basename(path)
     res = api("GET", f"/v2/inAppPurchases/{iid}/appStoreReviewScreenshot", allow=(404,))
     old = (res or {}).get("data")
-    if old and old["attributes"].get("fileName") == name and old["attributes"].get("fileSize") == len(blob):
-        return
+    if old:
+        attrs = old["attributes"]
+        delivery = attrs.get("assetDeliveryState") or {}
+        print(f"{pid}: 今の審査用スクリーンショット {attrs.get('fileName')} {attrs.get('fileSize')} bytes, {delivery}")
+        # Apple は受け取ったファイルの名前を "SOURCE" に変えるので、大きさで同じものかを見る
+        if attrs.get("fileSize") == len(blob) and delivery.get("state") != "FAILED":
+            return
     if old:
         api("DELETE", f"/v1/inAppPurchaseAppStoreReviewScreenshots/{old['id']}")
     print(f"{pid}: 審査用スクリーンショットをアップロード")
     created = api("POST", "/v1/inAppPurchaseAppStoreReviewScreenshots", {"data": {
         "type": "inAppPurchaseAppStoreReviewScreenshots", "attributes": {"fileName": name, "fileSize": len(blob)},
         "relationships": {"inAppPurchaseV2": iap_ref(iid)}}})["data"]
+    if DRY:
+        return
     upload_parts(created["attributes"]["uploadOperations"], blob)
     api("PATCH", f"/v1/inAppPurchaseAppStoreReviewScreenshots/{created['id']}", {"data": {
         "type": "inAppPurchaseAppStoreReviewScreenshots", "id": created["id"],
@@ -466,7 +473,13 @@ def main():
     state = state_of(version)
     print(f"バージョン {version['attributes']['versionString']}: {state}")
     if state in IN_REVIEW or state == "READY_FOR_DISTRIBUTION":
-        print("このバージョンはもう審査に出ているので、何も変えません")
+        print("このバージョンはもう審査に出ているので、バージョンの中身は変えません")
+        # あとから準備ができた課金アイテムだけ、追いかけて審査に出す
+        if purchases and cfg.get("submit_for_review"):
+            if DRY:
+                print(f"submit_for_review: true なので、マージすると課金アイテム {len(purchases)} 件を審査に出します")
+            else:
+                submit_purchases(purchases)
         return
     if version["id"] == "DRY":
         print("（dry run なので、これから作るバージョンの中身は確かめられません）")
