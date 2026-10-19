@@ -291,7 +291,7 @@ struct GoalShareCard: View {
         if let goal = content.goal {
             header("my goal ✦", dateText(goal.createdAt))
             DDayText(goal: goal, size: 96, theme: theme, now: goal.createdAt)
-                .padding(.top, 20)
+                .padding(.top, 14)
             Text(L10n.format("%@まで", goal.deadline.formatted(.dateTime.month().day().weekday(.abbreviated))))
                 .font(ReelTheme.sans(12))
                 .foregroundColor(ReelTheme.secondary)
@@ -316,13 +316,14 @@ struct GoalShareCard: View {
                     }
                 }
             }
-            .padding(.top, 22)
+            .padding(.top, 18)
+            // 写真の下の「day 1」が下の行に隠れない大きさにする
             HStack {
                 Spacer()
                 Polaroid(image: content.photo, caption: "day 1 ✎", badge: "", tape: GoalTheme.tapePink, angle: 3)
-                    .frame(width: 118)
+                    .frame(width: 108)
             }
-            .padding(.top, 20)
+            .padding(.top, 14)
         }
     }
 
