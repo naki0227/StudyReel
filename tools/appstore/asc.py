@@ -466,7 +466,13 @@ def main():
     state = state_of(version)
     print(f"バージョン {version['attributes']['versionString']}: {state}")
     if state in IN_REVIEW or state == "READY_FOR_DISTRIBUTION":
-        print("このバージョンはもう審査に出ているので、何も変えません")
+        print("このバージョンはもう審査に出ているので、バージョンの中身は変えません")
+        # あとから準備ができた課金アイテムだけ、追いかけて審査に出す
+        if purchases and cfg.get("submit_for_review"):
+            if DRY:
+                print(f"submit_for_review: true なので、マージすると課金アイテム {len(purchases)} 件を審査に出します")
+            else:
+                submit_purchases(purchases)
         return
     if version["id"] == "DRY":
         print("（dry run なので、これから作るバージョンの中身は確かめられません）")
