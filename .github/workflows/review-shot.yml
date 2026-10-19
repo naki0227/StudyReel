@@ -1,7 +1,7 @@
 name: Review screenshot
 
 # 課金アイテムの審査用スクリーンショットを撮る。
-# StudyReelReview スキーム（StudyReelReview.storekit の商品を使う）で課金画面を開いて撮り、
+# StudyReelReview.storekit の商品を読み込ませた課金画面をテストの中で描き、
 # appstore/purchases/ に置くための PNG を成果物として残す。
 # Actions の画面から手動で動かすか、コミットメッセージに [review-shot] を入れて push する
 on:
@@ -65,7 +65,7 @@ jobs:
             -scheme StudyReelReview \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath build \
-            -only-testing:StudyTimerAndVideoUITests/ReviewScreenshotTests \
+            -only-testing:StudyTimerAndVideoTests/ReviewScreenshotTests \
             -resultBundlePath Review.xcresult \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tail -40 && status=0 || status=$?
           # 失敗しても、そのときの画面を見られるようにスクリーンショットは取り出す

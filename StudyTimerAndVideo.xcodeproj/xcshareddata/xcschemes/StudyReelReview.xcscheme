@@ -35,9 +35,9 @@
             parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "F97914D72E87A828007079BF"
-               BuildableName = "StudyTimerAndVideoUITests.xctest"
-               BlueprintName = "StudyTimerAndVideoUITests"
+               BlueprintIdentifier = "F97914CD2E87A828007079BF"
+               BuildableName = "StudyTimerAndVideoTests.xctest"
+               BlueprintName = "StudyTimerAndVideoTests"
                ReferencedContainer = "container:StudyTimerAndVideo.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -64,9 +64,6 @@
             ReferencedContainer = "container:StudyTimerAndVideo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <StoreKitConfigurationFileReference
-         identifier = "../../StudyReelReview.storekit">
-      </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
