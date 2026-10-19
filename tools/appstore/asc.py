@@ -459,6 +459,16 @@ def screenshot_changes(by_locale, cfg, root):
                 continue
             print(f"{locale} {display_type} スクリーンショット: {len(current)} 枚 → {len(files)} 枚に入れ替え")
             changes.append({"loc": loc, "type": display_type, "set": sset, "current": current, "files": files})
+        # remove_other_screenshots: true のときは、書いていない枠（古い 6.5 インチなど）の画像を消す
+        if cfg.get("remove_other_screenshots"):
+            for sset in existing:
+                display_type = sset["attributes"]["screenshotDisplayType"]
+                if display_type in sets:
+                    continue
+                current = api("GET", f"/v1/appScreenshotSets/{sset['id']}/appScreenshots")["data"]
+                if current:
+                    print(f"{locale} {display_type} スクリーンショット: 書いていない枠なので {len(current)} 枚を消す")
+                    changes.append({"loc": loc, "type": display_type, "set": sset, "current": current, "files": []})
     return changes
 
 
@@ -473,6 +483,9 @@ def replace_screenshots(changes):
                     "data": {"type": "appStoreVersionLocalizations", "id": change["loc"]["id"]}}}}})["data"]
         for old in change["current"]:
             api("DELETE", f"/v1/appScreenshots/{old['id']}")
+        if not change["files"]:
+            print(f"{change['loc']['attributes']['locale']} {change['type']}: {len(change['current'])} 枚を消しました")
+            continue
         ids = []
         for path in change["files"]:
             blob = open(path, "rb").read()
