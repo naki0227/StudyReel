@@ -1,0 +1,53 @@
+name: App Store
+
+# appstore/release.yml の内容を App Store Connect に反映する。
+#   PR のとき:          読むだけ（dry run）。何が変わるかをログに出す
+#   main に入ったとき:  反映する。submit_for_review: true なら審査にも出す
+# Secrets は TestFlight と同じ ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_P8 を使う
+on:
+  pull_request:
+    paths:
+      - "appstore/**"
+      - "tools/appstore/**"
+      - ".github/workflows/appstore.yml"
+  push:
+    branches: [main]
+    paths:
+      - "appstore/**"
+      - "tools/appstore/**"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "読むだけにする"
+        type: boolean
+        default: true
+
+concurrency:
+  group: appstore
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install "pyjwt[crypto]==2.9.0" "pyyaml==6.0.2" "requests==2.32.3"
+
+      - name: Sync App Store Connect
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          flag=""
+          if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ inputs.dry_run }}" = "true" ]; then
+            flag="--dry-run"
+          fi
+          python3 tools/appstore/asc.py appstore/release.yml $flag

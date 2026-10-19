@@ -1,0 +1,51 @@
+# App Store に出す内容。
+# main にマージされると GitHub Actions（.github/workflows/appstore.yml）がこの内容を App Store Connect に反映する。
+# PR の間は反映せず、App Store Connect を読んで何が変わるかだけ確かめる（dry run）。
+#
+# 書いた項目だけを更新する。消した項目は App Store Connect の今の内容のまま残る。
+# アプリのプライバシー（データの収集）と年齢区分は API で変えられないので、App Store Connect の画面で設定する。
+
+app: com.ni.StudyTimerAndVideo
+version: "1.5"
+build: 219            # "latest" にすると、このバージョンで最後に上げたビルド
+release: manual       # manual: 承認されたら自分で公開 / after_approval: 承認されたらすぐ公開
+submit_for_review: false   # true にしてマージすると、反映したあと審査に出す
+
+localizations:
+  ja:
+    privacy_policy_url: https://enludus.com/products/studyreel-privacy
+    whats_new: |
+      ・勉強中に音を流せるようになりました。雨の音・集中ノイズ・BGMから選べます
+      ・教材を登録して、教材ごとに勉強時間を記録できます。バーコードや表紙を撮るだけで登録できます
+      ・今日・今週の記録や教材ごとの記録を、勉強垢やグループに共有できます
+      ・1週間分の記録を1本のVlogにまとめられます
+      ・録画中に画面を暗くできます。ロック画面とDynamic Islandにも残り時間を表示します
+      ・途中でアプリを離れても、戻ってから続きを撮れます
+      ・記録をiCloud Driveに自動でバックアップします
+      ・はじめての方向けに、画面の使い方の案内をつけました
+  en-US:
+    privacy_policy_url: https://enludus.com/products/studyreel-privacy
+    whats_new: |
+      • Play sounds while you study: rain, focus noise, or music
+      • Add your books and track study time for each one. Scan the barcode or the cover to add them
+      • Share today's or this week's study, or a single book's progress, with your study friends
+      • Turn a week of sessions into one vlog
+      • Dim the screen while recording. Time left shows on the Lock Screen and in the Dynamic Island
+      • Pick up recording where you left off after leaving the app
+      • Your records back up to iCloud Drive automatically
+      • A short guided tour for first-time users
+
+review:
+  demo_account_required: false
+  notes: |
+    StudyReel records a time-lapse of the user studying at their desk. No account or sign-in is needed.
+    - Camera: used only while a study session is recording. Face detection for the optional mosaic runs on the device.
+    - Book lookup: when adding a book, only the ISBN is sent to openBD (api.openbd.jp) and the National Diet Library (ndlsearch.ndl.go.jp) to get the title and cover. Cover text recognition runs on the device.
+    - Backup: records are copied to the user's own iCloud Drive (Files app > StudyReel). Nothing is sent to our servers.
+    - Pro features are an in-app purchase and can be restored from Settings.
+    To try it: tap + on the home screen, choose a timer, then press the round shutter button. Press it again to finish and see the review screen.
+
+# 動画のプレビュー。IPHONE_67 は App Store Connect の「6.9インチ」の枠（886x1920、30秒以内）
+previews:
+  ja:
+    IPHONE_67: appstore/previews/ja-iphone67.mp4
