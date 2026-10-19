@@ -237,6 +237,7 @@ struct VideoReviewView: View {
                         .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("review.tool.\(item.rawValue)")
                 }
             }
             .padding(.vertical, 6)

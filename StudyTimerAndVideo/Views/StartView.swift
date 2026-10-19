@@ -328,6 +328,7 @@ struct StartView: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("home.materials")
     }
 
     // 今週の合計と、共有ボタン（勉強垢のグループや SNS へ）
@@ -350,6 +351,7 @@ struct StartView: View {
             .foregroundColor(ReelTheme.accentDeep)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("home.share")
     }
 
     private func galleryRow(_ session: StudySession, showsDay: Bool) -> some View {

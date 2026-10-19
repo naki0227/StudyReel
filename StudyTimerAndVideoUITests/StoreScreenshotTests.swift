@@ -44,10 +44,6 @@ final class StoreScreenshotTests: XCTestCase {
         return true
     }
 
-    private func button(_ app: XCUIApplication, containing text: String) -> XCUIElement {
-        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
-    }
-
     private func shot(_ name: String) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name
@@ -62,8 +58,7 @@ final class StoreScreenshotTests: XCTestCase {
         pause(6)
         shot("01-home")
 
-        // 「共有する」だけのボタンを押す（ラベルに含むだけだと、今週の欄全体を押してしまう）
-        tap(app.buttons[label("共有する", "Share")].firstMatch)
+        tap(app.buttons["home.share"])
         pause(2)
         tap(app.buttons[label("今週", "This week")])
         pause(2.5)
@@ -71,7 +66,7 @@ final class StoreScreenshotTests: XCTestCase {
         tap(app.buttons[label("閉じる", "Close")])
         pause(1.5)
 
-        tap(app.buttons[label("すべて見る", "See All")].firstMatch)
+        tap(app.buttons["home.materials"])
         pause(3)
         shot("05-materials")
         tap(app.buttons[label("閉じる", "Close")])
@@ -112,7 +107,7 @@ final class StoreScreenshotTests: XCTestCase {
         }
         tap(app.buttons[label("終了して保存", "Stop & Save")])
         pause(4)
-        tap(button(app, containing: label("モザイク", "Mosaic")), timeout: 15)
+        tap(app.buttons["review.tool.mosaic"], timeout: 15)
         pause(2.5)
         shot("03-review")
     }
