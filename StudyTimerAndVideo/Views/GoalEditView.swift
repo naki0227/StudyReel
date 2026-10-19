@@ -177,6 +177,17 @@ struct GoalEditView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(GridPaperBackground().ignoresSafeArea())
+            .scrollDismissesKeyboard(.interactively)
+            .toolbar {
+                // 数字キーボードには閉じるキーがないので「完了」を出す
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(L10n.string("完了")) {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
+                    .font(ReelTheme.sans(15, weight: .semibold))
+                }
+            }
             .navigationTitle(L10n.string(goal == nil ? "目標をつくる" : "目標"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

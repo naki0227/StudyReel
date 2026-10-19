@@ -287,6 +287,16 @@ enum DemoSeeder {
     static func prepare(context: ModelContext) {
         applyDefaults()
         let defaults = UserDefaults.standard
+        // 目標のデモは、ほかのデモの記録がもう入っていても足す。目標なしで起動したら、前の目標と過去問は消す
+        if !DemoMode.showsGoal {
+            try? context.delete(model: StudyGoal.self)
+            try? context.delete(model: PastPaperResult.self)
+            try? context.save()
+        } else if (try? context.fetchCount(FetchDescriptor<StudyGoal>())) ?? 0 == 0 {
+            let materialID = (try? context.fetch(FetchDescriptor<StudyMaterial>()))?.first?.id
+            insertGoalDemo(context: context, today: Calendar.current.startOfDay(for: Date()), materialID: materialID)
+            try? context.save()
+        }
         guard (try? context.fetchCount(FetchDescriptor<StudySession>())) ?? 0 == 0 else { return }
 
         let subjects = ["数学", "英語", "物理", "国語"]
@@ -341,14 +351,14 @@ enum DemoSeeder {
         }
 
         context.insert(DailyGoal(date: today, targetDuration: 3 * 60 * 60))
-        if DemoMode.showsGoal {
+        if DemoMode.showsGoal, (try? context.fetchCount(FetchDescriptor<StudyGoal>())) ?? 0 == 0 {
             insertGoalDemo(context: context, today: today, materialID: materials[1].id)
         }
         try? context.save()
     }
 
     // TOEIC 800点を目指して、公式問題集を何回か解いた例
-    private static func insertGoalDemo(context: ModelContext, today: Date, materialID: UUID) {
+    private static func insertGoalDemo(context: ModelContext, today: Date, materialID: UUID?) {
         let calendar = Calendar.current
         func day(_ offset: Int) -> Date { calendar.date(byAdding: .day, value: offset, to: today) ?? today }
         context.insert(StudyGoal(
@@ -357,7 +367,7 @@ enum DemoSeeder {
             targetScore: 800,
             maxScore: 990,
             targetHours: 300,
-            materialIDs: [materialID],
+            materialIDs: materialID.map { [$0] } ?? [],
             note: L10n.string("毎朝1時間、寝る前に単語30分。"),
             createdAt: day(-12)
         ))

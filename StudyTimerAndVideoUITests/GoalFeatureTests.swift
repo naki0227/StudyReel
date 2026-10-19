@@ -99,13 +99,18 @@ final class GoalFeatureTests: XCTestCase {
         let title = app.textFields["goal.title"]
         tap(title)
         title.typeText("英検2級 合格")
-        tap(app.textFields["goal.targetHours"])
-        app.textFields["goal.targetHours"].typeText("120")
+        let hours = app.textFields["goal.targetHours"]
+        tap(hours)
+        hours.typeText("120")
         pause(0.5)
         shot("goal-09-create")
+        // キーボードの「完了」で閉じてから、下の作成ボタンを押す
+        tap(app.buttons["完了"])
+        pause(0.8)
         tap(app.buttons["goal.create"])
         pause(3)
         shot("goal-10-declared")
-        XCTAssert(app.otherElements["goal.share.card"].exists || app.images["goal.share.card"].exists || app.buttons["閉じる"].exists)
+        // 作ったら宣言カードの共有画面が開く
+        XCTAssert(app.navigationBars["カードで共有"].waitForExistence(timeout: 5))
     }
 }
