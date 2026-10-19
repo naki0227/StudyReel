@@ -26,7 +26,7 @@ struct StudyTimerAndVideoApp: App {
             // バックアップは iCloud Drive にファイルで送っているので、CloudKit 同期は使わない
             let configuration = ModelConfiguration(cloudKitDatabase: .none)
             container = try ModelContainer(
-                for: StudySession.self, Tag.self, DailyGoal.self, StudyMaterial.self,
+                for: StudySession.self, Tag.self, DailyGoal.self, StudyMaterial.self, StudyGoal.self, PastPaperResult.self,
                 configurations: configuration
             )
         } catch {
