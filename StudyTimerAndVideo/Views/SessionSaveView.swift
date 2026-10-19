@@ -10,6 +10,8 @@ struct SessionSaveView: View {
     @ObservedObject var subjectManager: SubjectManager
 
     @Query private var tags: [Tag]
+    @Query private var materials: [StudyMaterial]
+    @State private var materialID: UUID?
     @State private var selectedTags: Set<Tag> = []
     @State private var showTagManager = false
     @State private var showSubjectManager = false
@@ -24,11 +26,12 @@ struct SessionSaveView: View {
 
     private let media: SessionMedia
 
-    init(subjectManager: SubjectManager, duration: Int, media: SessionMedia = SessionMedia(), date: Date = Date()) {
+    init(subjectManager: SubjectManager, duration: Int, media: SessionMedia = SessionMedia(), date: Date = Date(), materialID: UUID? = nil) {
         self.subjectManager = subjectManager
         self.media = media
         _duration = State(initialValue: duration)
         _date = State(initialValue: date)
+        _materialID = State(initialValue: materialID)
     }
 
     var body: some View {
@@ -36,6 +39,7 @@ struct SessionSaveView: View {
             ScrollView {
                 VStack(spacing: 14) {
                     titleCard
+                    MaterialChooserRow(selection: $materialID)
                     detailCard
                     tagCard
                     memoCard
@@ -69,6 +73,10 @@ struct SessionSaveView: View {
             }
             .onAppear {
                 updateDefaultSubject()
+                applyMaterialSubject()
+            }
+            .onChange(of: materialID) {
+                applyMaterialSubject()
             }
             .onDisappear {
                 if !didSave {
@@ -223,7 +231,8 @@ struct SessionSaveView: View {
             title: title.trimmingCharacters(in: .whitespacesAndNewlines),
             memo: trimmedMemo.isEmpty ? nil : trimmedMemo,
             thumbnailFileName: media.thumbnailFileName,
-            videoFileName: media.videoFileName
+            videoFileName: media.videoFileName,
+            materialID: materialID
         )
         modelContext.insert(session)
         didSave = true
@@ -234,6 +243,13 @@ struct SessionSaveView: View {
             await StudyNotificationManager.shared.scheduleQuietReminderIfNeeded(with: updatedSessions)
         }
         dismiss()
+    }
+
+    // 教材を選んだら、その教材の教科に合わせる
+    private func applyMaterialSubject() {
+        guard let materialID, let material = materials.first(where: { $0.id == materialID }) else { return }
+        subjectManager.add(material.subject)
+        selectedSubject = material.subject
     }
 
     private func formattedDuration(_ seconds: Int) -> String {

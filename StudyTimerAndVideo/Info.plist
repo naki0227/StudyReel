@@ -14,7 +14,7 @@
 		</dict>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>StudyReel uses the camera to turn your study session into a time-lapse video. Footage never leaves your device.</string>
+	<string>StudyReel uses the camera to turn your study session into a time-lapse video and to scan the barcode or cover of your books. Footage never leaves your device.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>StudyReel automatically saves your time-lapse video to Photos when a session ends.</string>
 	<key>CFBundleDisplayName</key>

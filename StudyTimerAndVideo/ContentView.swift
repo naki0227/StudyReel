@@ -156,7 +156,7 @@ struct ContentView: View {
             Text(L10n.string("ここまでの記録は保存されません。"))
         }
         .sheet(isPresented: $showSaveSheet, onDismiss: { finishSession() }) {
-            SessionSaveView(subjectManager: subjectManager, duration: pendingDuration, media: pendingMedia)
+            SessionSaveView(subjectManager: subjectManager, duration: pendingDuration, media: pendingMedia, materialID: bootstrap?.materialID)
         }
         .onChange(of: captureOrientationRaw) {
             OrientationLock.lock(captureOrientation.mask)

@@ -1,7 +1,10 @@
 import SwiftData
 import SwiftUI
 
-// 今日・今週・先週の勉強を画像と短い文章にして、勉強垢のグループや SNS に共有する画面
+// 勉強の記録を画像と短い文章にして、勉強垢のグループや SNS に共有する画面
+//  - 期間：今日・今週・先週
+//  - 教材：ひとつの教材にかけた時間（やり終えたら「終えました」）
+//  - 教科：今月・これまでの、ひとつの教科の時間
 struct StudyShareView: View {
     static let hashtagKey = "share_adds_hashtags"
     static let photoKey = "share_includes_photo"
@@ -9,38 +12,102 @@ struct StudyShareView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.displayScale) private var displayScale
     @Query(sort: \StudySession.date) private var sessions: [StudySession]
+    @Query(sort: \StudyMaterial.createdAt, order: .reverse) private var materials: [StudyMaterial]
     @AppStorage(hashtagKey) private var addsHashtags = true
     @AppStorage(photoKey) private var includesPhoto = true
 
+    @State private var kind: ShareKind
     @State private var period: SharePeriod = .today
+    @State private var materialID: UUID?
+    @State private var subject = ""
+    @State private var subjectRange: SubjectShareRange = .thisMonth
     @State private var image: UIImage?
     @State private var showVlog = false
+
+    init(initialMaterial: StudyMaterial? = nil) {
+        _kind = State(initialValue: initialMaterial == nil ? .period : .material)
+        _materialID = State(initialValue: initialMaterial?.id)
+    }
 
     private var summary: StudyShareSummary {
         StudyShareSummary(sessions: sessions, period: period, includesPhoto: includesPhoto)
     }
 
-    private var message: String {
-        summary.message(addsHashtags: addsHashtags)
+    private var selectedMaterial: StudyMaterial? {
+        materials.first { $0.id == materialID } ?? materials.first
+    }
+
+    private var materialSummary: MaterialShareSummary? {
+        selectedMaterial.map { MaterialShareSummary(material: $0, sessions: sessions, includesPhoto: includesPhoto) }
+    }
+
+    // 勉強時間の長い順
+    private var subjects: [String] {
+        var totals: [String: Int] = [:]
+        for session in sessions {
+            totals[session.subject, default: 0] += session.duration
+        }
+        return totals.sorted { $0.value > $1.value }.map(\.key)
+    }
+
+    private var selectedSubject: String? {
+        subjects.contains(subject) ? subject : subjects.first
+    }
+
+    private var subjectSummary: SubjectShareSummary? {
+        selectedSubject.map {
+            SubjectShareSummary(subject: $0, range: subjectRange, sessions: sessions, materials: materials, includesPhoto: includesPhoto)
+        }
+    }
+
+    private var message: String? {
+        switch kind {
+        case .period: return summary.message(addsHashtags: addsHashtags)
+        case .material: return materialSummary?.message(addsHashtags: addsHashtags)
+        case .subject: return subjectSummary?.message(addsHashtags: addsHashtags)
+        }
+    }
+
+    private var headline: String {
+        switch kind {
+        case .period: return summary.headline
+        case .material: return materialSummary?.material.name ?? L10n.string("教材")
+        case .subject: return subjectSummary?.headline ?? L10n.string("教科")
+        }
+    }
+
+    // 何か変わったら画像を作り直す
+    private var renderKey: String {
+        [
+            kind.rawValue, period.rawValue, materialID?.uuidString ?? "", subject, subjectRange.rawValue,
+            String(includesPhoto), String(sessions.count), String(materials.count),
+            selectedMaterial.map { "\($0.name)\($0.finishedAt?.timeIntervalSince1970 ?? 0)" } ?? ""
+        ].joined(separator: "|")
     }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 18) {
-                    Picker(L10n.string("期間"), selection: $period) {
-                        ForEach(SharePeriod.allCases) { item in
+                    Picker(L10n.string("共有するもの"), selection: $kind) {
+                        ForEach(ShareKind.allCases) { item in
                             Text(item.title).tag(item)
                         }
                     }
                     .pickerStyle(.segmented)
 
-                    StudyShareCard(summary: summary)
-                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        .shadow(color: .black.opacity(0.06), radius: 12, y: 4)
+                    selector
 
-                    options
-                    shareButtons
+                    if message == nil {
+                        emptyState
+                    } else {
+                        card
+                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .shadow(color: .black.opacity(0.06), radius: 12, y: 4)
+
+                        options
+                        shareButtons
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
@@ -59,17 +126,120 @@ struct StudyShareView: View {
             .sheet(isPresented: $showVlog) {
                 WeeklyVlogView()
             }
-            .task(id: period) {
-                renderImage()
-            }
-            .onChange(of: includesPhoto) {
-                renderImage()
-            }
-            .onChange(of: sessions.count) {
+            .task(id: renderKey) {
                 renderImage()
             }
         }
         .tint(ReelTheme.accentDeep)
+    }
+
+    // 種類ごとの選び方
+    @ViewBuilder
+    private var selector: some View {
+        switch kind {
+        case .period:
+            Picker(L10n.string("期間"), selection: $period) {
+                ForEach(SharePeriod.allCases) { item in
+                    Text(item.title).tag(item)
+                }
+            }
+            .pickerStyle(.segmented)
+        case .material:
+            if !materials.isEmpty {
+                Menu {
+                    ForEach(materials) { item in
+                        Button {
+                            materialID = item.id
+                        } label: {
+                            if item.id == selectedMaterial?.id {
+                                Label(item.name, systemImage: "checkmark")
+                            } else {
+                                Text(item.name)
+                            }
+                        }
+                    }
+                } label: {
+                    menuLabel(selectedMaterial?.name ?? L10n.string("教材を選ぶ"))
+                }
+            }
+        case .subject:
+            if !subjects.isEmpty {
+                VStack(spacing: 10) {
+                    Menu {
+                        ForEach(subjects, id: \.self) { item in
+                            Button {
+                                subject = item
+                            } label: {
+                                if item == selectedSubject {
+                                    Label(item, systemImage: "checkmark")
+                                } else {
+                                    Text(item)
+                                }
+                            }
+                        }
+                    } label: {
+                        menuLabel(selectedSubject ?? L10n.string("教科を選ぶ"))
+                    }
+                    Picker(L10n.string("期間"), selection: $subjectRange) {
+                        ForEach(SubjectShareRange.allCases) { item in
+                            Text(item.title).tag(item)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+            }
+        }
+    }
+
+    private func menuLabel(_ title: String) -> some View {
+        HStack {
+            Text(title)
+                .font(ReelTheme.sans(15))
+                .foregroundColor(ReelTheme.ink)
+                .lineLimit(1)
+            Spacer()
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(ReelTheme.secondary)
+        }
+        .padding(.horizontal, 16)
+        .frame(minHeight: 46)
+        .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
+    }
+
+    @ViewBuilder
+    private var card: some View {
+        switch kind {
+        case .period:
+            StudyShareCard(summary: summary)
+        case .material:
+            if let materialSummary {
+                MaterialShareCard(summary: materialSummary)
+            }
+        case .subject:
+            if let subjectSummary {
+                SubjectShareCard(summary: subjectSummary)
+            }
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: kind == .material ? "books.vertical" : "chart.bar")
+                .font(.system(size: 30, weight: .light))
+                .foregroundColor(ReelTheme.accentDeep)
+            Text(kind == .material ? L10n.string("まだ教材がありません") : L10n.string("まだ記録がありません"))
+                .font(ReelTheme.serif(18))
+                .foregroundColor(ReelTheme.ink)
+            if kind == .material {
+                Text(L10n.string("録画を始めるときに教材を選ぶと、ここで共有できます。"))
+                    .font(ReelTheme.sans(12))
+                    .foregroundColor(ReelTheme.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 50)
     }
 
     private var options: some View {
@@ -90,13 +260,14 @@ struct StudyShareView: View {
     }
 
     private var shareButtons: some View {
-        VStack(spacing: 10) {
+        let text = message ?? ""
+        return VStack(spacing: 10) {
             if let image {
                 let picture = Image(uiImage: image)
                 ShareLink(
                     item: picture,
-                    message: Text(message),
-                    preview: SharePreview(summary.headline, image: picture)
+                    message: Text(text),
+                    preview: SharePreview(headline, image: picture)
                 ) {
                     Label(L10n.string("画像で共有"), systemImage: "square.and.arrow.up")
                         .font(ReelTheme.sans(15, weight: .semibold))
@@ -107,7 +278,7 @@ struct StudyShareView: View {
             }
 
             HStack(spacing: 10) {
-                ShareLink(item: message) {
+                ShareLink(item: text) {
                     Label(L10n.string("文章だけ"), systemImage: "text.bubble")
                         .font(ReelTheme.sans(14, weight: .medium))
                         .foregroundColor(ReelTheme.accentDeep)
@@ -135,9 +306,43 @@ struct StudyShareView: View {
 
     @MainActor
     private func renderImage() {
-        let renderer = ImageRenderer(content: StudyShareCard(summary: summary).frame(width: 360))
+        guard message != nil else {
+            image = nil
+            return
+        }
+        let renderer = ImageRenderer(content: card.frame(width: 360))
         renderer.scale = max(displayScale, 3)
         image = renderer.uiImage
+    }
+}
+
+enum ShareKind: String, CaseIterable, Identifiable {
+    case period
+    case material
+    case subject
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .period: return L10n.string("期間")
+        case .material: return L10n.string("教材")
+        case .subject: return L10n.string("教科")
+        }
+    }
+}
+
+enum SubjectShareRange: String, CaseIterable, Identifiable {
+    case thisMonth
+    case allTime
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .thisMonth: return L10n.string("今月")
+        case .allTime: return L10n.string("これまで")
+        }
     }
 }
 
@@ -363,5 +568,252 @@ struct StudyShareSummary {
             lines.append(L10n.string("#勉強垢 #勉強記録 #StudyReel"))
         }
         return lines.joined(separator: "\n")
+    }
+}
+
+// いちばん長く勉強した回のサムネイル（顔はモザイク済み）
+private func longestThumbnail(_ sessions: [StudySession]) -> UIImage? {
+    sessions
+        .sorted { $0.duration > $1.duration }
+        .lazy
+        .compactMap { MediaStore.thumbnail(named: $0.thumbnailFileName) }
+        .first
+}
+
+private func shareRangeText(from start: Date?, to end: Date?) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = Locale.current
+    formatter.setLocalizedDateFormatFromTemplate("yMMMd")
+    guard let start else { return "" }
+    let last = end ?? start
+    if Calendar.current.isDate(start, inSameDayAs: last) {
+        return formatter.string(from: start)
+    }
+    return "\(formatter.string(from: start)) – \(formatter.string(from: last))"
+}
+
+// MARK: - 教材
+
+struct MaterialShareSummary {
+    let material: StudyMaterial
+    let totals: StudyTotals
+    let rangeText: String
+    let thumbnail: UIImage?
+
+    init(material: StudyMaterial, sessions allSessions: [StudySession], includesPhoto: Bool) {
+        self.material = material
+        let sessions = allSessions.filter { $0.materialID == material.id }
+        totals = StudyTotals(sessions: sessions)
+        rangeText = shareRangeText(from: totals.firstDate ?? material.createdAt, to: material.finishedAt ?? totals.lastDate)
+        thumbnail = includesPhoto ? longestThumbnail(sessions) : nil
+    }
+
+    func message(addsHashtags: Bool) -> String {
+        var lines = [
+            material.isFinished
+                ? L10n.format("『%@』を終えました", material.name)
+                : L10n.format("『%@』を勉強中", material.name)
+        ]
+        lines.append(L10n.format("%@ · %d日 · %d回", WeeklyVlogMaker.durationText(totals.seconds), totals.days, totals.count))
+        if addsHashtags {
+            lines.append(L10n.string("#勉強垢 #勉強記録 #StudyReel"))
+        }
+        return lines.joined(separator: "\n")
+    }
+}
+
+struct MaterialShareCard: View {
+    let summary: MaterialShareSummary
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("StudyReel")
+                    .font(ReelTheme.serif(15))
+                    .foregroundColor(ReelTheme.accentDeep)
+                Spacer()
+                Text(summary.rangeText)
+                    .font(ReelTheme.sans(11))
+                    .foregroundColor(ReelTheme.secondary)
+            }
+            .padding(.bottom, 18)
+
+            HStack(alignment: .top, spacing: 16) {
+                MaterialCover(material: summary.material, cornerRadius: 6)
+                    .frame(width: 84, height: 114)
+                    .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
+                VStack(alignment: .leading, spacing: 6) {
+                    if summary.material.isFinished {
+                        Text(L10n.string("やり終えた！"))
+                            .font(ReelTheme.sans(11, weight: .semibold))
+                            .foregroundColor(ReelTheme.accentDeep)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Capsule().fill(ReelTheme.accentSoft))
+                    }
+                    Text(summary.material.name)
+                        .font(ReelTheme.serif(19))
+                        .foregroundColor(ReelTheme.ink)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(summary.material.subject)
+                        .font(ReelTheme.sans(12))
+                        .foregroundColor(ReelTheme.secondary)
+                }
+            }
+
+            Text(WeeklyVlogMaker.durationText(summary.totals.seconds))
+                .font(ReelTheme.serif(38))
+                .foregroundColor(ReelTheme.ink)
+                .monospacedDigit()
+                .padding(.top, 20)
+            Text(L10n.format("%d日 · %d回", summary.totals.days, summary.totals.count))
+                .font(ReelTheme.sans(13))
+                .foregroundColor(ReelTheme.ink)
+                .padding(.top, 2)
+
+            if let thumbnail = summary.thumbnail {
+                Image(uiImage: thumbnail)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: 150)
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .padding(.top, 18)
+            }
+        }
+        .padding(22)
+        .background(Color.white)
+    }
+}
+
+// MARK: - 教科
+
+struct SubjectShareSummary {
+    struct MaterialTime {
+        let name: String
+        let seconds: Int
+    }
+
+    let subject: String
+    let range: SubjectShareRange
+    let headline: String
+    let rangeText: String
+    let totals: StudyTotals
+    let materials: [MaterialTime]
+    let thumbnail: UIImage?
+
+    init(
+        subject: String,
+        range: SubjectShareRange,
+        sessions allSessions: [StudySession],
+        materials allMaterials: [StudyMaterial],
+        includesPhoto: Bool,
+        calendar: Calendar = .current
+    ) {
+        self.subject = subject
+        self.range = range
+        var sessions = allSessions.filter { $0.subject == subject }
+        if range == .thisMonth, let month = calendar.dateInterval(of: .month, for: Date()) {
+            sessions = sessions.filter { month.contains($0.date) }
+            headline = L10n.format("今月の%@", subject)
+            let formatter = DateFormatter()
+            formatter.locale = Locale.current
+            formatter.setLocalizedDateFormatFromTemplate("yMMMM")
+            rangeText = formatter.string(from: month.start)
+        } else {
+            headline = L10n.format("これまでの%@", subject)
+            rangeText = shareRangeText(from: sessions.map(\.date).min(), to: sessions.map(\.date).max())
+        }
+        totals = StudyTotals(sessions: sessions, calendar: calendar)
+
+        var byMaterial: [UUID: Int] = [:]
+        for session in sessions {
+            guard let id = session.materialID else { continue }
+            byMaterial[id, default: 0] += session.duration
+        }
+        materials = byMaterial
+            .sorted { $0.value > $1.value }
+            .compactMap { entry in
+                allMaterials.first { $0.id == entry.key }.map { MaterialTime(name: $0.name, seconds: entry.value) }
+            }
+            .prefix(3)
+            .map { $0 }
+        thumbnail = includesPhoto ? longestThumbnail(sessions) : nil
+    }
+
+    func message(addsHashtags: Bool) -> String {
+        var lines = [headline]
+        lines.append(L10n.format("合計 %@ · %d日", WeeklyVlogMaker.durationText(totals.seconds), totals.days))
+        if !materials.isEmpty {
+            lines.append(materials.map { "\($0.name) \(WeeklyVlogMaker.durationText($0.seconds))" }.joined(separator: " / "))
+        }
+        if addsHashtags {
+            lines.append(L10n.string("#勉強垢 #勉強記録 #StudyReel"))
+        }
+        return lines.joined(separator: "\n")
+    }
+}
+
+struct SubjectShareCard: View {
+    let summary: SubjectShareSummary
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("StudyReel")
+                    .font(ReelTheme.serif(15))
+                    .foregroundColor(ReelTheme.accentDeep)
+                Spacer()
+                Text(summary.rangeText)
+                    .font(ReelTheme.sans(11))
+                    .foregroundColor(ReelTheme.secondary)
+            }
+            .padding(.bottom, 18)
+
+            Text(summary.headline)
+                .font(ReelTheme.sans(12))
+                .foregroundColor(ReelTheme.secondary)
+            Text(WeeklyVlogMaker.durationText(summary.totals.seconds))
+                .font(ReelTheme.serif(38))
+                .foregroundColor(ReelTheme.ink)
+                .monospacedDigit()
+                .padding(.top, 2)
+            Text(L10n.format("%d日勉強しました", summary.totals.days))
+                .font(ReelTheme.sans(13))
+                .foregroundColor(ReelTheme.ink)
+                .padding(.top, 2)
+
+            if !summary.materials.isEmpty {
+                VStack(spacing: 8) {
+                    ForEach(Array(summary.materials.enumerated()), id: \.offset) { _, item in
+                        HStack {
+                            Text(item.name)
+                                .font(ReelTheme.sans(13))
+                                .foregroundColor(ReelTheme.ink)
+                                .lineLimit(1)
+                            Spacer()
+                            Text(WeeklyVlogMaker.durationText(item.seconds))
+                                .font(ReelTheme.sans(13))
+                                .foregroundColor(ReelTheme.secondary)
+                                .monospacedDigit()
+                        }
+                    }
+                }
+                .padding(.top, 18)
+            }
+
+            if let thumbnail = summary.thumbnail {
+                Image(uiImage: thumbnail)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: 150)
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .padding(.top, 18)
+            }
+        }
+        .padding(22)
+        .background(Color.white)
     }
 }

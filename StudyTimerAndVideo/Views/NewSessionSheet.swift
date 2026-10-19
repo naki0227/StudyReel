@@ -6,6 +6,7 @@ struct NewSessionSheet: View {
     @Binding var hours: Int
     @Binding var minutes: Int
     @Binding var seconds: Int
+    @Binding var materialID: UUID?
     let onStart: () -> Void
 
     @State private var showsCustom = false
@@ -63,6 +64,8 @@ struct NewSessionSheet: View {
                     .font(ReelTheme.sans(13))
                     .foregroundColor(ReelTheme.secondary)
             }
+
+            MaterialChooserRow(selection: $materialID)
 
             Spacer(minLength: 0)
 

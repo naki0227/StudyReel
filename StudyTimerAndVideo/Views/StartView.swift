@@ -31,6 +31,7 @@ struct StartView: View {
     @StateObject private var draftStore = CurrentSessionDraftStore()
 
     @State private var showPermissionAlert = false
+    @State private var selectedMaterialID: UUID? = MaterialSelection.lastID
     @State private var showShare = false
     @AppStorage(OnboardingView.storageKey) private var hasSeenOnboarding = false
     @State private var sessionBootstrap: SessionBootstrap?
@@ -114,7 +115,7 @@ struct StartView: View {
                 startAfterSheetCloses = false
                 beginSession()
             }) {
-                NewSessionSheet(mode: $selectedMode, hours: $hours, minutes: $minutes, seconds: $seconds) {
+                NewSessionSheet(mode: $selectedMode, hours: $hours, minutes: $minutes, seconds: $seconds, materialID: $selectedMaterialID) {
                     startAfterSheetCloses = true
                     showNewSession = false
                 }
@@ -392,7 +393,8 @@ struct StartView: View {
             startedAt: nil,
             autoStart: false,
             initialRecordingEnabled: recordTimelapse,
-            source: .app
+            source: .app,
+            materialID: selectedMaterialID
         )
     }
 

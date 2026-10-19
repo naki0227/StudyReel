@@ -21,7 +21,7 @@ struct StudyTimerAndVideoApp: App {
     
     init() {
         do {
-            container = try ModelContainer(for: StudySession.self, Tag.self, DailyGoal.self)
+            container = try ModelContainer(for: StudySession.self, Tag.self, DailyGoal.self, StudyMaterial.self)
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }

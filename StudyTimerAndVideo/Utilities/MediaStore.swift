@@ -46,6 +46,18 @@ enum MediaStore {
         }
     }
 
+    // 教材の表紙など、画像をアプリ内に保存する
+    static func storeImage(_ image: UIImage) -> String? {
+        guard let data = image.jpegData(compressionQuality: 0.85) else { return nil }
+        let name = "\(UUID().uuidString).jpg"
+        do {
+            try data.write(to: url(for: name), options: .atomic)
+            return name
+        } catch {
+            return nil
+        }
+    }
+
     // 書き出した動画をアプリ内にコピーする（写真アプリから消しても見返せるように）
     static func storeVideo(copying source: URL) -> String? {
         let name = "\(UUID().uuidString).mov"

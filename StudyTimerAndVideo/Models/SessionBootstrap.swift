@@ -8,6 +8,8 @@ struct SessionBootstrap: Identifiable, Equatable {
     let autoStart: Bool
     let initialRecordingEnabled: Bool
     let source: SessionLaunchSource
+    // ホームで選んだ教材。保存画面で最初から選んでおく
+    var materialID: UUID? = nil
 
     var elapsedSecondsAtLaunch: Int {
         guard let startedAt else { return 0 }

@@ -15,6 +15,7 @@ struct StudyStatsView: View {
     @State private var showManualAdd = false
     @State private var showPaywall = false
     @State private var showShare = false
+    @State private var showMaterials = false
 
     private let calendar = Calendar.current
 
@@ -68,6 +69,12 @@ struct StudyStatsView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
                         Button {
+                            showMaterials = true
+                        } label: {
+                            Image(systemName: "books.vertical")
+                        }
+                        .accessibilityLabel(L10n.string("教材"))
+                        Button {
                             showShare = true
                         } label: {
                             Image(systemName: "square.and.arrow.up")
@@ -86,6 +93,9 @@ struct StudyStatsView: View {
             }
             .sheet(isPresented: $showManualAdd) {
                 ManualAddView(subjectManager: subjectManager)
+            }
+            .sheet(isPresented: $showMaterials) {
+                MaterialsView()
             }
             .sheet(isPresented: $showShare) {
                 StudyShareView()

@@ -1,7 +1,7 @@
 /* English localization for Info.plist permission strings */
 
 /* Camera Usage Description */
-"NSCameraUsageDescription" = "StudyReel uses the camera to turn your study session into a time-lapse video. Footage never leaves your device.";
+"NSCameraUsageDescription" = "StudyReel uses the camera to turn your study session into a time-lapse video and to scan the barcode or cover of your books. Footage never leaves your device.";
 
 /* Photo Library Add Usage Description */
 "NSPhotoLibraryAddUsageDescription" = "StudyReel automatically saves your time-lapse video to Photos when a session ends.";

@@ -106,6 +106,19 @@ struct BackupSnapshot: Codable {
         let thumbnailFileName: String?
         let videoFileName: String?
         let tagNames: [String]
+        // 1.6 で追加。古いバックアップにはない
+        let materialID: UUID?
+    }
+
+    struct MaterialRecord: Codable {
+        let id: UUID
+        let name: String
+        let subject: String
+        let isbn: String?
+        let author: String?
+        let coverFileName: String?
+        let createdAt: Date
+        let finishedAt: Date?
     }
 
     struct TagRecord: Codable {
@@ -123,9 +136,12 @@ struct BackupSnapshot: Codable {
     var sessions: [SessionRecord]
     var tags: [TagRecord]
     var goals: [GoalRecord]
+    // 古いバックアップにはないので省略できるようにしておく
+    var materials: [MaterialRecord]?
 
     var mediaFileNames: [String] {
         sessions.flatMap { [$0.thumbnailFileName, $0.videoFileName].compactMap { $0 } }
+            + (materials ?? []).compactMap(\.coverFileName)
     }
 
     @MainActor
@@ -133,6 +149,7 @@ struct BackupSnapshot: Codable {
         let sessions = try context.fetch(FetchDescriptor<StudySession>())
         let tags = try context.fetch(FetchDescriptor<Tag>())
         let goals = try context.fetch(FetchDescriptor<DailyGoal>())
+        let materials = try context.fetch(FetchDescriptor<StudyMaterial>())
 
         self.sessions = sessions.map {
             SessionRecord(
@@ -145,11 +162,24 @@ struct BackupSnapshot: Codable {
                 memo: $0.memo,
                 thumbnailFileName: $0.thumbnailFileName,
                 videoFileName: $0.videoFileName,
-                tagNames: ($0.tags ?? []).map(\.name)
+                tagNames: ($0.tags ?? []).map(\.name),
+                materialID: $0.materialID
             )
         }
         self.tags = tags.map { TagRecord(name: $0.name, colorHex: $0.colorHex) }
         self.goals = goals.map { GoalRecord(date: $0.date, targetDuration: $0.targetDuration) }
+        self.materials = materials.map {
+            MaterialRecord(
+                id: $0.id,
+                name: $0.name,
+                subject: $0.subject,
+                isbn: $0.isbn,
+                author: $0.author,
+                coverFileName: $0.coverFileName,
+                createdAt: $0.createdAt,
+                finishedAt: $0.finishedAt
+            )
+        }
     }
 
     // 記録は id、タグは名前、目標は日付で照らし合わせて、ないものだけ足す
@@ -171,6 +201,20 @@ struct BackupSnapshot: Codable {
             context.insert(DailyGoal(date: record.date, targetDuration: record.targetDuration))
         }
 
+        let materialIDs = try Set(context.fetch(FetchDescriptor<StudyMaterial>()).map(\.id))
+        for record in materials ?? [] where !materialIDs.contains(record.id) {
+            context.insert(StudyMaterial(
+                id: record.id,
+                name: record.name,
+                subject: record.subject,
+                isbn: record.isbn,
+                author: record.author,
+                coverFileName: MediaStore.videoURL(named: record.coverFileName) == nil ? nil : record.coverFileName,
+                createdAt: record.createdAt,
+                finishedAt: record.finishedAt
+            ))
+        }
+
         let existingIDs = try Set(context.fetch(FetchDescriptor<StudySession>()).map(\.id))
         var restored = 0
         for record in sessions where !existingIDs.contains(record.id) {
@@ -184,7 +228,8 @@ struct BackupSnapshot: Codable {
                 title: record.title,
                 memo: record.memo,
                 thumbnailFileName: MediaStore.videoURL(named: record.thumbnailFileName) == nil ? nil : record.thumbnailFileName,
-                videoFileName: MediaStore.videoURL(named: record.videoFileName) == nil ? nil : record.videoFileName
+                videoFileName: MediaStore.videoURL(named: record.videoFileName) == nil ? nil : record.videoFileName,
+                materialID: record.materialID
             )
             context.insert(session)
             session.tags = record.tagNames.compactMap { tagsByName[$0] }
