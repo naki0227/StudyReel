@@ -56,7 +56,8 @@ def api(method, path, body=None, params=None, allow=()):
     if DRY and method != "GET":
         print(f"  [dry-run] {method} {path}")
         return {"data": {"id": "DRY", "attributes": {}}}
-    res = requests.request(method, BASE + path, json=body, params=params,
+    url = path if path.startswith("http") else BASE + path
+    res = requests.request(method, url, json=body, params=params,
                            headers={"Authorization": f"Bearer {token()}"}, timeout=60)
     if res.status_code in allow:
         return None
@@ -64,6 +65,25 @@ def api(method, path, body=None, params=None, allow=()):
         print(f"::error::{method} {path} -> {res.status_code}\n{res.text}")
         sys.exit(1)
     return res.json() if res.content else {}
+
+
+def api_all(path, params=None):
+    """ページに分かれた一覧を最後まで読む"""
+    items, url, query = [], path, dict(params or {})
+    while url:
+        res = api("GET", url, params=query)
+        items += res["data"]
+        url, query = (res.get("links") or {}).get("next"), None
+    return items
+
+
+def upload_parts(operations, blob):
+    for op in operations:
+        chunk = blob[op["offset"]:op["offset"] + op["length"]]
+        headers = {h["name"]: h["value"] for h in op.get("requestHeaders", [])}
+        r = requests.request(op["method"], op["url"], data=chunk, headers=headers, timeout=300)
+        if r.status_code >= 400:
+            sys.exit(f"::error::アップロードに失敗: {r.status_code} {r.text}")
 
 
 def changed(current, wanted):
@@ -256,12 +276,7 @@ def upload_previews(by_locale, cfg, root):
                 "relationships": {"appPreviewSet": {"data": {"type": "appPreviewSets", "id": pset["id"]}}}}})["data"]
             if DRY:
                 continue
-            for op in preview["attributes"]["uploadOperations"]:
-                chunk = blob[op["offset"]:op["offset"] + op["length"]]
-                headers = {h["name"]: h["value"] for h in op.get("requestHeaders", [])}
-                r = requests.request(op["method"], op["url"], data=chunk, headers=headers, timeout=300)
-                if r.status_code >= 400:
-                    sys.exit(f"::error::プレビューのアップロードに失敗: {r.status_code} {r.text}")
+            upload_parts(preview["attributes"]["uploadOperations"], blob)
             api("PATCH", f"/v1/appPreviews/{preview['id']}", {"data": {
                 "type": "appPreviews", "id": preview["id"],
                 "attributes": {"uploaded": True, "sourceFileChecksum": hashlib.md5(blob).hexdigest()}}})
@@ -283,28 +298,124 @@ def wait_previews(ids, minutes=20):
             time.sleep(30)
 
 
+def ensure_purchase(app_id, spec, root):
+    """create_purchases に書いた買い切りなどの課金アイテムを作り、名前・価格・販売地域・審査用スクリーンショットをそろえる"""
+    pid = spec["product_id"]
+    iap_ref = lambda iid: {"data": {"type": "inAppPurchases", "id": iid}}
+    existing = [i for i in api_all(f"/v1/apps/{app_id}/inAppPurchasesV2", {"limit": 200})
+                if i["attributes"]["productId"] == pid]
+    if existing:
+        iap = existing[0]
+    else:
+        print(f"課金アイテム {pid} を作成")
+        iap = api("POST", "/v2/inAppPurchases", {"data": {
+            "type": "inAppPurchases",
+            "attributes": {"name": spec["reference_name"], "productId": pid,
+                           "inAppPurchaseType": spec.get("type", "NON_CONSUMABLE"),
+                           "familySharable": bool(spec.get("family_sharable", False)),
+                           "reviewNote": (spec.get("review_note") or "").rstrip("\n") or None},
+            "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}})["data"]
+    iid = iap["id"]
+    if iid == "DRY":
+        return
+
+    locs = {l["attributes"]["locale"]: l for l in api("GET", f"/v2/inAppPurchases/{iid}/inAppPurchaseLocalizations")["data"]}
+    for locale, l in (spec.get("localizations") or {}).items():
+        wanted = {"name": l["name"], "description": l["description"]}
+        if locale in locs:
+            diff = changed(locs[locale]["attributes"], wanted)
+            if diff:
+                print(f"{pid} {locale}: {', '.join(diff)} を更新")
+                api("PATCH", f"/v1/inAppPurchaseLocalizations/{locs[locale]['id']}", {"data": {
+                    "type": "inAppPurchaseLocalizations", "id": locs[locale]["id"], "attributes": diff}})
+        else:
+            print(f"{pid} {locale}: 表示名と説明を追加")
+            api("POST", "/v1/inAppPurchaseLocalizations", {"data": {
+                "type": "inAppPurchaseLocalizations", "attributes": {"locale": locale, **wanted},
+                "relationships": {"inAppPurchaseV2": iap_ref(iid)}}})
+
+    availability = api("GET", f"/v2/inAppPurchases/{iid}/inAppPurchaseAvailability", allow=(404,))
+    if not (availability or {}).get("data"):
+        territories = api_all("/v1/territories", {"limit": 200})
+        print(f"{pid}: すべての国と地域（{len(territories)}）で販売")
+        api("POST", "/v1/inAppPurchaseAvailabilities", {"data": {
+            "type": "inAppPurchaseAvailabilities", "attributes": {"availableInNewTerritories": True},
+            "relationships": {"inAppPurchase": iap_ref(iid),
+                              "availableTerritories": {"data": [{"type": "territories", "id": t["id"]} for t in territories]}}}})
+
+    if spec.get("price_jpy"):
+        want = float(spec["price_jpy"])
+        current = None
+        schedule = api("GET", f"/v2/inAppPurchases/{iid}/iapPriceSchedule", allow=(404,))
+        if (schedule or {}).get("data"):
+            res = api("GET", f"/v1/inAppPurchasePriceSchedules/{schedule['data']['id']}/manualPrices",
+                      params={"include": "inAppPurchasePricePoint", "filter[territory]": "JPN"})
+            points = [i for i in res.get("included", []) if i["type"] == "inAppPurchasePricePoints"]
+            if points:
+                current = float(points[0]["attributes"]["customerPrice"])
+        if current != want:
+            points = api_all(f"/v2/inAppPurchases/{iid}/pricePoints", {"filter[territory]": "JPN", "limit": 200})
+            point = next((p for p in points if float(p["attributes"]["customerPrice"]) == want), None)
+            if not point:
+                sys.exit(f"::error::{pid}: 日本で {spec['price_jpy']} 円の価格帯が見つかりません")
+            print(f"{pid}: 価格を {spec['price_jpy']} 円に設定（ほかの国は Apple が自動で換算）")
+            api("POST", "/v1/inAppPurchasePriceSchedules", {
+                "data": {"type": "inAppPurchasePriceSchedules", "relationships": {
+                    "inAppPurchase": iap_ref(iid),
+                    "baseTerritory": {"data": {"type": "territories", "id": "JPN"}},
+                    "manualPrices": {"data": [{"type": "inAppPurchasePrices", "id": "${price}"}]}}},
+                "included": [{"type": "inAppPurchasePrices", "id": "${price}",
+                              "attributes": {"startDate": None},
+                              "relationships": {"inAppPurchaseV2": iap_ref(iid),
+                                                "inAppPurchasePricePoint": {"data": {"type": "inAppPurchasePricePoints", "id": point["id"]}}}}]})
+
+    shot = spec.get("review_screenshot")
+    if not shot:
+        return
+    path = os.path.join(root, shot)
+    if not os.path.exists(path):
+        print(f"::warning::{pid}: 審査用スクリーンショット {shot} がまだないので、審査には出せません")
+        return
+    blob = open(path, "rb").read()
+    name = os.path.basename(path)
+    res = api("GET", f"/v2/inAppPurchases/{iid}/appStoreReviewScreenshot", allow=(404,))
+    old = (res or {}).get("data")
+    if old and old["attributes"].get("fileName") == name and old["attributes"].get("fileSize") == len(blob):
+        return
+    if old:
+        api("DELETE", f"/v1/inAppPurchaseAppStoreReviewScreenshots/{old['id']}")
+    print(f"{pid}: 審査用スクリーンショットをアップロード")
+    created = api("POST", "/v1/inAppPurchaseAppStoreReviewScreenshots", {"data": {
+        "type": "inAppPurchaseAppStoreReviewScreenshots", "attributes": {"fileName": name, "fileSize": len(blob)},
+        "relationships": {"inAppPurchaseV2": iap_ref(iid)}}})["data"]
+    upload_parts(created["attributes"]["uploadOperations"], blob)
+    api("PATCH", f"/v1/inAppPurchaseAppStoreReviewScreenshots/{created['id']}", {"data": {
+        "type": "inAppPurchaseAppStoreReviewScreenshots", "id": created["id"],
+        "attributes": {"uploaded": True, "sourceFileChecksum": hashlib.md5(blob).hexdigest()}}})
+
+
 def check_purchases(app_id, wanted_ids):
     """Pro の課金アイテムが App Store Connect にあって、審査に出せる状態かを確かめる"""
     if not wanted_ids:
         return []
     found = {}
     for item in api("GET", f"/v1/apps/{app_id}/inAppPurchasesV2", params={"limit": 200})["data"]:
-        found[item["attributes"]["productId"]] = ("inAppPurchaseSubmissions", "inAppPurchaseV2", item)
+        found[item["attributes"]["productId"]] = ("inAppPurchaseSubmissions", "inAppPurchaseV2", "inAppPurchases", item)
     groups = api("GET", f"/v1/apps/{app_id}/subscriptionGroups", params={"limit": 50})["data"]
     for group in groups:
         for item in api("GET", f"/v1/subscriptionGroups/{group['id']}/subscriptions", params={"limit": 50})["data"]:
-            found[item["attributes"]["productId"]] = ("subscriptionSubmissions", "subscription", item)
+            found[item["attributes"]["productId"]] = ("subscriptionSubmissions", "subscription", "subscriptions", item)
     to_submit, ok = [], True
     for pid in wanted_ids:
         if pid not in found:
             print(f"::error::課金アイテム {pid} が App Store Connect にありません")
             ok = False
             continue
-        kind, rel, item = found[pid]
+        kind, rel, rel_type, item = found[pid]
         state = item["attributes"].get("state")
         print(f"課金アイテム {pid}: {state}")
         if state == "READY_TO_SUBMIT":
-            to_submit.append((kind, rel, item["id"]))
+            to_submit.append((kind, rel, rel_type, item["id"]))
         elif state in ("MISSING_METADATA", "DEVELOPER_ACTION_NEEDED", "REJECTED"):
             print(f"::warning::{pid} は {state}。App Store Connect で説明・価格・審査用スクリーンショットを埋めてください")
             ok = False
@@ -314,9 +425,9 @@ def check_purchases(app_id, wanted_ids):
 
 
 def submit_purchases(items):
-    for kind, rel, item_id in items:
+    for kind, rel, rel_type, item_id in items:
         api("POST", f"/v1/{kind}", {"data": {
-            "type": kind, "relationships": {rel: {"data": {"type": rel + "s", "id": item_id}}}}}, allow=(409,))
+            "type": kind, "relationships": {rel: {"data": {"type": rel_type, "id": item_id}}}}}, allow=(409,))
         print(f"課金アイテム {item_id} を審査に出しました")
 
 
@@ -348,6 +459,8 @@ def main():
         print("dry run: App Store Connect は読むだけで、何も変えません")
 
     app_id = find_app(cfg["app"])
+    for spec in cfg.get("create_purchases") or []:
+        ensure_purchase(app_id, spec, root)
     purchases = check_purchases(app_id, cfg.get("purchases") or [])
     version, versions = find_or_create_version(app_id, str(cfg["version"]))
     state = state_of(version)
