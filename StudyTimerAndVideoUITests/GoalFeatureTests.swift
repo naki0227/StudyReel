@@ -68,9 +68,10 @@ final class GoalFeatureTests: XCTestCase {
         tap(app.buttons["papers.share"])
         pause(2.5)
         shot("goal-04-card-scoreup")
-        tap(app.buttons["閉じる"])
+        // 共有画面が過去問の画面に重なるので、閉じるボタンはそれぞれの画面のものを押す
+        tap(app.navigationBars["カードで共有"].buttons["閉じる"])
         pause(1)
-        tap(app.buttons["閉じる"])
+        tap(app.navigationBars["過去問・模試"].buttons["閉じる"])
         pause(1.5)
 
         tap(app.buttons["home.goal.share"])
@@ -79,7 +80,7 @@ final class GoalFeatureTests: XCTestCase {
         tap(app.buttons["宣言"])
         pause(1.5)
         shot("goal-06-card-declaration")
-        tap(app.buttons["閉じる"])
+        tap(app.navigationBars["カードで共有"].buttons["閉じる"])
         pause(1.5)
 
         tap(app.buttons["home.goal.edit"])

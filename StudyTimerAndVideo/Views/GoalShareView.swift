@@ -229,6 +229,7 @@ struct GoalShareCard: View {
             } else {
                 GridPaperBackground(color: theme.paper)
             }
+            // 中身は上から並べる。下の行（ブランド名）は中身が長くても隠れないよう、いちばん下に重ねる
             VStack(alignment: .leading, spacing: 0) {
                 switch kind {
                 case .declaration: declaration
@@ -236,18 +237,21 @@ struct GoalShareCard: View {
                 case .scoreUp: scoreUp
                 case .achieved: achieved
                 }
-                Spacer(minLength: 0)
-                HStack {
-                    GoalScript(text: footerScript, size: 12, color: kind == .achieved ? Color(red: 0.31, green: 0.44, blue: 0.56) : ReelTheme.secondary)
-                    Spacer()
-                    Text("StudyReel")
-                        .font(ReelTheme.serif(14))
-                        .foregroundColor(ReelTheme.ink)
-                }
             }
             .padding(.horizontal, 26)
             .padding(.top, 28)
-            .padding(.bottom, 24)
+            .frame(width: 360, height: 640 - 56, alignment: .top)
+            .clipped()
+            HStack {
+                GoalScript(text: footerScript, size: 12, color: kind == .achieved ? Color(red: 0.31, green: 0.44, blue: 0.56) : ReelTheme.secondary)
+                Spacer()
+                Text("StudyReel")
+                    .font(ReelTheme.serif(14))
+                    .foregroundColor(ReelTheme.ink)
+            }
+            .padding(.horizontal, 26)
+            .frame(width: 360, height: 40)
+            .offset(y: 640 - 24 - 40)
         }
         .frame(width: 360, height: 640)
         .clipped()
@@ -286,8 +290,8 @@ struct GoalShareCard: View {
     private var declaration: some View {
         if let goal = content.goal {
             header("my goal ✦", dateText(goal.createdAt))
-            DDayText(goal: goal, size: 108, theme: theme, now: goal.createdAt)
-                .padding(.top, 26)
+            DDayText(goal: goal, size: 96, theme: theme, now: goal.createdAt)
+                .padding(.top, 20)
             Text(L10n.format("%@まで", goal.deadline.formatted(.dateTime.month().day().weekday(.abbreviated))))
                 .font(ReelTheme.sans(12))
                 .foregroundColor(ReelTheme.secondary)
@@ -312,13 +316,13 @@ struct GoalShareCard: View {
                     }
                 }
             }
-            .padding(.top, 24)
+            .padding(.top, 22)
             HStack {
                 Spacer()
                 Polaroid(image: content.photo, caption: "day 1 ✎", badge: "", tape: GoalTheme.tapePink, angle: 3)
-                    .frame(width: 168)
+                    .frame(width: 136)
             }
-            .padding(.top, 26)
+            .padding(.top, 20)
         }
     }
 
@@ -392,7 +396,7 @@ struct GoalShareCard: View {
                 HStack {
                     Spacer()
                     Polaroid(image: photo, caption: "today ✦", tape: GoalTheme.tapeYellow, angle: -3)
-                        .frame(width: 130)
+                        .frame(width: 108)
                 }
                 .padding(.top, 14)
             }
@@ -409,7 +413,7 @@ struct GoalShareCard: View {
     @ViewBuilder
     private var scoreUp: some View {
         if let series = content.series, let gain = series.gain {
-            header("score up ↗", series.latest.map { dateText($0.date) } ?? "")
+            header("score up \u{2197}\u{FE0E}", series.latest.map { dateText($0.date) } ?? "")
             Text(series.name)
                 .font(ReelTheme.sans(12))
                 .foregroundColor(ReelTheme.ink)
@@ -428,16 +432,20 @@ struct GoalShareCard: View {
             }
             .padding(.top, 22)
             let latestParts = series.latest?.parts.filter { $0.score != nil } ?? []
+            // 大問の点数と「目標まであと何点」は行を分けて、文字が切れないようにする
             HStack(spacing: 6) {
                 ForEach(latestParts.prefix(2)) { part in
                     GoalPill(value: part.score.map(String.init) ?? "", label: part.name)
-                }
-                if let target = content.goal?.targetScore, let last = series.latest?.score, target > last,
-                   content.goal?.maxScore == nil || content.goal?.maxScore == series.latest?.maxScore {
-                    GoalPill(value: L10n.format("あと%d", target - last), label: L10n.string("目標まで"))
+                        .fixedSize()
                 }
             }
             .padding(.top, 16)
+            if let target = content.goal?.targetScore, let last = series.latest?.score, target > last,
+               content.goal?.maxScore == nil || content.goal?.maxScore == series.latest?.maxScore {
+                GoalPill(value: L10n.format("あと%d", target - last), label: L10n.string("目標まで"))
+                    .fixedSize()
+                    .padding(.top, 6)
+            }
             if let memo = series.latest?.memo, !memo.isEmpty {
                 TapedPaper(tape: GoalTheme.tapePink, tapeAlignment: .topTrailing, tapeAngle: 4, padding: 14) {
                     VStack(alignment: .leading, spacing: 4) {
@@ -505,8 +513,8 @@ struct GoalShareCard: View {
                 .padding(.top, 22)
             if let score = goal.achievedScore {
                 Text("\(score)")
-                    .font(ReelTheme.serif(128))
-                    .kerning(-5)
+                    .font(ReelTheme.serif(112))
+                    .kerning(-4)
                     .foregroundColor(ReelTheme.ink)
                     .padding(.top, 2)
             } else {
@@ -520,7 +528,7 @@ struct GoalShareCard: View {
                 .padding(.top, 6)
             HStack(alignment: .top) {
                 Polaroid(image: content.photo, caption: "D-day ♡", badge: "\(hoursText(progress.studiedHours))h", tape: GoalTheme.tapeYellow, angle: -3)
-                    .frame(width: 180)
+                    .frame(width: 150)
                 Spacer()
                 VStack(spacing: 0) {
                     Text("\(progress.goal.dayNumber(at: goal.achievedAt ?? Date()))")
@@ -531,9 +539,9 @@ struct GoalShareCard: View {
                 .frame(width: 74, height: 74)
                 .background(Circle().fill(Color.white).shadow(color: ReelTheme.ink.opacity(0.18), radius: 8, y: 4))
                 .rotationEffect(.degrees(8))
-                .padding(.top, 120)
+                .padding(.top, 90)
             }
-            .padding(.top, 20)
+            .padding(.top, 16)
             HStack(spacing: 6) {
                 GoalPill(value: "\(hoursText(progress.studiedHours))h", label: L10n.string("勉強"))
                 GoalPill(value: L10n.format("%d日", progress.studyDays), label: L10n.string("勉強した日"))

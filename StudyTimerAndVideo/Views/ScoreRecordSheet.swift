@@ -110,7 +110,7 @@ struct ScoreRecordSheet: View {
                                 Spacer()
                             }
                             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                                TextField("715", text: $score)
+                                TextField(previous.last?.score.map(String.init) ?? "0", text: $score)
                                     .keyboardType(.numberPad)
                                     .multilineTextAlignment(.trailing)
                                     .font(ReelTheme.serif(52))
