@@ -20,7 +20,10 @@ jobs:
 
       - name: Show Xcode
         run: |
-          sudo xcode-select -s "$(ls -d /Applications/Xcode_16*.app | sort -V | tail -1)"
+          # App Store Connect は iOS 26 SDK（Xcode 26 以降）でビルドしたものしか受け付けない
+          xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -v -i beta | sort -V | tail -1 || true)
+          if [ -z "$xcode" ]; then echo "::error::Xcode 26 が見つかりません"; ls -d /Applications/Xcode*.app; exit 1; fi
+          sudo xcode-select -s "$xcode"
           xcodebuild -version
 
       - name: Build app and widget
