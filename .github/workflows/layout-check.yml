@@ -1,0 +1,102 @@
+name: Layout check
+
+# 横向きの録画画面と確認画面で、押せる部品が左右のセーフエリアに収まっているかを確かめる（LandscapeLayoutTests）。
+# Dynamic Island のある iPhone のシミュレータで動かし、撮った画面は成果物に残す。
+# 画面のレイアウトを変えたときに走る。Actions の画面から手動でも動かせる
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "StudyTimerAndVideo/Views/**"
+      - "StudyTimerAndVideo/ContentView.swift"
+      - "StudyTimerAndVideoUITests/LandscapeLayoutTests.swift"
+      - ".github/workflows/layout-check.yml"
+
+jobs:
+  landscape:
+    concurrency:
+      group: layout-check-${{ github.ref }}
+      cancel-in-progress: true
+    runs-on: macos-15
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        include:
+          - device: iphone
+            names: "iPhone 17 Pro,iPhone 16 Pro"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -v -i beta | sort -V | tail -1 || true)
+          if [ -z "$xcode" ]; then echo "::error::Xcode 26 が見つかりません"; exit 1; fi
+          sudo xcode-select -s "$xcode"
+          xcodebuild -version
+
+      - name: Boot simulator
+        id: sim
+        timeout-minutes: 14
+        env:
+          WANTED: ${{ matrix.names }}
+        run: |
+          udid=$(xcrun simctl list devices available -j | python3 -c '
+          import json, os, sys
+          data = json.load(sys.stdin)["devices"]
+          wanted = os.environ["WANTED"].split(",")
+          found = {}
+          for runtime, devices in data.items():
+              if "iOS" not in runtime:
+                  continue
+              for d in devices:
+                  found.setdefault(d["name"], d["udid"])
+          for name in wanted:
+              if name in found:
+                  print(found[name]); break
+          ')
+          if [ -z "$udid" ]; then echo "::error::シミュレータが見つかりません: ${{ matrix.names }}"; xcrun simctl list devices available; exit 1; fi
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+          for attempt in 1 2; do
+            xcrun simctl boot "$udid" || true
+            if perl -e "alarm 300; exec @ARGV" xcrun simctl bootstatus "$udid" -b; then break; fi
+            echo "boot timed out, retrying"
+            xcrun simctl shutdown "$udid" || true
+          done
+          xcrun simctl status_bar "$udid" override --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3
+          xcrun simctl ui "$udid" appearance light
+
+      - name: Build for testing
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing \
+            -project StudyTimerAndVideo.xcodeproj \
+            -scheme StudyTimerAndVideo \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tail -20
+
+      - name: Test landscape layout
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building \
+            -project StudyTimerAndVideo.xcodeproj \
+            -scheme StudyTimerAndVideo \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            -only-testing:StudyTimerAndVideoUITests/LandscapeLayoutTests \
+            -resultBundlePath Layout.xcresult 2>&1 | grep -E "error|failed|passed|セーフエリア|Test Case" | tail -60
+
+      - name: Export screens
+        if: always()
+        run: |
+          mkdir -p screens
+          xcrun xcresulttool export attachments --path Layout.xcresult --output-path screens || true
+          ls -la screens
+
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: layout-check
+          path: screens
+          if-no-files-found: warn

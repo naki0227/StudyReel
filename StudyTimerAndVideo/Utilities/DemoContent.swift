@@ -25,6 +25,11 @@ enum DemoMode {
     // 確認画面で最初に開く道具（-StudyReelDemoTool mosaic など）
     static var reviewTool: String? { value(after: "-StudyReelDemoTool") }
 
+    // 撮影の向き（-StudyReelDemoOrientation landscape）。書かなければ縦向き
+    static var orientation: CaptureOrientation {
+        value(after: "-StudyReelDemoOrientation").flatMap(CaptureOrientation.init(rawValue:)) ?? .portrait
+    }
+
     private static func value(after flag: String) -> String? {
         let args = ProcessInfo.processInfo.arguments
         guard isActive, let i = args.firstIndex(of: flag), i + 1 < args.count else { return nil }
@@ -270,7 +275,7 @@ enum DemoSeeder {
         defaults.set(true, forKey: CoachTour.recordingKey)
         defaults.set(false, forKey: RecordingSettings.saveToPhotosKey)
         defaults.set(true, forKey: MediaStore.keepVideoKey)
-        defaults.set(CaptureOrientation.portrait.rawValue, forKey: CaptureOrientation.storageKey)
+        defaults.set(DemoMode.orientation.rawValue, forKey: CaptureOrientation.storageKey)
         defaults.set(true, forKey: "debug_preview_seeded_v1")
     }
 
@@ -337,7 +342,8 @@ enum DemoSeeder {
     // 録画を止めたとき、確認画面に渡すデモの動画
     static func recordingResult(sessionStart: Date) -> RecordingResult? {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("demo-recording.mov")
-        let size = CGSize(width: 720, height: 1280)
+        // 撮影の向きに合わせる（横向きなら横長の動画）
+        let size = DemoMode.orientation.isLandscape ? CGSize(width: 1280, height: 720) : CGSize(width: 720, height: 1280)
         guard DemoArt.writeVideo(to: url, palette: DemoArt.palettes[0], size: size, frames: 80, mosaic: false) else { return nil }
         let face = DemoArt.faceRect(for: size).insetBy(dx: -0.04, dy: -0.03)
         var track = FaceTrack()
