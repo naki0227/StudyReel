@@ -8,6 +8,8 @@ struct StartView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var goals: [DailyGoal]
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
+    @Query(filter: #Predicate<StudyMaterial> { $0.finishedAt == nil }, sort: \StudyMaterial.createdAt, order: .reverse)
+    private var studyingMaterials: [StudyMaterial]
 
     // 新しい記録シートが閉じきってから録画画面を開くための印
     @State private var startAfterSheetCloses = false
@@ -33,6 +35,7 @@ struct StartView: View {
     @State private var showPermissionAlert = false
     @State private var selectedMaterialID: UUID? = MaterialSelection.lastID
     @State private var showShare = false
+    @State private var showMaterials = false
     @AppStorage(OnboardingView.storageKey) private var hasSeenOnboarding = false
     @State private var sessionBootstrap: SessionBootstrap?
 
@@ -65,6 +68,8 @@ struct StartView: View {
                     todayStrip
                         .padding(.bottom, 12)
                     weekShareRow
+                        .padding(.bottom, 18)
+                    materialsStrip
                         .padding(.bottom, 22)
 
                     if sessions.isEmpty {
@@ -126,6 +131,9 @@ struct StartView: View {
             }
             .sheet(isPresented: $showWeeklyVlog) {
                 WeeklyVlogView()
+            }
+            .sheet(isPresented: $showMaterials) {
+                MaterialsView()
             }
             .sheet(isPresented: $showShare) {
                 StudyShareView()
@@ -231,6 +239,51 @@ struct StartView: View {
                     }
                 }
                 .frame(height: 3)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // 勉強中の教材を表紙で並べる。タップで教材の一覧へ
+    private var materialsStrip: some View {
+        Button {
+            showMaterials = true
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(L10n.string("教材"))
+                        .font(ReelTheme.sans(12))
+                        .foregroundColor(ReelTheme.secondary)
+                    Spacer()
+                    Text(studyingMaterials.isEmpty ? L10n.string("教材を追加") : L10n.string("すべて見る"))
+                        .font(ReelTheme.sans(12))
+                        .foregroundColor(ReelTheme.accentDeep)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(ReelTheme.accentDeep)
+                }
+
+                if studyingMaterials.isEmpty {
+                    Text(L10n.string("使っている参考書や問題集を入れると、教材ごとに勉強時間がたまります。"))
+                        .font(ReelTheme.sans(12))
+                        .foregroundColor(ReelTheme.secondary)
+                        .multilineTextAlignment(.leading)
+                } else {
+                    // ボタンの中なので横スクロールにはせず、新しい順に5冊まで並べる
+                    HStack(alignment: .top, spacing: 12) {
+                            ForEach(studyingMaterials.prefix(5)) { material in
+                                VStack(alignment: .leading, spacing: 5) {
+                                    MaterialCover(material: material)
+                                        .frame(width: 58, height: 80)
+                                    Text(material.name)
+                                        .font(ReelTheme.sans(10))
+                                        .foregroundColor(ReelTheme.ink)
+                                        .lineLimit(2)
+                                        .frame(width: 58, alignment: .leading)
+                                }
+                            }
+                    }
+                }
             }
         }
         .buttonStyle(.plain)
