@@ -92,6 +92,8 @@ def find_or_create_version(app_id, version_string):
     versions = api("GET", f"/v1/apps/{app_id}/appStoreVersions",
                    params={"filter[platform]": "IOS", "limit": 50})["data"]
     for v in versions:
+        print(f"  既存のバージョン {v['attributes']['versionString']}: {state_of(v)}")
+    for v in versions:
         if v["attributes"]["versionString"] == version_string:
             return v, versions
     for v in versions:
@@ -106,6 +108,7 @@ def find_or_create_version(app_id, version_string):
         "type": "appStoreVersions",
         "attributes": {"platform": "IOS", "versionString": version_string},
         "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}})["data"]
+    created["attributes"].setdefault("versionString", version_string)
     created["attributes"].setdefault("appVersionState", "PREPARE_FOR_SUBMISSION")
     return created, versions
 
