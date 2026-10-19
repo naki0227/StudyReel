@@ -14,6 +14,8 @@ struct ContentView: View {
     @StateObject private var recorder = TimeLapseRecorder()
     @StateObject private var timerModel = TimerViewModel()
     @StateObject private var stopwatchModel = StopwatchViewModel()
+    @StateObject private var music = StudyMusicPlayer()
+    @AppStorage(StudySound.storageKey) private var studySoundRaw = StudySound.none.rawValue
 
     @State private var isRecording = false
     @State private var showSaveAlert = false
@@ -185,6 +187,9 @@ struct ContentView: View {
             didAutoStart = true
             startRecording()
         }
+        .onDisappear {
+            music.stop()
+        }
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
             syncWithWidgetStopState()
             saveRecoveryIfNeeded()
@@ -267,6 +272,8 @@ struct ContentView: View {
                     .background(Circle().fill(Color.white.opacity(0.22)))
             }
             .accessibilityLabel(L10n.string("中断"))
+
+            musicButton
 
             if !isRecording {
                 Button {
@@ -362,9 +369,61 @@ struct ContentView: View {
         [
             CoachStep(id: "rec.shutter", title: L10n.string("ここで開始"), message: L10n.string("押すとタイマーと撮影が始まります。もう一度押すと終了して、確認画面に進みます。")),
             CoachStep(id: "rec.mode", title: L10n.string("撮り方を選ぶ"), message: L10n.string("タイムラプスは数秒に1枚撮ってつなげます。全部録画（Pro）はずっと動画で残します。")),
+            CoachStep(id: "rec.music", title: L10n.string("勉強中の音"), message: L10n.string("雨の音や集中ノイズ、BGMを流しながら勉強できます。動画には入りません。")),
             CoachStep(id: "rec.orientation", title: L10n.string("縦か横か"), message: L10n.string("縦向きはリール向け、横向きは机全体が入ります。")),
             CoachStep(id: "rec.timer", title: L10n.string("残り時間"), message: L10n.string("録画中は🌙ボタンで画面を暗くできます。録画は続いたままです。"))
         ]
+    }
+
+    private var savedSound: StudySound {
+        let sound = StudySound(rawValue: studySoundRaw) ?? .none
+        return sound.isPro && !storeKit.isProUnlocked ? .none : sound
+    }
+
+    // 勉強中に流す音を選ぶ。選んだらすぐ鳴らして、次の記録でも同じ音にする
+    private var musicButton: some View {
+        Menu {
+            Picker(L10n.string("勉強中の音"), selection: Binding(
+                get: { savedSound },
+                set: { chooseSound($0) }
+            )) {
+                ForEach(StudySound.allCases) { sound in
+                    Label(
+                        sound.isPro && !storeKit.isProUnlocked ? "\(sound.title)  PRO" : sound.title,
+                        systemImage: sound.systemImage
+                    )
+                    .tag(sound)
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: savedSound == .none ? "music.note" : savedSound.systemImage)
+                if savedSound != .none {
+                    Text(savedSound.title)
+                        .lineLimit(1)
+                }
+            }
+            .font(ReelTheme.sans(13, weight: .medium))
+            .foregroundColor(.white)
+            .padding(.horizontal, savedSound == .none ? 0 : 12)
+            .frame(minWidth: 38, minHeight: 38)
+            .background(Capsule().fill(Color.white.opacity(0.22)))
+        }
+        .coachMark("rec.music")
+        .accessibilityLabel(L10n.string("勉強中の音"))
+    }
+
+    private func chooseSound(_ sound: StudySound) {
+        if sound.isPro && !storeKit.isProUnlocked {
+            showPaywall = true
+            return
+        }
+        studySoundRaw = sound.rawValue
+        if sound == .none {
+            music.stop()
+        } else {
+            music.play(sound)
+        }
     }
 
     private var dimButton: some View {
@@ -560,6 +619,10 @@ struct ContentView: View {
         isRecording = true
         isPaused = false
         stoppedWhileAway = false
+        if music.sound != savedSound {
+            music.play(savedSound)
+        }
+        music.hold(false)
         UIApplication.shared.isIdleTimerDisabled = true
         StudyLiveActivityController.shared.start(
             isTimer: mode == .timer,
@@ -583,6 +646,7 @@ struct ContentView: View {
                 recorder.resume()
             }
             isPaused = false
+            music.hold(false)
         } else {
             if mode == .timer {
                 timerModel.pause()
@@ -594,6 +658,7 @@ struct ContentView: View {
                 recorder.pause()
             }
             isPaused = true
+            music.hold(true)
         }
         updateLiveActivity()
     }
@@ -631,6 +696,7 @@ struct ContentView: View {
         showResumeCard = false
         stoppedWhileAway = false
         setDimmed(false)
+        music.stop()
         UIApplication.shared.isIdleTimerDisabled = false
         clearWidgetTimerState()
         StudyLiveActivityController.shared.end()
@@ -641,6 +707,7 @@ struct ContentView: View {
         timerModel.stop()
         stopwatchModel.stop()
         recorder.cancel()
+        music.stop()
         isRecording = false
         isPaused = false
         sessionStartedAt = nil
@@ -669,7 +736,9 @@ struct ContentView: View {
             // 裏に回るとカメラは止まる。勉強時間は数え続けて、録画だけ止めておく
             stopRecordingWhileAway()
             setDimmed(false)
+            music.hold(true)
         case .active:
+            music.hold(isPaused || !isRecording)
             if stoppedWhileAway && isRecording && !recorder.isInterrupted {
                 showResumeCard = true
             }

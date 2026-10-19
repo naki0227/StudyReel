@@ -21,5 +21,9 @@ Regenerate (needs Python 3 with numpy, and ffmpeg):
 ```bash
 cd tools/bgm
 python3 songs.py
+python3 ambient.py
 mv *.m4a ../../StudyTimerAndVideo/Resources/BGM/
 ```
+
+`ambient.py` makes the two study sounds played on the recording screen
+(Rain.m4a, BrownNoise.m4a). They are shaped noise only and loop every 60 s.
