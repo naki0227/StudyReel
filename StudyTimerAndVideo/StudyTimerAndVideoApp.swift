@@ -21,7 +21,14 @@ struct StudyTimerAndVideoApp: App {
     
     init() {
         do {
-            container = try ModelContainer(for: StudySession.self, Tag.self, DailyGoal.self, StudyMaterial.self)
+            // iCloud の権限があると SwiftData は CloudKit 同期を自動で始めようとし、
+            // 今のモデルは CloudKit の条件（全項目が省略可能など）を満たさないので起動時に落ちる。
+            // バックアップは iCloud Drive にファイルで送っているので、CloudKit 同期は使わない
+            let configuration = ModelConfiguration(cloudKitDatabase: .none)
+            container = try ModelContainer(
+                for: StudySession.self, Tag.self, DailyGoal.self, StudyMaterial.self,
+                configurations: configuration
+            )
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
