@@ -38,8 +38,10 @@ jobs:
       - name: Boot simulator
         id: sim
         timeout-minutes: 14
+        env:
+          WANTED: ${{ matrix.names }}
         run: |
-          udid=$(WANTED="${{ matrix.names }}" xcrun simctl list devices available -j | python3 -c '
+          udid=$(xcrun simctl list devices available -j | python3 -c '
           import json, os, sys
           data = json.load(sys.stdin)["devices"]
           wanted = os.environ["WANTED"].split(",")

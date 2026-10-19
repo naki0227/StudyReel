@@ -438,6 +438,103 @@ def submit_purchases(items):
         print(f"課金アイテム {item_id} を審査に出しました")
 
 
+def screenshot_changes(by_locale, cfg, root):
+    """screenshots に書いた画像と、App Store Connect に今ある画像を比べて、入れ替えが要る枠を返す"""
+    changes = []
+    for locale, sets in (cfg.get("screenshots") or {}).items():
+        loc = by_locale.get(locale)
+        if not loc:
+            print(f"::warning::{locale} のストア情報がないのでスクリーンショットを飛ばします")
+            continue
+        existing = api("GET", f"/v1/appStoreVersionLocalizations/{loc['id']}/appScreenshotSets")["data"]
+        for display_type, rel_paths in sets.items():
+            files = [os.path.join(root, p) for p in rel_paths]
+            sizes = [os.path.getsize(f) for f in files]
+            sset = next((x for x in existing if x["attributes"]["screenshotDisplayType"] == display_type), None)
+            current = []
+            if sset:
+                current = api("GET", f"/v1/appScreenshotSets/{sset['id']}/appScreenshots")["data"]
+            if [c["attributes"]["fileSize"] for c in current] == sizes:
+                print(f"{locale} {display_type} スクリーンショット: 変更なし（{len(sizes)} 枚）")
+                continue
+            print(f"{locale} {display_type} スクリーンショット: {len(current)} 枚 → {len(files)} 枚に入れ替え")
+            changes.append({"loc": loc, "type": display_type, "set": sset, "current": current, "files": files})
+    return changes
+
+
+def replace_screenshots(changes):
+    uploaded = []
+    for change in changes:
+        sset = change["set"]
+        if not sset:
+            sset = api("POST", "/v1/appScreenshotSets", {"data": {
+                "type": "appScreenshotSets", "attributes": {"screenshotDisplayType": change["type"]},
+                "relationships": {"appStoreVersionLocalization": {
+                    "data": {"type": "appStoreVersionLocalizations", "id": change["loc"]["id"]}}}}})["data"]
+        for old in change["current"]:
+            api("DELETE", f"/v1/appScreenshots/{old['id']}")
+        ids = []
+        for path in change["files"]:
+            blob = open(path, "rb").read()
+            shot = api("POST", "/v1/appScreenshots", {"data": {
+                "type": "appScreenshots", "attributes": {"fileName": os.path.basename(path), "fileSize": len(blob)},
+                "relationships": {"appScreenshotSet": {"data": {"type": "appScreenshotSets", "id": sset["id"]}}}}})["data"]
+            if DRY:
+                continue
+            upload_parts(shot["attributes"]["uploadOperations"], blob)
+            api("PATCH", f"/v1/appScreenshots/{shot['id']}", {"data": {
+                "type": "appScreenshots", "id": shot["id"],
+                "attributes": {"uploaded": True, "sourceFileChecksum": hashlib.md5(blob).hexdigest()}}})
+            ids.append(shot["id"])
+        if ids:
+            # 書いた順に並べる（1〜3枚目が検索結果に出る）
+            api("PATCH", f"/v1/appScreenshotSets/{sset['id']}/relationships/appScreenshots",
+                {"data": [{"type": "appScreenshots", "id": i} for i in ids]})
+        uploaded += ids
+        print(f"{change['loc']['attributes']['locale']} {change['type']}: {len(change['files'])} 枚をアップロード")
+    return uploaded
+
+
+def wait_screenshots(ids, minutes=20):
+    deadline = time.time() + minutes * 60
+    for sid in ids:
+        while True:
+            attrs = api("GET", f"/v1/appScreenshots/{sid}")["data"]["attributes"]
+            state = (attrs.get("assetDeliveryState") or {}).get("state")
+            if state == "COMPLETE":
+                break
+            if state == "FAILED" or time.time() > deadline:
+                sys.exit(f"::error::スクリーンショットの処理が終わりません: {attrs.get('fileName')} {attrs.get('assetDeliveryState')}")
+            time.sleep(10)
+    if ids:
+        print(f"スクリーンショット {len(ids)} 枚の処理が終わりました")
+
+
+def withdraw(app_id, version):
+    """審査待ちのバージョンを取り下げて、中身を変えられる状態に戻す"""
+    subs = api("GET", "/v1/reviewSubmissions", params={
+        "filter[app]": app_id, "filter[platform]": "IOS", "filter[state]": "WAITING_FOR_REVIEW"})["data"]
+    if not subs:
+        sys.exit("::error::取り下げられる審査が見つかりません")
+    for sub in subs:
+        print(f"審査を取り下げます（{sub['id']}）")
+        api("PATCH", f"/v1/reviewSubmissions/{sub['id']}", {"data": {
+            "type": "reviewSubmissions", "id": sub["id"], "attributes": {"canceled": True}}})
+    if DRY:
+        return
+    deadline = time.time() + 600
+    while time.time() < deadline:
+        current = api("GET", f"/v1/appStoreVersions/{version['id']}")["data"]
+        state = state_of(current)
+        if state in EDITABLE:
+            print(f"取り下げました（{state}）")
+            version["attributes"] = current["attributes"]
+            return
+        print(f"取り下げ待ち（{state}）…")
+        time.sleep(15)
+    sys.exit("::error::取り下げが終わりません")
+
+
 def submit(app_id, version_id):
     subs = api("GET", "/v1/reviewSubmissions", params={
         "filter[app]": app_id, "filter[platform]": "IOS",
@@ -472,6 +569,14 @@ def main():
     version, versions = find_or_create_version(app_id, str(cfg["version"]))
     state = state_of(version)
     print(f"バージョン {version['attributes']['versionString']}: {state}")
+    # 審査待ちでも、スクリーンショットを入れ替えたいときは取り下げてから直す（withdraw_to_update: true のとき）
+    if state == "WAITING_FOR_REVIEW" and cfg.get("withdraw_to_update"):
+        locs = api("GET", f"/v1/appStoreVersions/{version['id']}/appStoreVersionLocalizations")["data"]
+        if screenshot_changes({l["attributes"]["locale"]: l for l in locs}, cfg, root):
+            withdraw(app_id, version)
+            state = "DEVELOPER_REJECTED"
+            # 一緒に取り下がった課金アイテムも、もう一度出せるように数え直す
+            purchases = check_purchases(app_id, cfg.get("purchases") or [])
     if state in IN_REVIEW or state == "READY_FOR_DISTRIBUTION":
         print("このバージョンはもう審査に出ているので、バージョンの中身は変えません")
         # あとから準備ができた課金アイテムだけ、追いかけて審査に出す
@@ -492,12 +597,14 @@ def main():
     attach_build(version["id"], build)
     update_review_detail(version["id"], versions, cfg)
     previews = upload_previews(by_locale, cfg, root)
+    shots = replace_screenshots(screenshot_changes(by_locale, cfg, root))
 
     if cfg.get("submit_for_review"):
         if DRY:
             print("submit_for_review: true なので、マージすると審査に出します")
             return
         wait_previews(previews)
+        wait_screenshots(shots)
         submit_purchases(purchases)
         submit(app_id, version["id"])
     else:
