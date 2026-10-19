@@ -63,7 +63,11 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             GeometryReader { geometry in
-                CameraPreview(recorder: recorder, isLandscape: geometry.size.width > geometry.size.height)
+                if DemoMode.isActive {
+                    DemoCameraView()
+                } else {
+                    CameraPreview(recorder: recorder, isLandscape: geometry.size.width > geometry.size.height)
+                }
             }
             .ignoresSafeArea()
 
@@ -282,7 +286,7 @@ struct ContentView: View {
                 .accessibilityLabel(L10n.format("%@に切り替える", captureOrientation.toggled.title))
             }
 
-            if recordingMode != .off && !recorder.canCaptureVideo {
+            if recordingMode != .off && !canRecord {
                 Text(L10n.string("この端末では録画できません。"))
                     .font(ReelTheme.sans(11))
                     .foregroundColor(.white.opacity(0.85))
@@ -509,12 +513,17 @@ struct ContentView: View {
         CaptureOrientation(rawValue: captureOrientationRaw) ?? .landscape
     }
 
+    // デモ表示ではカメラがなくても録画しているように見せる
+    private var canRecord: Bool {
+        recorder.canCaptureVideo || DemoMode.isActive
+    }
+
     private var isRecordingVideo: Bool {
-        recordingMode != .off && recorder.canCaptureVideo
+        recordingMode != .off && canRecord
     }
 
     private var recordingLabel: String {
-        if recordingMode != .off && !recorder.canCaptureVideo { return L10n.string("録画できません") }
+        if recordingMode != .off && !canRecord { return L10n.string("録画できません") }
         return recordingMode.title
     }
 
@@ -595,7 +604,14 @@ struct ContentView: View {
         // 確認画面の途中でアプリが終わっても、勉強時間だけは残せるよう最後の時間で控えておく
         saveRecoveryIfNeeded(force: true, elapsed: completedDuration)
 
-        if isRecordingVideo {
+        if isRecordingVideo && DemoMode.isActive {
+            recorder.cancel()
+            if let result = DemoSeeder.recordingResult(sessionStart: sessionStartedAt ?? Date()) {
+                reviewResult = result
+            } else {
+                showSaveSheet = true
+            }
+        } else if isRecordingVideo {
             recorder.finish { result in
                 if let result {
                     reviewResult = result

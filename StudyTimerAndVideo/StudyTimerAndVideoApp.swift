@@ -32,6 +32,9 @@ struct StudyTimerAndVideoApp: App {
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
+        if DemoMode.isActive {
+            DemoSeeder.applyDefaults()
+        }
     }
     
     var body: some Scene {
@@ -70,6 +73,9 @@ struct StudyTimerAndVideoApp: App {
             }
             .onAppear {
                 let context = container.mainContext
+                if DemoMode.isActive {
+                    DemoSeeder.prepare(context: context)
+                }
                 // すでに使っている人には案内を出さない
                 if !hasSeenOnboarding, (try? context.fetchCount(FetchDescriptor<StudySession>())) ?? 0 > 0 {
                     hasSeenOnboarding = true
@@ -77,7 +83,9 @@ struct StudyTimerAndVideoApp: App {
                 let migrator = DataMigrator(modelContext: context)
                 migrator.migrateIfNeeded()
                 #if DEBUG
-                DebugPreviewSeeder.seedIfNeeded(modelContext: context)
+                if !DemoMode.isActive {
+                    DebugPreviewSeeder.seedIfNeeded(modelContext: context)
+                }
                 #endif
             }
         }
