@@ -380,14 +380,20 @@ def ensure_purchase(app_id, spec, root):
     name = os.path.basename(path)
     res = api("GET", f"/v2/inAppPurchases/{iid}/appStoreReviewScreenshot", allow=(404,))
     old = (res or {}).get("data")
-    if old and old["attributes"].get("fileName") == name and old["attributes"].get("fileSize") == len(blob):
-        return
+    if old:
+        attrs = old["attributes"]
+        delivery = attrs.get("assetDeliveryState") or {}
+        print(f"{pid}: 今の審査用スクリーンショット {attrs.get('fileName')} {attrs.get('fileSize')} bytes, {delivery}")
+        if attrs.get("fileName") == name and attrs.get("fileSize") == len(blob) and delivery.get("state") != "FAILED":
+            return
     if old:
         api("DELETE", f"/v1/inAppPurchaseAppStoreReviewScreenshots/{old['id']}")
     print(f"{pid}: 審査用スクリーンショットをアップロード")
     created = api("POST", "/v1/inAppPurchaseAppStoreReviewScreenshots", {"data": {
         "type": "inAppPurchaseAppStoreReviewScreenshots", "attributes": {"fileName": name, "fileSize": len(blob)},
         "relationships": {"inAppPurchaseV2": iap_ref(iid)}}})["data"]
+    if DRY:
+        return
     upload_parts(created["attributes"]["uploadOperations"], blob)
     api("PATCH", f"/v1/inAppPurchaseAppStoreReviewScreenshots/{created['id']}", {"data": {
         "type": "inAppPurchaseAppStoreReviewScreenshots", "id": created["id"],
