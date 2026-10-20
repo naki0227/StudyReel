@@ -132,9 +132,11 @@ jobs:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        # macOS の pip は外部管理（PEP 668）なので --break-system-packages。使い捨ての Mac なので問題ない。
         run: |
-          pip3 install -q "pyjwt[crypto]==2.9.0" "requests==2.32.3"
-          python3 tools/appstore/certs.py revoke --started "${{ steps.build.outputs.started }}" --window 20 || echo "::warning::証明書の後片付けに失敗しました"
+          { pip3 install -q --break-system-packages "pyjwt[crypto]==2.9.0" "requests==2.32.3" \
+            && python3 tools/appstore/certs.py revoke --started "${{ steps.build.outputs.started }}" --window 20; } \
+            || echo "::warning::証明書の後片付けに失敗しました"
 
       - name: Remove key
         if: always()
