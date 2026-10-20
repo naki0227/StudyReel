@@ -100,7 +100,7 @@ graph TD
 **Enludus**
 
 Focus: Native iOS & Flutter Development
-Contact: https://enludus.vercel.app
+Contact: https://enludus.com
 
 <p align="center"> 
     © 2025 StudyReel Project. All rights reserved. 

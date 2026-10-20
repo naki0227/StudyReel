@@ -2,7 +2,7 @@
 //  StudyReelWidget.swift
 //  StudyReelWidget
 //
-//  Created by hw24a094 on 2025/12/18.
+//  Created by Ibuki Nagase on 2025/12/18.
 //
 
 import WidgetKit
