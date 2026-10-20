@@ -164,4 +164,23 @@ final class GoalFeatureTests: XCTestCase {
         pause(2.5)
         shot("theme-07-papers-lavender")
     }
+
+    // 閉じるボタンは、どの画面でも左にある
+    @MainActor
+    func test4CloseButtonsOnTheLeft() throws {
+        let app = launch([])
+        pause(6)
+        for (icon, name) in [("gearshape", "設定"), ("chart.bar", "統計"), ("calendar", "カレンダー")] {
+            tap(app.buttons[icon])
+            pause(2)
+            shot("close-\(icon)")
+            let bar = app.navigationBars[name]
+            XCTAssert(bar.waitForExistence(timeout: 5), "「\(name)」が開きません")
+            let closeButton = bar.buttons["閉じる"]
+            XCTAssert(closeButton.exists, "「\(name)」に閉じるがありません")
+            XCTAssertLessThan(closeButton.frame.midX, app.windows.firstMatch.frame.midX, "「\(name)」の閉じるが右にあります")
+            close(app, name)
+            pause(1)
+        }
+    }
 }
