@@ -45,7 +45,6 @@ struct StartView: View {
     @AppStorage(OnboardingView.storageKey) private var hasSeenOnboarding = false
     @AppStorage(CoachTour.homeKey) private var hasSeenHomeTour = false
     @AppStorage(ThemeColor.storageKey) private var themeRaw = ThemeColor.sky.rawValue
-    @EnvironmentObject private var storeKit: StoreKitManager
     @State private var showHomeTour = false
     @State private var sessionBootstrap: SessionBootstrap?
 
@@ -70,7 +69,7 @@ struct StartView: View {
 
     var body: some View {
         // 主役の色をここで決める。ホームとここから開く画面は、この色で描く
-        let theme = ThemeColor.apply(rawValue: themeRaw, isPro: storeKit.isProUnlocked)
+        let theme = ThemeColor.apply(rawValue: themeRaw)
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {

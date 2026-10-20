@@ -24,6 +24,8 @@ struct SettingsView: View {
 
     @State private var quietReminderEnabled = StudyNotificationManager.shared.isQuietReminderEnabled
     @State private var showPaywall = false
+    // Pro の色を使っている Pro でない人が、ほかの色に変えようとしたとき
+    @State private var pendingTheme: ThemeColor?
     @State private var showSubjects = false
     @State private var showTags = false
 
@@ -32,14 +34,16 @@ struct SettingsView: View {
 
     var body: some View {
         // 選んだ色をこの画面にもすぐ反映する
-        let theme = ThemeColor.apply(rawValue: themeRaw, isPro: storeKit.isProUnlocked)
+        let theme = ThemeColor.apply(rawValue: themeRaw)
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     sectionTitle(L10n.string("テーマカラー"))
                     themeCard(selected: theme)
                     if !storeKit.isProUnlocked {
-                        note(L10n.string("空色のほかの色は、Proで選べます。"))
+                        note(theme.isPro
+                            ? L10n.string("いまの色はそのまま使えます。ほかの色に変えると、Proに入るまで戻せません。")
+                            : L10n.string("空色のほかの色は、Proで選べます。"))
                     }
 
                     sectionTitle(L10n.string("撮影設定"))
@@ -208,6 +212,16 @@ struct SettingsView: View {
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
             }
+            .alert(
+                L10n.string("色を変えますか？"),
+                isPresented: Binding(get: { pendingTheme != nil }, set: { if !$0 { pendingTheme = nil } }),
+                presenting: pendingTheme
+            ) { color in
+                Button(L10n.string("キャンセル"), role: .cancel) {}
+                Button(L10n.format("%@にする", color.title)) { themeRaw = color.rawValue }
+            } message: { _ in
+                Text(L10n.format("いまの「%@」はProの色です。変えると、Proに入るまで戻せません。", theme.title))
+            }
             .alert(L10n.string("バックアップから戻しますか？"), isPresented: $showRestoreConfirm) {
                 Button(L10n.string("キャンセル"), role: .cancel) {}
                 Button(L10n.string("戻す")) { restoreBackup() }
@@ -284,14 +298,19 @@ struct SettingsView: View {
         }
     }
 
-    // 8色から選ぶ。Proでない人が空色以外を押したら、Proの案内を出す
+    // 8色から選ぶ。Proでない人が空色以外を押したら、Proの案内を出す。
+    // Proのときに選んだ色はProが終わっても使えるが、変えると戻せないので先に確かめる
     private func themeCard(selected: ThemeColor) -> some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 4), spacing: 14) {
             ForEach(ThemeColor.allCases) { color in
-                let locked = color.isPro && !storeKit.isProUnlocked
+                let locked = color.isPro && !storeKit.isProUnlocked && color != selected
                 Button {
-                    if locked {
+                    if color == selected {
+                        return
+                    } else if locked {
                         showPaywall = true
+                    } else if selected.isPro && !storeKit.isProUnlocked {
+                        pendingTheme = color
                     } else {
                         themeRaw = color.rawValue
                     }

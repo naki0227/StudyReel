@@ -1,6 +1,7 @@
 import SwiftUI
 
-// アプリ全体の主役の色。空色はだれでも、ほかの色は Pro で選べる
+// アプリ全体の主役の色。空色はだれでも、ほかの色は Pro で選べる。
+// Pro が終わっても、選んでいた色はそのまま使える（変えると Pro に入るまで戻せない）
 enum ThemeColor: String, CaseIterable, Identifiable {
     case sky
     case mint
@@ -13,14 +14,12 @@ enum ThemeColor: String, CaseIterable, Identifiable {
 
     static let storageKey = "theme_color"
 
-    // いま画面に使っている色。アプリの入口とホームが、設定と Pro の状態から決める
+    // いま画面に使っている色。ホームと設定が、保存してある色から決める
     private(set) static var active: ThemeColor = .sky
 
-    // 選んだ色を Pro の状態で確かめてから使う。Pro でなければ空色に戻す
     @discardableResult
-    static func apply(rawValue: String, isPro: Bool) -> ThemeColor {
-        let color = ThemeColor(rawValue: rawValue) ?? .sky
-        active = color.isPro && !isPro ? .sky : color
+    static func apply(rawValue: String) -> ThemeColor {
+        active = ThemeColor(rawValue: rawValue) ?? .sky
         return active
     }
 

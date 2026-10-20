@@ -481,3 +481,7 @@
 "ミルクティー" = "Milk tea";
 "さくら" = "Sakura";
 "抹茶" = "Matcha";
+"いまの色はそのまま使えます。ほかの色に変えると、Proに入るまで戻せません。" = "You can keep this color. If you change it, you'll need Pro to pick it again.";
+"色を変えますか？" = "Change the color?";
+"%@にする" = "Use %@";
+"いまの「%@」はProの色です。変えると、Proに入るまで戻せません。" = "“%@” is a Pro color. If you change it, you'll need Pro to pick it again.";
