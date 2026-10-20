@@ -6,10 +6,10 @@
 # アプリのプライバシー（データの収集）と年齢区分は API で変えられないので、App Store Connect の画面で設定する。
 
 app: com.ni.StudyTimerAndVideo
-version: "1.5"
-build: 220            # "latest" にすると、このバージョンで最後に上げたビルド
+version: "1.6"
+build: 223            # "latest" にすると、このバージョンで最後に上げたビルド
 release: manual       # manual: 承認されたら自分で公開 / after_approval: 承認されたらすぐ公開
-submit_for_review: true    # true にしてマージすると、反映したあと審査に出す
+submit_for_review: false   # true にしてマージすると、反映したあと審査に出す
 withdraw_to_update: true   # 審査待ちのときにスクリーンショットかビルドが変わっていたら、取り下げて差し替えてから出し直す
 
 # Pro の課金アイテム（StoreKitManager.swift の productIDs と同じ）。
@@ -42,25 +42,19 @@ localizations:
   ja:
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
-      ・勉強中に音を流せるようになりました。雨の音・集中ノイズ・BGMから選べます
-      ・教材を登録して、教材ごとに勉強時間を記録できます。バーコードや表紙を撮るだけで登録できます
-      ・今日・今週の記録や教材ごとの記録を、勉強垢やグループに共有できます
-      ・1週間分の記録を1本のVlogにまとめられます
-      ・録画中に画面を暗くできます。ロック画面とDynamic Islandにも残り時間を表示します
-      ・途中でアプリを離れても、戻ってから続きを撮れます
-      ・記録をiCloud Driveに自動でバックアップします
-      ・はじめての方向けに、画面の使い方の案内をつけました
+      ・目標を決めて、本番までの残り日数（D-day）をホームに出せます。勉強時間と過去問の最高点の進み具合も見られます
+      ・過去問や模試の点数を記録できます。同じ問題を解くたびに伸びが分かり、グラフで推移を確かめられます
+      ・目標の宣言・途中経過・点数アップ・達成を1枚のカードにして、勉強垢に共有できます
+      ・テーマカラーを8色から選べます（空色以外はPro）
+      ・画面の見出しと「閉じる」ボタンの位置を、どの画面でも同じにそろえました
   en-US:
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
-      • Play sounds while you study: rain, focus noise, or music
-      • Add your books and track study time for each one. Scan the barcode or the cover to add them
-      • Share today's or this week's study, or a single book's progress, with your study friends
-      • Turn a week of sessions into one vlog
-      • Dim the screen while recording. Time left shows on the Lock Screen and in the Dynamic Island
-      • Pick up recording where you left off after leaving the app
-      • Your records back up to iCloud Drive automatically
-      • A short guided tour for first-time users
+      • Set a goal and see the days left until test day on Home, along with your study hours and best past-paper score
+      • Log past paper and mock exam scores. Retake the same paper to see how much you've improved, with a trend chart
+      • Share your goal, progress, score gains and achievements as a card made for your study feed
+      • Choose from 8 theme colors (colors other than Sky are Pro)
+      • Screen titles and Close buttons now sit in the same place on every screen
 
 review:
   demo_account_required: false
