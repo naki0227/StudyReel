@@ -2,7 +2,7 @@
 //  StudyTimerAndVideoApp.swift
 //  StudyTimerAndVideo
 //
-//  Created by hw24a094 on 2025/09/27.
+//  Created by Ibuki Nagase on 2025/09/27.
 //
 
 import SwiftUI

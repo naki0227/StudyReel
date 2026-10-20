@@ -13,3 +13,6 @@ xcuserdata/
 *.xcodeproj/project.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
 __pycache__/
+*.ipa
+build_error.log
+StudyTimerAndVideo 20*/
