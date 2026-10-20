@@ -209,7 +209,7 @@ struct GoalCardContent {
 struct GoalShareCard: View {
     let kind: GoalCardKind
     let content: GoalCardContent
-    var theme: GoalTheme = .sky
+    var theme: GoalTheme = .current
 
     var body: some View {
         GeometryReader { geometry in
@@ -225,7 +225,7 @@ struct GoalShareCard: View {
     private var card: some View {
         ZStack(alignment: .topLeading) {
             if kind == .achieved {
-                LinearGradient(colors: [Color(red: 0.863, green: 0.918, blue: 0.965), Color(red: 0.686, green: 0.796, blue: 0.902)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                LinearGradient(colors: [theme.soft, theme.accent], startPoint: .topLeading, endPoint: .bottomTrailing)
             } else {
                 GridPaperBackground(color: theme.paper)
             }
@@ -243,7 +243,7 @@ struct GoalShareCard: View {
             .frame(width: 360, height: 640 - 56, alignment: .top)
             .clipped()
             HStack {
-                GoalScript(text: footerScript, size: 12, color: kind == .achieved ? Color(red: 0.31, green: 0.44, blue: 0.56) : ReelTheme.secondary)
+                GoalScript(text: footerScript, size: 12, color: kind == .achieved ? theme.deep : ReelTheme.secondary)
                 Spacer()
                 Text("StudyReel")
                     .font(ReelTheme.serif(14))
@@ -505,7 +505,6 @@ struct GoalShareCard: View {
     @ViewBuilder
     private var achieved: some View {
         if let goal = content.goal, let progress = content.progress {
-            let blue = Color(red: 0.31, green: 0.44, blue: 0.56)
             header("goal achieved ✦", dateText(goal.achievedAt ?? Date()), color: theme.deep)
             Text(goal.title)
                 .font(ReelTheme.serif(30))
@@ -526,7 +525,7 @@ struct GoalShareCard: View {
             }
             Text(L10n.string("目標、達成しました"))
                 .font(ReelTheme.sans(12))
-                .foregroundColor(blue)
+                .foregroundColor(theme.deep)
                 .padding(.top, 6)
             HStack(alignment: .top) {
                 Polaroid(image: content.photo, caption: "D-day ♡", badge: "\(hoursText(progress.studiedHours))h", tape: GoalTheme.tapeYellow, angle: -3)

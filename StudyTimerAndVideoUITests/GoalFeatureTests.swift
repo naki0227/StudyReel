@@ -22,16 +22,28 @@ final class GoalFeatureTests: XCTestCase {
         }
     }
 
-    // 閉じたことを確かめる。1回目の「閉じる」が効かなかったときだけ、もう一度押す
+    // 閉じたことを確かめる。1回目の「閉じる」が効かなかったときだけ、もう一度押す。
+    // 押し直したときは「retry-」のスクショを残す（テストが通っても、タップが効かなかったことが分かる）
     private func close(_ app: XCUIApplication, _ title: String) {
         let bar = app.navigationBars[title]
         for attempt in 0..<2 where bar.exists {
-            if attempt > 0 { print("「\(title)」: 1回目の「閉じる」で閉じませんでした") }
+            if attempt > 0 { shot("retry-close-\(title)") }
             tap(bar.buttons["閉じる"])
             let gone = NSPredicate(format: "exists == false")
             if XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: gone, object: bar)], timeout: 4) == .completed { return }
         }
         XCTAssertFalse(bar.exists, "「\(title)」の画面が閉じません")
+    }
+
+    // ボタンを押して、見出しが title の画面が開いたことを確かめる。開かなければ1回だけ押し直す
+    private func open(_ app: XCUIApplication, _ button: XCUIElement, _ title: String) {
+        let bar = app.navigationBars[title]
+        for attempt in 0..<2 where !bar.exists {
+            if attempt > 0 { shot("retry-open-\(title)") }
+            tap(button)
+            if bar.waitForExistence(timeout: 4) { return }
+        }
+        XCTAssert(bar.exists, "「\(title)」の画面が開きません")
     }
 
     private func shot(_ name: String) {
@@ -71,8 +83,8 @@ final class GoalFeatureTests: XCTestCase {
         shot("goal-01-home")
         assertInsideScreen(app, "ホーム")
 
-        tap(app.buttons["home.goal.papers"])
-        pause(2.5)
+        open(app, app.buttons["home.goal.papers"], "過去問・模試")
+        pause(1.5)
         shot("goal-02-papers")
         assertInsideScreen(app, "過去問")
         tap(app.buttons["papers.add"])
@@ -82,16 +94,16 @@ final class GoalFeatureTests: XCTestCase {
         shot("goal-03-record")
         tap(app.buttons["キャンセル"])
         pause(1)
-        tap(app.buttons["papers.share"])
-        pause(2.5)
+        open(app, app.buttons["papers.share"], "カードで共有")
+        pause(1.5)
         shot("goal-04-card-scoreup")
         // 共有画面が過去問の画面に重なるので、閉じるボタンはそれぞれの画面のものを押す
         close(app, "カードで共有")
         close(app, "過去問・模試")
         pause(1.5)
 
-        tap(app.buttons["home.goal.share"])
-        pause(2.5)
+        open(app, app.buttons["home.goal.share"], "カードで共有")
+        pause(1.5)
         shot("goal-05-card-progress")
         tap(app.buttons["宣言"])
         pause(1.5)
@@ -99,8 +111,7 @@ final class GoalFeatureTests: XCTestCase {
         close(app, "カードで共有")
         pause(1)
 
-        tap(app.buttons["home.goal.edit"])
-        XCTAssert(app.navigationBars["目標"].waitForExistence(timeout: 5), "目標の編集画面が開きません")
+        open(app, app.buttons["home.goal.edit"], "目標")
         pause(1)
         shot("goal-07-edit")
         assertInsideScreen(app, "目標の編集")
@@ -130,5 +141,55 @@ final class GoalFeatureTests: XCTestCase {
         shot("goal-10-declared")
         // 作ったら宣言カードの共有画面が開く
         XCTAssert(app.navigationBars["カードで共有"].waitForExistence(timeout: 5))
+    }
+
+    // テーマカラー。ミントで起動して、設定でラベンダーに変えると、設定とホームと共有カードが変わる
+    @MainActor
+    func test3ThemeColors() throws {
+        let app = launch(["-StudyReelDemoGoal", "-StudyReelDemoTheme", "mint"])
+        pause(6)
+        shot("theme-01-home-mint")
+
+        open(app, app.buttons["gearshape"], "設定")
+        pause(1)
+        shot("theme-02-settings-mint")
+        assertInsideScreen(app, "設定")
+        tap(app.buttons["theme.lavender"])
+        pause(1)
+        shot("theme-03-settings-lavender")
+        XCTAssert(app.buttons["theme.lavender"].isSelected, "ラベンダーが選ばれていません")
+        close(app, "設定")
+        pause(1)
+        shot("theme-04-home-lavender")
+
+        open(app, app.buttons["home.goal.share"], "カードで共有")
+        pause(1.5)
+        shot("theme-05-card-lavender")
+        tap(app.buttons["点数アップ"])
+        pause(1.5)
+        shot("theme-06-scoreup-lavender")
+        close(app, "カードで共有")
+
+        open(app, app.buttons["home.goal.papers"], "過去問・模試")
+        pause(1.5)
+        shot("theme-07-papers-lavender")
+    }
+
+    // 閉じるボタンは、どの画面でも左にある
+    @MainActor
+    func test4CloseButtonsOnTheLeft() throws {
+        let app = launch([])
+        pause(6)
+        for (icon, name) in [("gearshape", "設定"), ("chart.bar", "統計"), ("calendar", "カレンダー")] {
+            open(app, app.buttons[icon], name)
+            pause(1)
+            shot("close-\(icon)")
+            let bar = app.navigationBars[name]
+            let closeButton = bar.buttons["閉じる"]
+            XCTAssert(closeButton.exists, "「\(name)」に閉じるがありません")
+            XCTAssertLessThan(closeButton.frame.midX, app.windows.firstMatch.frame.midX, "「\(name)」の閉じるが右にあります")
+            close(app, name)
+            pause(1)
+        }
     }
 }

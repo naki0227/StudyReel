@@ -44,6 +44,7 @@ struct StartView: View {
     @State private var showMaterials = false
     @AppStorage(OnboardingView.storageKey) private var hasSeenOnboarding = false
     @AppStorage(CoachTour.homeKey) private var hasSeenHomeTour = false
+    @AppStorage(ThemeColor.storageKey) private var themeRaw = ThemeColor.sky.rawValue
     @State private var showHomeTour = false
     @State private var sessionBootstrap: SessionBootstrap?
 
@@ -67,6 +68,8 @@ struct StartView: View {
     }
 
     var body: some View {
+        // 主役の色をここで決める。ホームとここから開く画面は、この色で描く
+        let theme = ThemeColor.apply(rawValue: themeRaw)
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
@@ -124,6 +127,8 @@ struct StartView: View {
                 .frame(maxWidth: 640)
                 .frame(maxWidth: .infinity)
             }
+            // 色が変わったらホームを描き直す。開いている設定の画面は閉じない
+            .id(theme)
             .background(ReelTheme.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
             .coachTour(homeTourSteps, isPresented: $showHomeTour) {

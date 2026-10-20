@@ -56,22 +56,21 @@ struct MaterialsView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(ReelTheme.background.ignoresSafeArea())
+            // 見出しは左上に置くと iOS 26 で「…」にまとめられるので、上の真ん中に出す
+            .navigationTitle(L10n.string("教材"))
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Text(L10n.string("教材"))
-                        .font(ReelTheme.serif(24))
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L10n.string("閉じる")) { dismiss() }
                         .foregroundColor(ReelTheme.ink)
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 16) {
-                        Button {
-                            showAdd = true
-                        } label: {
-                            Image(systemName: "plus")
-                        }
-                        .accessibilityLabel(L10n.string("教材を追加"))
-                        Button(L10n.string("閉じる")) { dismiss() }
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showAdd = true
+                    } label: {
+                        Image(systemName: "plus")
                     }
+                    .accessibilityLabel(L10n.string("教材を追加"))
                     .foregroundColor(ReelTheme.accentDeep)
                 }
             }

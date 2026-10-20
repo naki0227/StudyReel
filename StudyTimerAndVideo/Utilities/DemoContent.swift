@@ -27,6 +27,9 @@ enum DemoMode {
         isActive && ProcessInfo.processInfo.arguments.contains("-StudyReelDemoGoal")
     }
 
+    // テーマカラー（-StudyReelDemoTheme mint など）。書かなければ空色
+    static var theme: String? { value(after: "-StudyReelDemoTheme") }
+
     // 確認画面で最初に開く道具（-StudyReelDemoTool mosaic など）
     static var reviewTool: String? { value(after: "-StudyReelDemoTool") }
 
@@ -281,22 +284,22 @@ enum DemoSeeder {
         defaults.set(false, forKey: RecordingSettings.saveToPhotosKey)
         defaults.set(true, forKey: MediaStore.keepVideoKey)
         defaults.set(DemoMode.orientation.rawValue, forKey: CaptureOrientation.storageKey)
+        defaults.set(DemoMode.theme ?? ThemeColor.sky.rawValue, forKey: ThemeColor.storageKey)
         defaults.set(true, forKey: "debug_preview_seeded_v1")
     }
 
     static func prepare(context: ModelContext) {
         applyDefaults()
         let defaults = UserDefaults.standard
-        // 目標のデモは、ほかのデモの記録がもう入っていても足す。目標なしで起動したら、前の目標と過去問は消す
-        if !DemoMode.showsGoal {
-            try? context.delete(model: StudyGoal.self)
-            try? context.delete(model: PastPaperResult.self)
-            try? context.save()
-        } else if (try? context.fetchCount(FetchDescriptor<StudyGoal>())) ?? 0 == 0 {
+        // 目標と過去問は起動のたびに消して、目標のデモ（-StudyReelDemoGoal）なら入れ直す。
+        // 前のテストで作った目標が残っていても、毎回同じ状態から始まる
+        try? context.delete(model: StudyGoal.self)
+        try? context.delete(model: PastPaperResult.self)
+        if DemoMode.showsGoal {
             let materialID = (try? context.fetch(FetchDescriptor<StudyMaterial>()))?.first?.id
             insertGoalDemo(context: context, today: Calendar.current.startOfDay(for: Date()), materialID: materialID)
-            try? context.save()
         }
+        try? context.save()
         guard (try? context.fetchCount(FetchDescriptor<StudySession>())) ?? 0 == 0 else { return }
 
         let subjects = ["数学", "英語", "物理", "国語"]

@@ -82,9 +82,9 @@ struct GoalSettingView: View {
             .padding(24)
             .background(ReelTheme.background.ignoresSafeArea())
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button(L10n.string("閉じる")) { dismiss() }
-                        .foregroundColor(ReelTheme.secondary)
+                        .foregroundColor(ReelTheme.ink)
                 }
             }
             .onAppear {

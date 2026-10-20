@@ -36,11 +36,9 @@ struct PaywallView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(L10n.string("閉じる")) {
-                        dismiss()
-                    }
-                    .foregroundColor(ReelTheme.secondary)
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L10n.string("閉じる")) { dismiss() }
+                        .foregroundColor(ReelTheme.ink)
                 }
             }
             .task {
@@ -72,7 +70,7 @@ struct PaywallView: View {
                 .font(ReelTheme.serif(26))
                 .foregroundColor(ReelTheme.ink)
 
-            Text(L10n.string("透かしなしの動画、フォント選び、全部録画が使えます。"))
+            Text(L10n.string("透かしなしの動画、フォント選び、全部録画、テーマカラーが使えます。"))
                 .font(ReelTheme.sans(13))
                 .foregroundColor(ReelTheme.secondary)
 

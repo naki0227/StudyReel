@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-// 08 設定。必要な項目だけを、撮影・モザイク・保存先・学習の順に並べる
+// 08 設定。必要な項目だけを、テーマカラー・撮影・モザイク・保存先・学習の順に並べる
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -17,12 +17,15 @@ struct SettingsView: View {
     @AppStorage(RecordingSettings.saveToPhotosKey) private var saveToPhotos = true
     @AppStorage(MediaStore.keepVideoKey) private var keepInApp = true
     @AppStorage(CloudBackup.autoBackupKey) private var autoBackup = true
+    @AppStorage(ThemeColor.storageKey) private var themeRaw = ThemeColor.sky.rawValue
     @ObservedObject private var cloudBackup = CloudBackup.shared
     @State private var showRestoreConfirm = false
     @State private var backupMessage: String?
 
     @State private var quietReminderEnabled = StudyNotificationManager.shared.isQuietReminderEnabled
     @State private var showPaywall = false
+    // Pro の色を使っている Pro でない人が、ほかの色に変えようとしたとき
+    @State private var pendingTheme: ThemeColor?
     @State private var showSubjects = false
     @State private var showTags = false
 
@@ -30,9 +33,19 @@ struct SettingsView: View {
     let termsOfServiceURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
 
     var body: some View {
+        // 選んだ色をこの画面にもすぐ反映する
+        let theme = ThemeColor.apply(rawValue: themeRaw)
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
+                    sectionTitle(L10n.string("テーマカラー"))
+                    themeCard(selected: theme)
+                    if !storeKit.isProUnlocked {
+                        note(theme.isPro
+                            ? L10n.string("いまの色はそのまま使えます。ほかの色に変えると、Proに入るまで戻せません。")
+                            : L10n.string("空色のほかの色は、Proで選べます。"))
+                    }
+
                     sectionTitle(L10n.string("撮影設定"))
                     card {
                         ReelRow(systemImage: "timer", title: L10n.string("撮影間隔")) {
@@ -177,15 +190,13 @@ struct SettingsView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(ReelTheme.background.ignoresSafeArea())
+            // 見出しは左上に置くと iOS 26 で「…」にまとめられるので、上の真ん中に出す
+            .navigationTitle(L10n.string("設定"))
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Text(L10n.string("設定"))
-                        .font(ReelTheme.serif(24))
-                        .foregroundColor(ReelTheme.ink)
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button(L10n.string("閉じる")) { dismiss() }
-                        .foregroundColor(ReelTheme.accentDeep)
+                        .foregroundColor(ReelTheme.ink)
                 }
             }
             .onChange(of: quietReminderEnabled) { _, enabled in
@@ -198,6 +209,16 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
+            }
+            .alert(
+                L10n.string("色を変えますか？"),
+                isPresented: Binding(get: { pendingTheme != nil }, set: { if !$0 { pendingTheme = nil } }),
+                presenting: pendingTheme
+            ) { color in
+                Button(L10n.string("キャンセル"), role: .cancel) {}
+                Button(L10n.format("%@にする", color.title)) { themeRaw = color.rawValue }
+            } message: { _ in
+                Text(L10n.format("いまの「%@」はProの色です。変えると、Proに入るまで戻せません。", theme.title))
             }
             .alert(L10n.string("バックアップから戻しますか？"), isPresented: $showRestoreConfirm) {
                 Button(L10n.string("キャンセル"), role: .cancel) {}
@@ -273,6 +294,62 @@ struct SettingsView: View {
                 backupMessage = error.localizedDescription
             }
         }
+    }
+
+    // 8色から選ぶ。Proでない人が空色以外を押したら、Proの案内を出す。
+    // Proのときに選んだ色はProが終わっても使えるが、変えると戻せないので先に確かめる
+    private func themeCard(selected: ThemeColor) -> some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 4), spacing: 14) {
+            ForEach(ThemeColor.allCases) { color in
+                let locked = color.isPro && !storeKit.isProUnlocked && color != selected
+                Button {
+                    if color == selected {
+                        return
+                    } else if locked {
+                        showPaywall = true
+                    } else if selected.isPro && !storeKit.isProUnlocked {
+                        pendingTheme = color
+                    } else {
+                        themeRaw = color.rawValue
+                    }
+                } label: {
+                    VStack(spacing: 6) {
+                        ZStack {
+                            Circle()
+                                .fill(color.accent)
+                                .frame(width: 36, height: 36)
+                            if color == selected {
+                                Circle()
+                                    .stroke(color.accentDeep, lineWidth: 2)
+                                    .frame(width: 44, height: 44)
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(color.accentDeep)
+                            } else if locked {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(color.accentDeep.opacity(0.8))
+                            }
+                        }
+                        .frame(width: 46, height: 46)
+                        Text(color.title)
+                            .font(ReelTheme.sans(10))
+                            .foregroundColor(color == selected ? ReelTheme.ink : ReelTheme.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(locked ? L10n.format("%@（Pro）", color.title) : color.title)
+                .accessibilityAddTraits(color == selected ? .isSelected : [])
+                .accessibilityIdentifier("theme.\(color.rawValue)")
+            }
+        }
+        .padding(.vertical, 16)
+        .padding(.horizontal, 8)
+        .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
     }
 
     private func sectionTitle(_ text: String) -> some View {

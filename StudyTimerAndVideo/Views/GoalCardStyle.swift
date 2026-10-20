@@ -9,16 +9,14 @@ struct GoalTheme {
     let deep: Color
     let tape: Color
 
-    static let sky = GoalTheme(
-        paper: Color(red: 0.969, green: 0.973, blue: 0.980),   // #F7F8FA
-        soft: ReelTheme.accentSoft,
-        accent: ReelTheme.accent,
-        deep: ReelTheme.accentDeep,
-        tape: Color(red: 0.949, green: 0.796, blue: 0.816)     // #F2CBD0
-    )
+    // いまのテーマカラーで作る
+    static var current: GoalTheme {
+        let color = ThemeColor.active
+        return GoalTheme(paper: color.paper, soft: color.accentSoft, accent: color.accent, deep: color.accentDeep, tape: color.tape)
+    }
 
-    // テープの3色（空色・ピンク・黄色）
-    static let tapeBlue = Color(red: 0.620, green: 0.765, blue: 0.886).opacity(0.6)
+    // テープの3色（主役の色・ピンク・黄色）
+    static var tapeBlue: Color { ThemeColor.active.accent.opacity(0.6) }
     static let tapePink = Color(red: 0.949, green: 0.796, blue: 0.816).opacity(0.85)
     static let tapeYellow = Color(red: 0.965, green: 0.886, blue: 0.659).opacity(0.85)
 }
@@ -47,7 +45,7 @@ struct GridPaper: Shape {
 
 // 方眼ノートの地。上から下へ少しずつ線を薄くする
 struct GridPaperBackground: View {
-    var color: Color = GoalTheme.sky.paper
+    var color: Color = GoalTheme.current.paper
     var spacing: CGFloat = 20
 
     var body: some View {
@@ -171,7 +169,7 @@ struct Polaroid: View {
 struct GoalPill: View {
     let value: String
     let label: String
-    var theme: GoalTheme = .sky
+    var theme: GoalTheme = .current
 
     var body: some View {
         HStack(spacing: 5) {
@@ -192,7 +190,7 @@ struct GoalPill: View {
 struct GoalMeter: View {
     let ratio: Double
     var height: CGFloat = 7
-    var theme: GoalTheme = .sky
+    var theme: GoalTheme = .current
 
     var body: some View {
         GeometryReader { geometry in
@@ -223,7 +221,7 @@ struct GoalScript: View {
 struct DDayText: View {
     let goal: StudyGoal
     var size: CGFloat = 58
-    var theme: GoalTheme = .sky
+    var theme: GoalTheme = .current
     var now: Date = Date()
 
     var body: some View {

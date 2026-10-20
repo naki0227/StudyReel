@@ -110,21 +110,19 @@ struct ManualAddView: View {
                 .padding(16)
             }
             .background(ReelTheme.background.ignoresSafeArea())
+            // 見出しは左上に置くと iOS 26 で「…」にまとめられるので、上の真ん中に出す
+            .navigationTitle(L10n.string("手動追加"))
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Text(L10n.string("手動追加"))
-                        .font(ReelTheme.serif(22))
-                        .foregroundColor(ReelTheme.ink)
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L10n.string("キャンセル")) { dismiss() }
+                        .foregroundColor(ReelTheme.secondary)
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 16) {
-                        Button(L10n.string("閉じる")) { dismiss() }
-                            .foregroundColor(ReelTheme.secondary)
-                        Button(L10n.string("保存")) { saveManualSession() }
-                            .font(ReelTheme.sans(15, weight: .semibold))
-                            .foregroundColor(ReelTheme.accentDeep)
-                            .disabled(selectedSubject.isEmpty)
-                    }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(L10n.string("保存")) { saveManualSession() }
+                        .font(ReelTheme.sans(15, weight: .semibold))
+                        .foregroundColor(ReelTheme.accentDeep)
+                        .disabled(selectedSubject.isEmpty)
                 }
             }
             .alert(L10n.string("保存できません"), isPresented: $showValidationAlert) {
