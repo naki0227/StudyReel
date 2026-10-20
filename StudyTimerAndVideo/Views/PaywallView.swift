@@ -36,11 +36,9 @@ struct PaywallView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(L10n.string("閉じる")) {
-                        dismiss()
-                    }
-                    .foregroundColor(ReelTheme.secondary)
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L10n.string("閉じる")) { dismiss() }
+                        .foregroundColor(ReelTheme.ink)
                 }
             }
             .task {

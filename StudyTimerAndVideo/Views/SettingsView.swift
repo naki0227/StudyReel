@@ -194,9 +194,9 @@ struct SettingsView: View {
             .navigationTitle(L10n.string("設定"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button(L10n.string("閉じる")) { dismiss() }
-                        .foregroundColor(ReelTheme.accentDeep)
+                        .foregroundColor(ReelTheme.ink)
                 }
             }
             .onChange(of: quietReminderEnabled) { _, enabled in

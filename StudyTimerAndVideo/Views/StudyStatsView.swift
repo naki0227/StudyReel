@@ -64,6 +64,10 @@ struct StudyStatsView: View {
             .navigationTitle(L10n.string("統計"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L10n.string("閉じる")) { dismiss() }
+                        .foregroundColor(ReelTheme.ink)
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
                         Button {
@@ -84,7 +88,6 @@ struct StudyStatsView: View {
                             Image(systemName: "plus")
                         }
                         .accessibilityLabel(L10n.string("手動追加"))
-                        Button(L10n.string("閉じる")) { dismiss() }
                     }
                     .foregroundColor(ReelTheme.accentDeep)
                 }

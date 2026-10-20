@@ -114,15 +114,15 @@ struct ManualAddView: View {
             .navigationTitle(L10n.string("手動追加"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 16) {
-                        Button(L10n.string("閉じる")) { dismiss() }
-                            .foregroundColor(ReelTheme.secondary)
-                        Button(L10n.string("保存")) { saveManualSession() }
-                            .font(ReelTheme.sans(15, weight: .semibold))
-                            .foregroundColor(ReelTheme.accentDeep)
-                            .disabled(selectedSubject.isEmpty)
-                    }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L10n.string("キャンセル")) { dismiss() }
+                        .foregroundColor(ReelTheme.secondary)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(L10n.string("保存")) { saveManualSession() }
+                        .font(ReelTheme.sans(15, weight: .semibold))
+                        .foregroundColor(ReelTheme.accentDeep)
+                        .disabled(selectedSubject.isEmpty)
                 }
             }
             .alert(L10n.string("保存できません"), isPresented: $showValidationAlert) {

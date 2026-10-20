@@ -68,9 +68,9 @@ struct CalendarView: View {
             .navigationTitle(L10n.string("カレンダー"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button(L10n.string("閉じる")) { dismiss() }
-                        .foregroundColor(ReelTheme.accentDeep)
+                        .foregroundColor(ReelTheme.ink)
                 }
             }
         }

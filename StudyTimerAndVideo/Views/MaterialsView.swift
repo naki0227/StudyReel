@@ -60,16 +60,17 @@ struct MaterialsView: View {
             .navigationTitle(L10n.string("教材"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 16) {
-                        Button {
-                            showAdd = true
-                        } label: {
-                            Image(systemName: "plus")
-                        }
-                        .accessibilityLabel(L10n.string("教材を追加"))
-                        Button(L10n.string("閉じる")) { dismiss() }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L10n.string("閉じる")) { dismiss() }
+                        .foregroundColor(ReelTheme.ink)
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showAdd = true
+                    } label: {
+                        Image(systemName: "plus")
                     }
+                    .accessibilityLabel(L10n.string("教材を追加"))
                     .foregroundColor(ReelTheme.accentDeep)
                 }
             }
