@@ -98,8 +98,8 @@ window.seek = (t) => {
   // 3 カード 13.5–19：3枚が扇形に出て、ゆっくり横に流れる
   set($('L3'), { o: window_(t, 13.5, 19.0, 0.3, 0.4) });
   cap($('l3-cap'), t, 13.6, 19.0);
-  const drift = lerp(60, -60, seg(t, 14.0, 5.0, ease.linear));
-  [['k1', 13.8, -300, 60, -9], ['k2', 14.1, 0, 0, 0], ['k3', 14.4, 300, 60, 9]].forEach(([id, st, x, y, rot]) => {
+  const drift = lerp(40, -40, seg(t, 14.0, 5.0, ease.linear));
+  [['k1', 13.8, -270, 60, -9], ['k2', 14.1, 0, 0, 0], ['k3', 14.4, 270, 60, 9]].forEach(([id, st, x, y, rot]) => {
     const p = seg(t, st, 0.8, ease.outBack);
     setShot($(id), { x: lerp(0, x, p) + drift, y: 200 + lerp(220, y, p), r: lerp(0, rot, p), s: lerp(0.8, 1, p), o: seg(t, st, 0.3) });
   });
