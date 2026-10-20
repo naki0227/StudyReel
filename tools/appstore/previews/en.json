@@ -1,0 +1,72 @@
+{
+  "music": "StudyTimerAndVideo/Resources/BGM/Morning.m4a",
+  "fade": 0.4,
+  "segments": [
+    {
+      "start": 82,
+      "duration": 3.5,
+      "speed": 2.0,
+      "note": "Home with the goal card (D-56), then a scroll"
+    },
+    {
+      "start": 101.5,
+      "duration": 3.0,
+      "speed": 2.0,
+      "note": "Past papers trend"
+    },
+    {
+      "start": 111,
+      "duration": 3.2,
+      "speed": 1.6,
+      "note": "Score-up card"
+    },
+    {
+      "start": 129.5,
+      "duration": 2.6,
+      "speed": 1.4,
+      "note": "Progress card"
+    },
+    {
+      "start": 135,
+      "duration": 3.0,
+      "speed": 1.6,
+      "note": "Goal card"
+    },
+    {
+      "start": 147,
+      "duration": 3.5,
+      "speed": 4.2,
+      "note": "Theme colors in Settings"
+    },
+    {
+      "start": 164.5,
+      "duration": 2.2,
+      "speed": 1.5,
+      "note": "Home in lavender"
+    },
+    {
+      "start": 170.5,
+      "duration": 4.0,
+      "speed": 2.2,
+      "note": "New Session, Start Recording, Start"
+    },
+    {
+      "start": 181,
+      "duration": 2.5,
+      "speed": 2.0,
+      "note": "The timer runs"
+    },
+    {
+      "start": 199,
+      "duration": 3.2,
+      "speed": 2.0,
+      "note": "Review with the mosaic"
+    },
+    {
+      "start": 205.5,
+      "duration": 2.5,
+      "speed": 2.4,
+      "note": "Filter and music"
+    }
+  ]
+}

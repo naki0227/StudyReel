@@ -16,5 +16,5 @@ node render.js next.html out/studyreel-next-ja.mp4 --bgm ../../StudyTimerAndVide
 node snap.js v15.html out/check 1.5 5 9      # 確認用に、その時刻のコマだけ PNG にする
 ```
 
-App Store のプレビュー（6.9 インチは 886×1920）にするときは、できた動画を ffmpeg で縮める:
-`ffmpeg -i out/studyreel-1.5-ja.mp4 -vf scale=886:1920 -c:a copy out/ja-iphone67.mp4`
+App Store のプレビュー動画は、字幕や写真を入れられない（画面の録画そのもの）ので、この PV とは別に作る。
+`.github/workflows/preview.yml` でシミュレータを録画し、`tools/appstore/preview.py` で切り出す（計画は `tools/appstore/previews/*.json`）。

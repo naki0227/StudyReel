@@ -9,7 +9,7 @@ app: com.ni.StudyTimerAndVideo
 version: "1.6"
 build: 223            # "latest" にすると、このバージョンで最後に上げたビルド
 release: manual       # manual: 承認されたら自分で公開 / after_approval: 承認されたらすぐ公開
-submit_for_review: false   # true にしてマージすると、反映したあと審査に出す
+submit_for_review: true    # true にしてマージすると、反映したあと審査に出す
 withdraw_to_update: true   # 審査待ちのときにスクリーンショットかビルドが変わっていたら、取り下げて差し替えてから出し直す
 
 # Pro の課金アイテム（StoreKitManager.swift の productIDs と同じ）。
@@ -67,9 +67,12 @@ review:
     To try it: tap + on the home screen, choose a timer, then press the round shutter button. Press it again to finish and see the review screen.
 
 # 動画のプレビュー。IPHONE_67 は App Store Connect の「6.9インチ」の枠（886x1920、30秒以内）
+# プレビュー動画（6.9 インチ用 886×1920、30 秒以内）。素材は preview.yml で録り、tools/appstore/preview.py で仕上げる
 previews:
   ja:
     IPHONE_67: appstore/previews/ja-iphone67.mp4
+  en-US:
+    IPHONE_67: appstore/previews/en-iphone67.mp4
 
 # ストアのスクリーンショット。書いた順に並ぶ（1〜3枚目が検索結果に出る）
 # 素材は store-shots.yml で撮り、tools/appstore/frames/compose.js で見出しをつける
