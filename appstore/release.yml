@@ -91,6 +91,7 @@ screenshots:
       - appstore/screenshots/ja/iphone-04.png
       - appstore/screenshots/ja/iphone-05.png
       - appstore/screenshots/ja/iphone-06.png
+      - appstore/screenshots/ja/iphone-07.png
     APP_IPAD_PRO_3GEN_129:
       - appstore/screenshots/ja/ipad-01.png
       - appstore/screenshots/ja/ipad-02.png
@@ -98,6 +99,7 @@ screenshots:
       - appstore/screenshots/ja/ipad-04.png
       - appstore/screenshots/ja/ipad-05.png
       - appstore/screenshots/ja/ipad-06.png
+      - appstore/screenshots/ja/ipad-07.png
   en-US:
     APP_IPHONE_67:
       - appstore/screenshots/en/iphone-01.png
@@ -106,6 +108,7 @@ screenshots:
       - appstore/screenshots/en/iphone-04.png
       - appstore/screenshots/en/iphone-05.png
       - appstore/screenshots/en/iphone-06.png
+      - appstore/screenshots/en/iphone-07.png
     APP_IPAD_PRO_3GEN_129:
       - appstore/screenshots/en/ipad-01.png
       - appstore/screenshots/en/ipad-02.png
@@ -113,3 +116,4 @@ screenshots:
       - appstore/screenshots/en/ipad-04.png
       - appstore/screenshots/en/ipad-05.png
       - appstore/screenshots/en/ipad-06.png
+      - appstore/screenshots/en/ipad-07.png

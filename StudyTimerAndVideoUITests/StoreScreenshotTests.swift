@@ -68,10 +68,10 @@ final class StoreScreenshotTests: XCTestCase {
         shot("05-materials")
     }
 
-    // ホームと1週間のVlog
+    // ホーム（目標のデモ入り）と1週間のVlog
     @MainActor
     func test1Home() throws {
-        let app = launch()
+        let app = launch(["-StudyReelDemoGoal"])
         pause(6)
         shot("01-home")
 
@@ -114,5 +114,15 @@ final class StoreScreenshotTests: XCTestCase {
         _ = app.buttons["review.tool.mosaic"].waitForExistence(timeout: 15)
         pause(2.5)
         shot("03-review")
+    }
+
+    // 目標の宣言カード（共有画面）
+    @MainActor
+    func test5GoalCard() throws {
+        let app = launch(["-StudyReelDemoGoal", "-StudyReelDemoScreen", "goalShare"])
+        pause(6)
+        tap(app.buttons[label("宣言", "Goal")])
+        pause(2.5)
+        shot("07-goal")
     }
 }
