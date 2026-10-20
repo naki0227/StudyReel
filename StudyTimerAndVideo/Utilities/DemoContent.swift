@@ -27,6 +27,9 @@ enum DemoMode {
         isActive && ProcessInfo.processInfo.arguments.contains("-StudyReelDemoGoal")
     }
 
+    // テーマカラー（-StudyReelDemoTheme mint など）。書かなければ空色
+    static var theme: String? { value(after: "-StudyReelDemoTheme") }
+
     // 確認画面で最初に開く道具（-StudyReelDemoTool mosaic など）
     static var reviewTool: String? { value(after: "-StudyReelDemoTool") }
 
@@ -281,6 +284,7 @@ enum DemoSeeder {
         defaults.set(false, forKey: RecordingSettings.saveToPhotosKey)
         defaults.set(true, forKey: MediaStore.keepVideoKey)
         defaults.set(DemoMode.orientation.rawValue, forKey: CaptureOrientation.storageKey)
+        defaults.set(DemoMode.theme ?? ThemeColor.sky.rawValue, forKey: ThemeColor.storageKey)
         defaults.set(true, forKey: "debug_preview_seeded_v1")
     }
 

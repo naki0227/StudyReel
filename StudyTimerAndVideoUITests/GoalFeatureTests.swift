@@ -131,4 +131,36 @@ final class GoalFeatureTests: XCTestCase {
         // 作ったら宣言カードの共有画面が開く
         XCTAssert(app.navigationBars["カードで共有"].waitForExistence(timeout: 5))
     }
+
+    // テーマカラー。ミントで起動して、設定でラベンダーに変えると、設定とホームと共有カードが変わる
+    @MainActor
+    func test3ThemeColors() throws {
+        let app = launch(["-StudyReelDemoGoal", "-StudyReelDemoTheme", "mint"])
+        pause(6)
+        shot("theme-01-home-mint")
+
+        tap(app.buttons["gearshape"])
+        pause(2)
+        shot("theme-02-settings-mint")
+        assertInsideScreen(app, "設定")
+        tap(app.buttons["theme.lavender"])
+        pause(1)
+        shot("theme-03-settings-lavender")
+        XCTAssert(app.buttons["theme.lavender"].isSelected, "ラベンダーが選ばれていません")
+        tap(app.buttons["閉じる"])
+        pause(2)
+        shot("theme-04-home-lavender")
+
+        tap(app.buttons["home.goal.share"])
+        pause(2.5)
+        shot("theme-05-card-lavender")
+        tap(app.buttons["点数アップ"])
+        pause(1.5)
+        shot("theme-06-scoreup-lavender")
+        close(app, "カードで共有")
+
+        tap(app.buttons["home.goal.papers"])
+        pause(2.5)
+        shot("theme-07-papers-lavender")
+    }
 }

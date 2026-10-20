@@ -12,6 +12,7 @@ on:
       - "StudyTimerAndVideoUITests/LandscapeLayoutTests.swift"
       - "StudyTimerAndVideoUITests/GoalFeatureTests.swift"
       - "StudyTimerAndVideo/Models/**"
+      - "StudyTimerAndVideo/Utilities/**"
       - ".github/workflows/layout-check.yml"
 
 jobs:

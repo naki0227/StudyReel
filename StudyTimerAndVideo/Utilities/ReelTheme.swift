@@ -7,9 +7,10 @@ enum ReelTheme {
     static let ink = Color(red: 0.180, green: 0.227, blue: 0.275)          // #2E3A46
     static let secondary = Color(red: 0.557, green: 0.604, blue: 0.651)    // #8E9AA6
     static let line = Color(red: 0.890, green: 0.914, blue: 0.937)         // #E3E9EF
-    static let accent = Color(red: 0.620, green: 0.765, blue: 0.886)       // #9EC3E2
-    static let accentSoft = Color(red: 0.882, green: 0.929, blue: 0.965)   // #E1EDF6
-    static let accentDeep = Color(red: 0.369, green: 0.553, blue: 0.722)   // #5E8DB8
+    // 主役の色は設定のテーマカラーに合わせる（ThemeColor）
+    static var accent: Color { ThemeColor.active.accent }
+    static var accentSoft: Color { ThemeColor.active.accentSoft }
+    static var accentDeep: Color { ThemeColor.active.accentDeep }
 
     // タイトルや大きな数字に使う明朝・セリフ体
     static func serif(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {

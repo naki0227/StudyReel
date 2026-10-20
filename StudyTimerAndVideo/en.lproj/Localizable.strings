@@ -468,3 +468,16 @@
 "達成！" = "Achieved!";
 "目標をつくる" = "New Goal";
 "目標" = "Goal";
+
+/* テーマカラー */
+"テーマカラー" = "Theme color";
+"空色のほかの色は、Proで選べます。" = "Colors other than Sky come with Pro.";
+"%@（Pro）" = "%@ (Pro)";
+"空色" = "Sky";
+"ミント" = "Mint";
+"バター" = "Butter";
+"ラベンダー" = "Lavender";
+"ピーチ" = "Peach";
+"ミルクティー" = "Milk tea";
+"さくら" = "Sakura";
+"抹茶" = "Matcha";

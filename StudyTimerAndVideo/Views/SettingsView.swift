@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-// 08 設定。必要な項目だけを、撮影・モザイク・保存先・学習の順に並べる
+// 08 設定。必要な項目だけを、テーマカラー・撮影・モザイク・保存先・学習の順に並べる
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -17,6 +17,7 @@ struct SettingsView: View {
     @AppStorage(RecordingSettings.saveToPhotosKey) private var saveToPhotos = true
     @AppStorage(MediaStore.keepVideoKey) private var keepInApp = true
     @AppStorage(CloudBackup.autoBackupKey) private var autoBackup = true
+    @AppStorage(ThemeColor.storageKey) private var themeRaw = ThemeColor.sky.rawValue
     @ObservedObject private var cloudBackup = CloudBackup.shared
     @State private var showRestoreConfirm = false
     @State private var backupMessage: String?
@@ -30,9 +31,17 @@ struct SettingsView: View {
     let termsOfServiceURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
 
     var body: some View {
+        // 選んだ色をこの画面にもすぐ反映する
+        let theme = ThemeColor.apply(rawValue: themeRaw, isPro: storeKit.isProUnlocked)
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
+                    sectionTitle(L10n.string("テーマカラー"))
+                    themeCard(selected: theme)
+                    if !storeKit.isProUnlocked {
+                        note(L10n.string("空色のほかの色は、Proで選べます。"))
+                    }
+
                     sectionTitle(L10n.string("撮影設定"))
                     card {
                         ReelRow(systemImage: "timer", title: L10n.string("撮影間隔")) {
@@ -273,6 +282,57 @@ struct SettingsView: View {
                 backupMessage = error.localizedDescription
             }
         }
+    }
+
+    // 8色から選ぶ。Proでない人が空色以外を押したら、Proの案内を出す
+    private func themeCard(selected: ThemeColor) -> some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 4), spacing: 14) {
+            ForEach(ThemeColor.allCases) { color in
+                let locked = color.isPro && !storeKit.isProUnlocked
+                Button {
+                    if locked {
+                        showPaywall = true
+                    } else {
+                        themeRaw = color.rawValue
+                    }
+                } label: {
+                    VStack(spacing: 6) {
+                        ZStack {
+                            Circle()
+                                .fill(color.accent)
+                                .frame(width: 36, height: 36)
+                            if color == selected {
+                                Circle()
+                                    .stroke(color.accentDeep, lineWidth: 2)
+                                    .frame(width: 44, height: 44)
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(color.accentDeep)
+                            } else if locked {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(color.accentDeep.opacity(0.8))
+                            }
+                        }
+                        .frame(width: 46, height: 46)
+                        Text(color.title)
+                            .font(ReelTheme.sans(10))
+                            .foregroundColor(color == selected ? ReelTheme.ink : ReelTheme.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(locked ? L10n.format("%@（Pro）", color.title) : color.title)
+                .accessibilityAddTraits(color == selected ? .isSelected : [])
+                .accessibilityIdentifier("theme.\(color.rawValue)")
+            }
+        }
+        .padding(.vertical, 16)
+        .padding(.horizontal, 8)
+        .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
     }
 
     private func sectionTitle(_ text: String) -> some View {
