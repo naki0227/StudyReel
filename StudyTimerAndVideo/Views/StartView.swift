@@ -147,6 +147,10 @@ struct StartView: View {
                     totalSeconds: bootstrap.totalSeconds,
                     onFinish: {
                         sessionBootstrap = nil
+                        // 記録を保存してホームに戻った、いちばん気分のよいところでレビューを頼む（保存せずに閉じたときは頼まない）
+                        if let saved = sessions.first?.recordedAt, Date().timeIntervalSince(saved) < 10 * 60 {
+                            ReviewRequest.askIfDeserved(sessionCount: sessions.count)
+                        }
                     },
                     mode: bootstrap.mode,
                     bootstrap: bootstrap

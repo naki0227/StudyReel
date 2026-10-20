@@ -167,6 +167,10 @@ struct SettingsView: View {
                             ReelRow(systemImage: "questionmark.circle", title: L10n.string("使い方をもう一度見る")) { chevron }
                         }
                         divider
+                        Link(destination: ReviewRequest.writeReviewURL) {
+                            ReelRow(systemImage: "star.bubble", title: L10n.string("StudyReel をレビューする")) { chevron }
+                        }
+                        divider
                         Link(destination: privacyPolicyURL) {
                             ReelRow(systemImage: "hand.raised", title: L10n.string("プライバシーポリシー")) { chevron }
                         }
