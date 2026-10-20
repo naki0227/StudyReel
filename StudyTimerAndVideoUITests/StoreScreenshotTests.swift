@@ -68,10 +68,10 @@ final class StoreScreenshotTests: XCTestCase {
         shot("05-materials")
     }
 
-    // ホームと1週間のVlog
+    // ホーム（目標のデモ入り）と1週間のVlog
     @MainActor
     func test1Home() throws {
-        let app = launch()
+        let app = launch(["-StudyReelDemoGoal"])
         pause(6)
         shot("01-home")
 
@@ -114,5 +114,45 @@ final class StoreScreenshotTests: XCTestCase {
         _ = app.buttons["review.tool.mosaic"].waitForExistence(timeout: 15)
         pause(2.5)
         shot("03-review")
+    }
+
+    // 目標の宣言カード（共有画面）
+    @MainActor
+    func test5GoalCard() throws {
+        let app = launch(["-StudyReelDemoGoal", "-StudyReelDemoScreen", "goalShare"])
+        pause(6)
+        tap(app.buttons[label("宣言", "Goal")])
+        pause(2.5)
+        shot("07-goal")
+    }
+
+    // PV（tools/pv）に使う画面。過去問、途中経過と点数アップのカード、ミントとラベンダーのホーム
+    @MainActor
+    func test6PastPapers() throws {
+        _ = launch(["-StudyReelDemoGoal", "-StudyReelDemoScreen", "papers"])
+        pause(7)
+        shot("08-papers")
+    }
+
+    @MainActor
+    func test7GoalCards() throws {
+        let app = launch(["-StudyReelDemoGoal", "-StudyReelDemoScreen", "goalShare"])
+        pause(6)
+        tap(app.buttons[label("途中経過", "Progress")])
+        pause(2.5)
+        shot("09-card-progress")
+        tap(app.buttons[label("点数アップ", "Score Up")])
+        pause(2.5)
+        shot("10-card-scoreup")
+    }
+
+    @MainActor
+    func test8ThemeHomes() throws {
+        _ = launch(["-StudyReelDemoGoal", "-StudyReelDemoTheme", "mint"])
+        pause(6)
+        shot("11-home-mint")
+        _ = launch(["-StudyReelDemoGoal", "-StudyReelDemoTheme", "lavender"])
+        pause(6)
+        shot("12-home-lavender")
     }
 }

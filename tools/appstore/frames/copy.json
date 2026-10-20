@@ -1,6 +1,7 @@
 {
   "ja": [
     {"shot": "01-home", "title": "毎日の勉強を、<br>ギャラリーに。", "sub": "撮った記録が、日付ごとに並びます"},
+    {"shot": "07-goal", "title": "目標を決めて、<br>カードで宣言。", "sub": "D-dayと過去問の伸びを、勉強垢でシェア"},
     {"shot": "02-recording", "title": "机に置いて、<br>始めるだけ。", "sub": "雨の音や集中ノイズを流しながら"},
     {"shot": "03-review", "title": "顔はモザイクで、<br>しっかり隠せる。", "sub": "カット・フィルター・BGMもかんたん"},
     {"shot": "04-share", "title": "今日の記録を、<br>勉強垢へ。", "sub": "今日・今週・教材ごとにまとめて共有"},
@@ -9,6 +10,7 @@
   ],
   "en": [
     {"shot": "01-home", "title": "Your study,<br>as a gallery.", "sub": "Every session, sorted by day"},
+    {"shot": "07-goal", "title": "Set a goal.<br>Share the card.", "sub": "Count down to test day and show your gains"},
     {"shot": "02-recording", "title": "Set it down.<br>Press start.", "sub": "Study with rain or focus noise"},
     {"shot": "03-review", "title": "Hide your face<br>with a mosaic.", "sub": "Trim, filters and music in a tap"},
     {"shot": "04-share", "title": "Share today with<br>your study circle.", "sub": "Today, this week, or one book at a time"},

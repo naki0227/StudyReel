@@ -1,0 +1,139 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="pv.css">
+<style>
+  .shot { width: 640px; }
+  .badge { display: inline-block; font-family: Corm, serif; font-size: 34px; letter-spacing: .32em; color: var(--deep); background: var(--soft); border-radius: 999px; padding: 14px 40px 12px 48px; }
+  .score { position: absolute; font-family: Mincho, serif; font-size: 54px; color: var(--ink); background: #fff; border-radius: 24px; padding: 18px 34px; box-shadow: 0 14px 30px rgba(46,58,70,.14); }
+  .score small { font-family: CormI, serif; font-size: 30px; color: var(--sub); margin-left: 8px; }
+  .score.up { color: var(--deep); font-size: 64px; }
+  .card { position: absolute; left: 50%; top: 50%; width: 440px; border-radius: 30px; overflow: hidden; box-shadow: 0 40px 90px rgba(46,58,70,.24); will-change: transform, opacity; }
+  .card img { display: block; width: 100%; height: auto; }
+  .dots { position: absolute; left: 0; right: 0; top: 505px; display: flex; justify-content: center; gap: 26px; }
+  .dots i { position: relative; width: 74px; height: 74px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(46,58,70,.06); }
+  .dots i::after { content: ""; position: absolute; inset: -9px; border-radius: 50%; border: 3px solid var(--ink); opacity: 0; }
+  .dots i.on::after { opacity: 1; }
+  .store { display: inline-block; font-family: Zen, sans-serif; font-size: 34px; color: #fff; background: var(--deep); border-radius: 999px; padding: 22px 54px; }
+</style></head>
+<body>
+<div class="grid"></div>
+
+<!-- 0: オープニング -->
+<div class="layer" id="L0">
+  <div class="cap" id="l0-badge" style="top: 640px"><div class="badge">UPDATE</div></div>
+  <div class="cap" id="l0-logo" style="top: 760px"><div class="logo">StudyReel</div></div>
+  <div class="cap" id="l0-sub" style="top: 930px"><div class="serif-r tagline" data-t="lead"></div></div>
+</div>
+
+<!-- 1: 目標と D-day -->
+<div class="layer" id="L1">
+  <div class="cap" id="l1-cap" style="top: 170px"><div class="no">0 1</div><div class="t serif" data-t="t1"></div><div class="s sans" data-t="s1"></div></div>
+  <div class="shot" id="l1-shot" style="transform-origin: 50% 22%"><img data-img="goal-home.png"></div>
+</div>
+
+<!-- 2: 過去問 -->
+<div class="layer" id="L2">
+  <div class="cap" id="l2-cap" style="top: 170px"><div class="no">0 2</div><div class="t serif" data-t="t2"></div><div class="s sans" data-t="s2"></div></div>
+  <div class="shot" id="l2-shot"><img data-img="papers.png"></div>
+  <div class="score" id="s1" style="left: 30px; top: 700px">610<small>1st</small></div>
+  <div class="score" id="s2" style="left: 20px; top: 1010px">685<small>2nd</small></div>
+  <div class="score" id="s3" style="left: 840px; top: 820px">715<small>3rd</small></div>
+  <div class="score up" id="s4" style="left: 800px; top: 1240px">+105</div>
+</div>
+
+<!-- 3: 共有カード -->
+<div class="layer" id="L3">
+  <div class="cap" id="l3-cap" style="top: 170px"><div class="no">0 3</div><div class="t serif" data-t="t3"></div><div class="s sans" data-t="s3"></div></div>
+  <div class="card" id="k1"><img data-img="card-declaration.png"></div>
+  <div class="card" id="k2"><img data-img="card-progress.png"></div>
+  <div class="card" id="k3"><img data-img="card-scoreup.png"></div>
+</div>
+
+<!-- 4: テーマカラー -->
+<div class="layer" id="L4">
+  <div class="cap" id="l4-cap" style="top: 170px"><div class="no">0 4</div><div class="t serif" data-t="t4"></div><div class="s sans" data-t="s4"></div></div>
+  <div class="dots" id="dots">
+    <i style="background:#9EC3E2"></i><i style="background:#A8DCCB"></i><i style="background:#F1D98A"></i><i style="background:#C9BFEA"></i>
+    <i style="background:#F4BBA4"></i><i style="background:#D7C1AA"></i><i style="background:#F1BFCB"></i><i style="background:#BFD0A9"></i>
+  </div>
+  <div class="shot" id="t1" style="width: 600px"><img data-img="goal-home.png"></div>
+  <div class="shot" id="t2" style="width: 600px"><img data-img="theme-home-mint.png"></div>
+  <div class="shot" id="t3" style="width: 600px"><img data-img="theme-home-lavender.png"></div>
+</div>
+
+<!-- 5: エンディング -->
+<div class="layer" id="L5">
+  <div class="tape pink" style="left: 465px; top: 680px; transform: rotate(5deg)"></div>
+  <div class="cap" id="l5-logo" style="top: 740px"><div class="logo">StudyReel</div></div>
+  <div class="cap" id="l5-sub" style="top: 910px"><div class="serif-r tagline" data-t="tagline"></div></div>
+  <div class="cap" id="l5-store" style="top: 1040px"><div class="store" data-t="store"></div></div>
+  <div class="cap" id="l5-dev" style="top: 1160px"><div class="sans-r" style="font-size: 28px; color: var(--sub)" data-t="dev"></div></div>
+</div>
+
+<script src="pv.js"></script>
+<script>
+const DUR = 27.5;
+const COPY = {
+  ja: { lead: '目標も、過去問も、ここに。', tagline: '勉強を、記録する。', store: 'App Store でアップデート', dev: 'iPhone / iPad · 無料',
+    t1: '目標を決めて、<br>D-day を数える。', s1: 'ホームのいちばん上に、本番までの残り日数',
+    t2: '過去問の伸びが、<br>見える。', s2: '同じ問題を解くたびに、点数の推移を記録',
+    t3: '宣言も、伸びも、<br>1枚のカードに。', s3: '勉強垢にそのまま投稿できる縦型カード',
+    t4: 'テーマカラーで、<br>自分の色に。', s4: '8色から選べます（Pro）' },
+  en: { lead: 'Goals and past papers, in one place.', tagline: 'Record your study.', store: 'Update on the App Store', dev: 'iPhone / iPad · Free',
+    t1: 'Set a goal.<br>Count down to test day.', s1: 'Your D-day sits at the top of Home',
+    t2: 'Watch your<br>scores climb.', s2: 'Log every retake of a past paper and see the trend',
+    t3: 'Your goal and your gains,<br>on one card.', s3: 'Vertical cards made for your study feed',
+    t4: 'Theme colors,<br>your way.', s4: 'Pick from 8 colors (Pro)' },
+};
+window.setup = () => { applyLang(COPY); return ready().then(() => DUR); };
+const cap = (el, t, start, end) => set(el, { y: lerp(30, 0, seg(t, start, 0.7)) - lerp(0, 20, seg(t, end - 0.4, 0.4, ease.in)), o: window_(t, start, end, 0.6, 0.4) });
+
+window.seek = (t) => {
+  // 0 オープニング 0–3
+  set($('L0'), { o: window_(t, 0, 3.0, 0.01, 0.4) });
+  set($('l0-badge'), { s: lerp(0.7, 1, seg(t, 0.15, 0.6, ease.outBack)), o: seg(t, 0.15, 0.3) });
+  set($('l0-logo'), { y: lerp(40, 0, seg(t, 0.5, 0.9)), o: seg(t, 0.5, 0.7) });
+  set($('l0-sub'), { y: lerp(24, 0, seg(t, 1.0, 0.8)), o: seg(t, 1.0, 0.6) });
+
+  // 1 目標 3–8.5：画面が上がってきて、目標カードに寄る
+  set($('L1'), { o: window_(t, 3.0, 8.5, 0.3, 0.4) });
+  cap($('l1-cap'), t, 3.1, 5.8);
+  const zoom = seg(t, 5.2, 2.4, ease.inOut);
+  setShot($('l1-shot'), { y: lerp(520, 236, seg(t, 3.1, 1.0)) + lerp(0, 140, zoom), s: lerp(0.96, 1, seg(t, 3.1, 1.2)) * lerp(1, 1.45, zoom), o: seg(t, 3.1, 0.5) });
+
+  // 2 過去問 8.5–13.5
+  set($('L2'), { o: window_(t, 8.5, 13.5, 0.3, 0.4) });
+  cap($('l2-cap'), t, 8.6, 13.5);
+  setShot($('l2-shot'), { y: lerp(300, 236, seg(t, 8.6, 1.0)), s: lerp(0.96, 1, seg(t, 8.6, 1.2)), o: seg(t, 8.6, 0.5) });
+  [['s1', 9.6, -6], ['s2', 10.1, 4], ['s3', 10.6, 5], ['s4', 11.3, -4]].forEach(([id, st, rot]) =>
+    set($(id), { r: rot, y: lerp(30, 0, seg(t, st, 0.6)) + Math.sin((t - st) * 2) * 5, s: lerp(0.6, 1, seg(t, st, 0.6, ease.outBack)), o: seg(t, st, 0.3) }));
+
+  // 3 カード 13.5–19：3枚が扇形に出て、ゆっくり横に流れる
+  set($('L3'), { o: window_(t, 13.5, 19.0, 0.3, 0.4) });
+  cap($('l3-cap'), t, 13.6, 19.0);
+  const drift = lerp(40, -40, seg(t, 14.0, 5.0, ease.linear));
+  [['k1', 13.8, -270, 60, -9], ['k2', 14.1, 0, 0, 0], ['k3', 14.4, 270, 60, 9]].forEach(([id, st, x, y, rot]) => {
+    const p = seg(t, st, 0.8, ease.outBack);
+    setShot($(id), { x: lerp(0, x, p) + drift, y: 200 + lerp(220, y, p), r: lerp(0, rot, p), s: lerp(0.8, 1, p), o: seg(t, st, 0.3) });
+  });
+  $('k2').style.zIndex = 2;
+
+  // 4 テーマカラー 19–24：空色→ミント→ラベンダーに変わる
+  set($('L4'), { o: window_(t, 19.0, 24.0, 0.3, 0.4) });
+  cap($('l4-cap'), t, 19.1, 24.0);
+  set($('dots'), { y: lerp(30, 0, seg(t, 19.3, 0.7)), o: seg(t, 19.3, 0.5) });
+  const stage = t < 20.8 ? 0 : t < 22.4 ? 1 : 2;
+  [...$('dots').children].forEach((e, i) => e.classList.toggle('on', i === [0, 1, 3][stage]));
+  const base = { y: lerp(400, 300, seg(t, 19.1, 1.0)), s: lerp(0.96, 1, seg(t, 19.1, 1.2)) };
+  setShot($('t1'), { ...base, o: seg(t, 19.1, 0.5) });
+  setShot($('t2'), { ...base, o: seg(t, 20.8, 0.5) });
+  setShot($('t3'), { ...base, o: seg(t, 22.4, 0.5) });
+
+  // 5 エンディング 24–27.5
+  set($('L5'), { o: window_(t, 24.0, DUR + 1, 0.4, 1) });
+  set($('l5-logo'), { y: lerp(30, 0, seg(t, 24.1, 0.9)), o: seg(t, 24.1, 0.6) });
+  set($('l5-sub'), { y: lerp(20, 0, seg(t, 24.5, 0.8)), o: seg(t, 24.5, 0.6) });
+  set($('l5-store'), { s: lerp(0.8, 1, seg(t, 24.9, 0.6, ease.outBack)), o: seg(t, 24.9, 0.3) });
+  set($('l5-dev'), { o: seg(t, 25.4, 0.5) });
+};
+</script>
+</body></html>
