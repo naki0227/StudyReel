@@ -54,6 +54,7 @@ jobs:
       - name: Decide build number
         id: build
         run: |
+          echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
           if [ -n "${{ inputs.build_number }}" ]; then
             number="${{ inputs.build_number }}"
           else
@@ -122,6 +123,18 @@ jobs:
             archive.log
             export.log
           if-no-files-found: ignore
+
+      # この Mac は使い捨てなので、署名のために作られた Development 証明書は残しておくと上限に当たる。
+      # 作った時刻（= この実行の開始時刻）で見つけて消す。詳しくは tools/appstore/certs.py
+      - name: Remove the certificate made for this run
+        if: always()
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          pip3 install -q "pyjwt[crypto]==2.9.0" "requests==2.32.3"
+          python3 tools/appstore/certs.py revoke --started "${{ steps.build.outputs.started }}" --window 20 || echo "::warning::証明書の後片付けに失敗しました"
 
       - name: Remove key
         if: always()
