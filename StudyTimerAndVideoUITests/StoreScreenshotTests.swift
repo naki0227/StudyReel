@@ -125,4 +125,34 @@ final class StoreScreenshotTests: XCTestCase {
         pause(2.5)
         shot("07-goal")
     }
+
+    // PV（tools/pv）に使う画面。過去問、途中経過と点数アップのカード、ミントとラベンダーのホーム
+    @MainActor
+    func test6PastPapers() throws {
+        _ = launch(["-StudyReelDemoGoal", "-StudyReelDemoScreen", "papers"])
+        pause(7)
+        shot("08-papers")
+    }
+
+    @MainActor
+    func test7GoalCards() throws {
+        let app = launch(["-StudyReelDemoGoal", "-StudyReelDemoScreen", "goalShare"])
+        pause(6)
+        tap(app.buttons[label("途中経過", "Progress")])
+        pause(2.5)
+        shot("09-card-progress")
+        tap(app.buttons[label("点数アップ", "Score Up")])
+        pause(2.5)
+        shot("10-card-scoreup")
+    }
+
+    @MainActor
+    func test8ThemeHomes() throws {
+        _ = launch(["-StudyReelDemoGoal", "-StudyReelDemoTheme", "mint"])
+        pause(6)
+        shot("11-home-mint")
+        _ = launch(["-StudyReelDemoGoal", "-StudyReelDemoTheme", "lavender"])
+        pause(6)
+        shot("12-home-lavender")
+    }
 }
