@@ -37,12 +37,16 @@ def main():
         sys.exit(f"::error::{total:.1f} 秒になります。プレビューは {LIMIT:.0f} 秒まで")
 
     with tempfile.TemporaryDirectory() as tmp:
+        # シミュレータの録画は画面が変わったときしかコマを持たないので、まず 30fps の固定レートにそろえる。
+        # そのままだと、動きのない場面を -ss で切り出したときに最初のコマが落ちて、止まっている時間が消える
+        cfr = os.path.join(tmp, "cfr.mp4")
+        run(["-i", src, "-vf", f"fps={FPS}", "-an", "-c:v", "libx264", "-crf", "14", "-preset", "veryfast", cfr])
         parts = []
         for i, s in enumerate(segments):
             speed = float(s.get("speed", 1))
             part = os.path.join(tmp, f"part{i:02d}.mp4")
             # 素材を duration×speed 秒だけ取り、speed 倍の早回しにして 886×1920 に合わせる（幅に合わせて上下を少し切る）
-            run(["-ss", str(s["start"]), "-t", str(s["duration"] * speed), "-i", src,
+            run(["-ss", str(s["start"]), "-t", str(s["duration"] * speed), "-i", cfr,
                  "-vf", f"setpts=(PTS-STARTPTS)/{speed},fps={FPS},scale={WIDTH}:-2:flags=lanczos,"
                         f"crop={WIDTH}:{HEIGHT}:0:(ih-{HEIGHT})/2,format=yuv420p",
                  "-t", str(s["duration"]), "-an", "-c:v", "libx264", "-crf", "16", "-preset", "medium", part])

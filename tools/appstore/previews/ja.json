@@ -1,0 +1,72 @@
+{
+  "music": "StudyTimerAndVideo/Resources/BGM/Morning.m4a",
+  "fade": 0.4,
+  "segments": [
+    {
+      "start": 79.5,
+      "duration": 3.5,
+      "speed": 2.0,
+      "note": "ホームの目標カード（D-56）を上下に見せる"
+    },
+    {
+      "start": 96.5,
+      "duration": 3.0,
+      "speed": 2.0,
+      "note": "過去問・模試の推移"
+    },
+    {
+      "start": 104,
+      "duration": 3.0,
+      "speed": 1.6,
+      "note": "点数アップのカード"
+    },
+    {
+      "start": 122,
+      "duration": 2.6,
+      "speed": 1.6,
+      "note": "途中経過のカード"
+    },
+    {
+      "start": 128,
+      "duration": 2.8,
+      "speed": 1.6,
+      "note": "宣言のカード"
+    },
+    {
+      "start": 143,
+      "duration": 3.5,
+      "speed": 2.4,
+      "note": "設定でテーマカラーを変える"
+    },
+    {
+      "start": 155.5,
+      "duration": 2.2,
+      "speed": 1.5,
+      "note": "ラベンダーのホーム"
+    },
+    {
+      "start": 162,
+      "duration": 4.0,
+      "speed": 2.2,
+      "note": "新しい記録 → 撮影をはじめる → 開始"
+    },
+    {
+      "start": 172,
+      "duration": 2.5,
+      "speed": 2.0,
+      "note": "タイマーが進む"
+    },
+    {
+      "start": 180,
+      "duration": 3.5,
+      "speed": 2.0,
+      "note": "確認画面：モザイク"
+    },
+    {
+      "start": 189,
+      "duration": 2.5,
+      "speed": 2.4,
+      "note": "フィルターと音楽"
+    }
+  ]
+}
