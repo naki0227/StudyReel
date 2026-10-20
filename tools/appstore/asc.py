@@ -435,8 +435,13 @@ def check_purchases(app_id, wanted_ids):
 
 def submit_purchases(items):
     for kind, rel, rel_type, item_id in items:
-        api("POST", f"/v1/{kind}", {"data": {
+        res = api("POST", f"/v1/{kind}", {"data": {
             "type": kind, "relationships": {rel: {"data": {"type": rel_type, "id": item_id}}}}}, allow=(409,))
+        if res is None:
+            # 最初の買い切りアイテムは、App Store Connect の画面でバージョンに追加してからでないと出せない（API にその操作がない）
+            print(f"::warning::課金アイテム {item_id} は単独では審査に出せませんでした（上の 409 を参照）。"
+                  "最初の買い切りは、App Store Connect のバージョンの画面「App 内課金とサブスクリプション」で追加して、バージョンと一緒に出してください")
+            continue
         print(f"課金アイテム {item_id} を審査に出しました")
 
 
