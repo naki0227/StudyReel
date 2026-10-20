@@ -142,6 +142,7 @@ final class GoalFeatureTests: XCTestCase {
         tap(app.buttons["gearshape"])
         pause(2)
         shot("theme-02-settings-mint")
+        XCTAssert(app.navigationBars["設定"].exists, "設定の見出しが出ていません")
         assertInsideScreen(app, "設定")
         tap(app.buttons["theme.lavender"])
         pause(1)

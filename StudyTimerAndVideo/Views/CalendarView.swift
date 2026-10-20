@@ -64,12 +64,10 @@ struct CalendarView: View {
                 }
             }
             .background(ReelTheme.background.ignoresSafeArea())
+            // 見出しは左上に置くと iOS 26 で「…」にまとめられるので、上の真ん中に出す
+            .navigationTitle(L10n.string("カレンダー"))
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Text(L10n.string("カレンダー"))
-                        .font(ReelTheme.serif(24))
-                        .foregroundColor(ReelTheme.ink)
-                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(L10n.string("閉じる")) { dismiss() }
                         .foregroundColor(ReelTheme.accentDeep)

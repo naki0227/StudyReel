@@ -64,12 +64,10 @@ struct TagManagerView: View {
             }
             .scrollContentBackground(.hidden)
             .background(ReelTheme.background.ignoresSafeArea())
+            // 見出しは左上に置くと iOS 26 で「…」にまとめられるので、上の真ん中に出す
+            .navigationTitle(L10n.string("タグ"))
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Text(L10n.string("タグ"))
-                        .font(ReelTheme.serif(22))
-                        .foregroundColor(ReelTheme.ink)
-                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(L10n.string("完了")) { dismiss() }
                         .foregroundColor(ReelTheme.accentDeep)

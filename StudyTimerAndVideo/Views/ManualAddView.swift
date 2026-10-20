@@ -110,12 +110,10 @@ struct ManualAddView: View {
                 .padding(16)
             }
             .background(ReelTheme.background.ignoresSafeArea())
+            // 見出しは左上に置くと iOS 26 で「…」にまとめられるので、上の真ん中に出す
+            .navigationTitle(L10n.string("手動追加"))
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Text(L10n.string("手動追加"))
-                        .font(ReelTheme.serif(22))
-                        .foregroundColor(ReelTheme.ink)
-                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
                         Button(L10n.string("閉じる")) { dismiss() }
