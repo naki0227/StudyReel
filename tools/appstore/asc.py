@@ -60,6 +60,8 @@ def api(method, path, body=None, params=None, allow=()):
     res = requests.request(method, url, json=body, params=params,
                            headers={"Authorization": f"Bearer {token()}"}, timeout=60)
     if res.status_code in allow:
+        # 許した失敗でも、何が起きたかは残す（409 は「もうある」のことも「まだ出せない」のこともある）
+        print(f"  {method} {path} -> {res.status_code}: {res.text[:600]}")
         return None
     if res.status_code >= 400:
         print(f"::error::{method} {path} -> {res.status_code}\n{res.text}")
@@ -563,6 +565,10 @@ def submit(app_id, version_id):
         "relationships": {"reviewSubmission": {"data": {"type": "reviewSubmissions", "id": sub["id"]}},
                           "appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}},
         allow=(409,))
+    # バージョンが入っていない審査を出そうとすると「does not have any items」で止まる。入っているか確かめてから出す
+    items = api("GET", f"/v1/reviewSubmissions/{sub['id']}/items", params={"include": "appStoreVersion"})["data"]
+    if not DRY and not any((i.get("relationships") or {}).get("appStoreVersion", {}).get("data", {}).get("id") == version_id for i in items):
+        sys.exit(f"::error::審査（{sub['id']}）にバージョンを入れられませんでした。上の 409 の内容を確認してください")
     api("PATCH", f"/v1/reviewSubmissions/{sub['id']}", {"data": {
         "type": "reviewSubmissions", "id": sub["id"], "attributes": {"submitted": True}}})
     print("審査に提出しました")
