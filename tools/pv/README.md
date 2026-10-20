@@ -6,7 +6,7 @@
 - `v15.html` 1.5 の PV（録画・モザイク・ギャラリー・共有・Vlog）
 - `next.html` 次のアップデートの PV（目標と D-day・過去問・共有カード・テーマカラー）
 - `pv.css` / `pv.js` 共通の見た目と、時刻から値を出す道具
-- `assets/` 画面（store-shots / layout-check の成果物）と写真
+- `assets/` 画面（store-shots / layout-check の成果物）と写真。英語の画面は `assets/en/`（`--lang en` で使う）
 - `fonts/` Shippori Mincho・Zen Kaku Gothic New・Cormorant Garamond（tools/appstore/frames/fonts と同じ。git には入れない）
 
 ```sh

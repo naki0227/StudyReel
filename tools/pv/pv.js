@@ -36,3 +36,15 @@ const setShot = (el, { x = 0, y = 0, s = 1, r = 0, o = 1 } = {}) => {
 };
 const pad2 = (n) => String(Math.floor(n)).padStart(2, '0');
 const mmss = (sec) => `${pad2(sec / 60)}:${pad2(sec % 60)}`;
+
+// 言語。?lang=en で開くと英語の文言と assets/en/ の画面を使う
+const LANG = new URLSearchParams(location.search).get('lang') || 'ja';
+document.documentElement.lang = LANG;
+document.body.classList.add(LANG);
+const applyLang = (copy) => {
+  const c = copy[LANG];
+  document.querySelectorAll('[data-t]').forEach((el) => { el.innerHTML = c[el.dataset.t]; });
+  document.querySelectorAll('img[data-img]').forEach((el) => { el.src = (LANG === 'ja' ? 'assets/' : `assets/${LANG}/`) + el.dataset.img; });
+};
+// フォントと画像がそろうのを待つ
+const ready = () => Promise.all([document.fonts.ready, ...[...document.images].map((i) => i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; }))]);

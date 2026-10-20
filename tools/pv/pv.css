@@ -62,3 +62,10 @@ body { position: relative; }
 
 .logo { font-family: Mincho, serif; font-size: 120px; letter-spacing: .02em; }
 .brand { position: absolute; font-family: Mincho, serif; font-size: 36px; color: var(--ink); }
+
+/* 英語は Cormorant Garamond。明朝より小さく見えるので少し大きく */
+body.en .serif, body.en .serif-r { font-family: Corm, serif; letter-spacing: .01em; line-height: 1.12; }
+body.en .cap .t { font-size: 94px; font-weight: 600; }
+body.en .tagline { font-size: 52px !important; }
+body.en .cap .s, body.en .sans, body.en .store { font-family: ZenR, sans-serif; }
+body.en .logo { font-family: Mincho, serif; }

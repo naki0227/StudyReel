@@ -1,5 +1,5 @@
 // PV（宣伝動画）を書き出す。scene の HTML を Chromium で開き、window.seek(秒) で1コマずつ進めて ffmpeg に流す。
-// node render.js <scene.html> <出力.mp4> [--bgm 曲.m4a] [--fps 30] [--size 1080x1920] [--start 秒] [--end 秒]
+// node render.js <scene.html> <出力.mp4> [--lang ja|en] [--bgm 曲.m4a] [--fps 30] [--size 1080x1920] [--start 秒] [--end 秒]
 // scene は window.setup() で長さ（秒）を返し、window.seek(t) でその時刻の見た目にする
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
@@ -16,12 +16,13 @@ const fps = Number(opt('fps', 30));
 const [w, h] = opt('size', '1080x1920').split('x').map(Number);
 const bgm = opt('bgm', null);
 const start = Number(opt('start', 0));
+const lang = opt('lang', 'ja');
 
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
   page.on('pageerror', (e) => { console.error('page error:', e.message); process.exit(1); });
-  await page.goto('file://' + path.resolve(scene));
+  await page.goto('file://' + path.resolve(scene) + '?lang=' + lang);
   const duration = await page.evaluate(() => window.setup());
   const end = Number(opt('end', duration));
   const frames = Math.round((end - start) * fps);

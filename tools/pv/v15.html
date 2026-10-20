@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="pv.css">
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="pv.css">
 <style>
   .shot { width: 640px; }
   #rec-timer { left: 448px; top: 102px; width: 182px; height: 56px; border-radius: 12px; backdrop-filter: blur(18px); background: rgba(120, 110, 100, .55);
@@ -17,7 +17,7 @@
   .strip { position: absolute; left: 0; right: 0; bottom: 0; height: 110px; background: rgba(46,58,70,.55); display: flex; align-items: center; padding: 0 60px; gap: 14px; }
   .strip i { flex: 1; height: 70px; background-size: cover; background-position: center; border-radius: 6px; opacity: .35; }
   .strip i.on { opacity: 1; box-shadow: 0 0 0 3px #fff; }
-  .store { position: absolute; left: 50%; transform: translateX(-50%); font-family: Zen, sans-serif; font-size: 34px; color: #fff; background: var(--deep); border-radius: 999px; padding: 22px 54px; }
+  .store { display: inline-block; font-family: Zen, sans-serif; font-size: 34px; color: #fff; background: var(--deep); border-radius: 999px; padding: 22px 54px; }
 </style></head>
 <body>
 <div class="grid"></div>
@@ -26,32 +26,32 @@
 <div class="layer" id="L0">
   <div class="tape yellow" style="left: 465px; top: 700px; transform: rotate(-6deg)"></div>
   <div class="cap" id="l0-logo" style="top: 760px"><div class="logo">StudyReel</div></div>
-  <div class="cap" id="l0-sub" style="top: 930px"><div class="serif-r" style="font-size: 44px">勉強を、記録する。</div></div>
+  <div class="cap" id="l0-sub" style="top: 930px"><div class="serif-r tagline" data-t="tagline"></div></div>
   <div class="cap" id="l0-script" style="top: 1030px"><div class="script" style="font-size: 40px">study with me ♡</div></div>
 </div>
 
 <!-- 1: 録画 -->
 <div class="layer" id="L1">
-  <div class="cap" id="l1-cap" style="top: 170px"><div class="no">0 1</div><div class="t serif">机に置いて、<br>始めるだけ。</div><div class="s sans">雨の音や集中ノイズを流しながら</div></div>
-  <div class="shot" id="l1-shot"><img src="assets/recording.png"><div class="over" id="rec-timer"><i></i><span id="rec-text">00:00</span></div></div>
+  <div class="cap" id="l1-cap" style="top: 170px"><div class="no">0 1</div><div class="t serif" data-t="t1"></div><div class="s sans" data-t="s1"></div></div>
+  <div class="shot" id="l1-shot"><img data-img="recording.png"><div class="over" id="rec-timer"><i></i><span id="rec-text">00:00</span></div></div>
 </div>
 
 <!-- 2: モザイク -->
 <div class="layer" id="L2">
-  <div class="cap" id="l2-cap" style="top: 170px"><div class="no">0 2</div><div class="t serif">顔はモザイクで、<br>しっかり隠せる。</div><div class="s sans">カット・フィルター・BGMもかんたん</div></div>
+  <div class="cap" id="l2-cap" style="top: 170px"><div class="no">0 2</div><div class="t serif" data-t="t2"></div><div class="s sans" data-t="s2"></div></div>
   <div class="polaroid photo-big" id="l2-photo">
     <div class="tape pink"></div>
     <div class="ph" style="background-image: url(assets/photo-home-day.jpg)"></div>
     <div class="mos" id="l2-mos" style="background-image: url(assets/photo-home-day-mosaic.jpg)"></div>
     <div class="cap2">Tue 10/14 · 2h 25m</div>
   </div>
-  <div class="shot" id="l2-shot" style="width: 420px; border-radius: 64px"><img src="assets/review.png"></div>
+  <div class="shot" id="l2-shot" style="width: 420px; border-radius: 64px"><img data-img="review.png"></div>
 </div>
 
 <!-- 3: ギャラリー -->
 <div class="layer" id="L3">
-  <div class="cap" id="l3-cap" style="top: 170px"><div class="no">0 3</div><div class="t serif">毎日の勉強を、<br>ギャラリーに。</div><div class="s sans">撮った記録が、日付ごとに並びます</div></div>
-  <div class="shot" id="l3-shot"><img src="assets/home15.png"></div>
+  <div class="cap" id="l3-cap" style="top: 170px"><div class="no">0 3</div><div class="t serif" data-t="t3"></div><div class="s sans" data-t="s3"></div></div>
+  <div class="shot" id="l3-shot"><img data-img="home15.png"></div>
   <div class="polaroid mini" id="p1" style="left: 20px; top: 560px"><div class="tape"></div><div class="ph" style="background-image: url(assets/photo-library-morning.jpg)"></div><div class="cap2">Mon 10/13</div></div>
   <div class="polaroid mini" id="p2" style="left: 780px; top: 700px"><div class="tape pink"></div><div class="ph" style="background-image: url(assets/photo-home-day.jpg)"></div><div class="cap2">Tue 10/14</div></div>
   <div class="polaroid mini" id="p3" style="left: 40px; top: 1180px"><div class="tape yellow"></div><div class="ph" style="background-image: url(assets/photo-home-night.jpg)"></div><div class="cap2">Wed 10/15</div></div>
@@ -60,9 +60,9 @@
 
 <!-- 4: 共有 -->
 <div class="layer" id="L4">
-  <div class="cap" id="l4-cap" style="top: 170px"><div class="no">0 4</div><div class="t serif">今日の記録を、<br>勉強垢へ。</div><div class="s sans">今日・今週・教材ごとにまとめて共有</div></div>
-  <div class="shot" id="l4-shot"><img src="assets/share.png"></div>
-  <div class="hash" id="h1" style="left: 60px; top: 720px">#勉強垢</div>
+  <div class="cap" id="l4-cap" style="top: 170px"><div class="no">0 4</div><div class="t serif" data-t="t4"></div><div class="s sans" data-t="s4"></div></div>
+  <div class="shot" id="l4-shot"><img data-img="share.png"></div>
+  <div class="hash" id="h1" style="left: 60px; top: 720px" data-t="h1"></div>
   <div class="hash" id="h2" style="left: 760px; top: 900px">#studywithme</div>
   <div class="hash" id="h3" style="left: 80px; top: 1500px">#StudyReel</div>
 </div>
@@ -75,16 +75,16 @@
   <div class="cut" id="c4" style="background-image: url(assets/photo-library-cloudy.jpg)"></div>
   <div class="cut-label" id="l5-label"><div class="d" id="l5-d">Mon 10/13</div><div class="m" id="l5-m">2h 25m</div></div>
   <div class="strip" id="l5-strip"></div>
-  <div class="cap" id="l5-cap" style="top: 170px; color: #fff"><div class="no" style="color: #fff; opacity: .8">0 5</div><div class="t serif" style="text-shadow: 0 2px 24px rgba(0,0,0,.45)">1週間が、<br>1本のVlogに。</div><div class="s sans" style="color: #fff; opacity: .9">毎日の記録を自動でまとめます</div></div>
-  <div class="shot" id="l5-shot"><img src="assets/vlog.png"></div>
+  <div class="cap" id="l5-cap" style="top: 170px; color: #fff"><div class="no" style="color: #fff; opacity: .8">0 5</div><div class="t serif" style="text-shadow: 0 2px 24px rgba(0,0,0,.45)" data-t="t5"></div><div class="s sans" style="color: #fff; opacity: .9" data-t="s5"></div></div>
+  <div class="shot" id="l5-shot"><img data-img="vlog.png"></div>
 </div>
 
 <!-- 6: エンディング -->
 <div class="layer" id="L6">
   <div class="tape" style="left: 465px; top: 680px; transform: rotate(5deg)"></div>
   <div class="cap" id="l6-logo" style="top: 740px"><div class="logo">StudyReel</div></div>
-  <div class="cap" id="l6-sub" style="top: 910px"><div class="serif-r" style="font-size: 44px">勉強を、記録する。</div></div>
-  <div class="cap" id="l6-store" style="top: 1040px"><div class="store" style="position: static; display: inline-block; transform: none">App Store で無料</div></div>
+  <div class="cap" id="l6-sub" style="top: 910px"><div class="serif-r tagline" data-t="tagline"></div></div>
+  <div class="cap" id="l6-store" style="top: 1040px"><div class="store" data-t="store"></div></div>
   <div class="cap" id="l6-dev" style="top: 1160px"><div class="sans-r" style="font-size: 28px; color: var(--sub)">iPhone / iPad</div></div>
 </div>
 
@@ -92,10 +92,25 @@
 <script>
 const DUR = 27.5;
 const photos = ['assets/photo-library-morning.jpg', 'assets/photo-home-day.jpg', 'assets/photo-home-night.jpg', 'assets/photo-library-cloudy.jpg'];
+const COPY = {
+  ja: { tagline: '勉強を、記録する。', store: 'App Store で無料', h1: '#勉強垢',
+    t1: '机に置いて、<br>始めるだけ。', s1: '雨の音や集中ノイズを流しながら',
+    t2: '顔はモザイクで、<br>しっかり隠せる。', s2: 'カット・フィルター・BGMもかんたん',
+    t3: '毎日の勉強を、<br>ギャラリーに。', s3: '撮った記録が、日付ごとに並びます',
+    t4: '今日の記録を、<br>勉強垢へ。', s4: '今日・今週・教材ごとにまとめて共有',
+    t5: '1週間が、<br>1本のVlogに。', s5: '毎日の記録を自動でまとめます' },
+  en: { tagline: 'Record your study.', store: 'Free on the App Store', h1: '#studygram',
+    t1: 'Set it down.<br>Press start.', s1: 'Study with rain or focus noise',
+    t2: 'Hide your face<br>with a mosaic.', s2: 'Trim, filters and music in a tap',
+    t3: 'Your study,<br>as a gallery.', s3: 'Every session, sorted by day',
+    t4: 'Share today with<br>your study circle.', s4: 'Today, this week, or one book at a time',
+    t5: 'A week,<br>in one vlog.', s5: 'Your sessions, stitched together' },
+};
 window.setup = () => {
+  applyLang(COPY);
   const strip = $('l5-strip');
   for (let i = 0; i < 7; i++) { const e = document.createElement('i'); e.style.backgroundImage = `url(${photos[i % 4]})`; strip.appendChild(e); }
-  return document.fonts.ready.then(() => DUR);
+  return ready().then(() => DUR);
 };
 
 const cap = (el, t, start, end) => set(el, { y: lerp(30, 0, seg(t, start, 0.7)) - lerp(0, 20, seg(t, end - 0.4, 0.4, ease.in)), o: window_(t, start, end, 0.6, 0.4) });
@@ -123,7 +138,7 @@ window.seek = (t) => {
   // 3 ギャラリー 12.5–17
   set($('L3'), { o: window_(t, 12.5, 17.0, 0.3, 0.4) });
   cap($('l3-cap'), t, 12.6, 17.0);
-  setShot($('l3-shot'), { y: lerp(300, 200, seg(t, 12.6, 4.4, ease.linear)), s: lerp(0.96, 1, seg(t, 12.6, 1.0)), o: seg(t, 12.6, 0.5) });
+  setShot($('l3-shot'), { y: lerp(330, 236, seg(t, 12.6, 4.4, ease.linear)), s: lerp(0.96, 1, seg(t, 12.6, 1.0)), o: seg(t, 12.6, 0.5) });
   [['p1', 13.0, -7], ['p2', 13.35, 6], ['p3', 13.7, 5], ['p4', 14.05, -6]].forEach(([id, st, rot]) =>
     set($(id), { r: rot, s: lerp(0.6, 1, seg(t, st, 0.6, ease.outBack)), o: seg(t, st, 0.3) }));
 
