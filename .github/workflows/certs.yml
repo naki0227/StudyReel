@@ -1,0 +1,46 @@
+name: Certificates
+
+# 署名用の証明書を整理する。TestFlight（testflight.yml）はまっさらな Mac で動くたびに Development 証明書を
+# 1枚作るので、放っておくと上限に当たって「Choose a certificate to revoke」で止まる。
+# action: list    … チームの証明書を一覧にする
+#         match   … 過去の TestFlight の実行時刻と期限が合う（CI が作った）証明書を出すだけ
+#         revoke  … それを消す
+# Secrets は TestFlight と同じ ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_P8
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "list / match / revoke"
+        type: choice
+        options: [list, match, revoke]
+        default: match
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  certs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install "pyjwt[crypto]==2.9.0" "requests==2.32.3"
+
+      - name: TestFlight の実行時刻を集める
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run list --repo "$GITHUB_REPOSITORY" --workflow testflight.yml --limit 200 --json startedAt,conclusion > runs.json && python3 -c "import json; print(len(json.load(open('runs.json'))), 'runs')"
+
+      - name: ${{ inputs.action }}
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: python3 tools/appstore/certs.py ${{ inputs.action }} --runs runs.json
