@@ -114,7 +114,8 @@ final class BuddyCloud: ObservableObject {
     @Published private(set) var isBannedFromPhotos = false
     @Published private(set) var bannedSenders: Set<String> = []
 
-    let container = CKContainer(identifier: BuddyCloud.containerIdentifier)
+    // 必要になるまで作らない。署名なしのシミュレーター（UI テスト）では iCloud の権限がなく、作るだけで落ちるため
+    private(set) lazy var container = CKContainer(identifier: BuddyCloud.containerIdentifier)
     var privateDB: CKDatabase { container.privateCloudDatabase }
     var sharedDB: CKDatabase { container.sharedCloudDatabase }
     var publicDB: CKDatabase { container.publicCloudDatabase }
