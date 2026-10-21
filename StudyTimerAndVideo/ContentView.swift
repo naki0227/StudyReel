@@ -630,6 +630,8 @@ struct ContentView: View {
             isRecording: isRecordingVideo
         )
         saveRecoveryIfNeeded(force: true)
+        // 勉強仲間に「いま勉強中」と見せる
+        BuddyCloud.shared.studyStarted(at: startedAt, plannedSeconds: mode == .timer ? totalSeconds : nil)
     }
 
     private func togglePause() {
@@ -700,6 +702,7 @@ struct ContentView: View {
         UIApplication.shared.isIdleTimerDisabled = false
         clearWidgetTimerState()
         StudyLiveActivityController.shared.end()
+        BuddyCloud.shared.studyEnded()
     }
 
     private func discardSession() {
@@ -714,6 +717,7 @@ struct ContentView: View {
         setDimmed(false)
         clearWidgetTimerState()
         StudyLiveActivityController.shared.end()
+        BuddyCloud.shared.studyEnded()
         finishSession()
     }
 
