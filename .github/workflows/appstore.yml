@@ -38,7 +38,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install
-        run: pip install "pyjwt[crypto]==2.9.0" "pyyaml==6.0.2" "requests==2.32.3"
+        run: pip install "pyjwt[crypto]==2.15.1" "pyyaml==6.0.2" "requests==2.34.2"
 
       - name: Sync App Store Connect
         env:
