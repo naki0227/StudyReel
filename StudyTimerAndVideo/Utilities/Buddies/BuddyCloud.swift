@@ -203,7 +203,11 @@ final class BuddyCloud: ObservableObject {
             token = changes.changeToken
             more = changes.moreComing
         }
-        let groupRecord = records.first { $0.recordID.recordName == Self.groupRecordName }
+        var groupRecord = records.first { $0.recordID.recordName == Self.groupRecordName }
+        if groupRecord == nil {
+            // 変更の一覧に出てこなかったときは、直接取りにいく
+            groupRecord = try? await db.record(for: CKRecord.ID(recordName: Self.groupRecordName, zoneID: zoneID))
+        }
         let share = records.compactMap { $0 as? CKShare }.first
         let members = records.filter { $0.recordType == "BuddyMember" }.map(Self.member)
         let today = BuddyTotals.dayKey()
@@ -211,7 +215,7 @@ final class BuddyCloud: ObservableObject {
         let photos = records.filter { $0.recordType == "BuddyPhoto" }.map(Self.photo).sorted { $0.createdAt > $1.createdAt }
         return Group(
             zoneID: zoneID,
-            name: groupRecord?["name"] as? String ?? (share?[CKShare.SystemFieldKey.title] as? String ?? ""),
+            name: groupRecord?["name"] as? String ?? (share?[CKShare.SystemFieldKey.title] as? String ?? L10n.string("名前のないグループ")),
             inviteToken: groupRecord?["inviteToken"] as? String ?? "",
             isOwner: isOwner,
             members: members,
@@ -279,11 +283,15 @@ final class BuddyCloud: ObservableObject {
             share[CKShare.SystemFieldKey.title] = name as NSString
             // 参加者はオーナーが一人ずつ足す（リンクを知っているだけでは入れない）
             share.publicPermission = .none
-            _ = try await privateDB.modifyRecords(saving: [groupRecord, share], deleting: [])
+            // グループの行と共有は別々に保存する（まとめると片方の失敗で両方入らず、気づけない）
+            try await save([groupRecord], in: privateDB)
+            try await save([share], in: privateDB)
             try await saveMyMember(in: zone.zoneID, db: privateDB)
             await refresh()
             return groups.first { $0.zoneID == zone.zoneID }
         } catch {
+            // 途中で失敗したら、名前のないグループが残らないようにゾーンごと消す
+            _ = try? await privateDB.deleteRecordZone(withID: zone.zoneID)
             message = Self.describe(error)
             return nil
         }
@@ -319,7 +327,7 @@ final class BuddyCloud: ObservableObject {
         do {
             let record = try await privateDB.record(for: CKRecord.ID(recordName: Self.groupRecordName, zoneID: group.zoneID))
             record["inviteToken"] = Self.newToken() as NSString
-            _ = try await privateDB.modifyRecords(saving: [record], deleting: [], savePolicy: .changedKeys)
+            try await save([record], in: privateDB, policy: .changedKeys)
             await refresh()
         } catch {
             message = Self.describe(error)
@@ -350,7 +358,7 @@ final class BuddyCloud: ObservableObject {
         record["icon"] = BuddyProfile.icon.rawValue as NSString
         record["code"] = NSNumber(value: BuddyProfile.code)
         do {
-            _ = try await publicDB.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
+            try await save([record], in: publicDB, policy: .allKeys)
             if !pendingJoins.contains(where: { $0.requestName == recordName }) {
                 pendingJoins.append(PendingJoin(requestName: recordName, groupName: groupName))
                 savePending()
@@ -393,11 +401,11 @@ final class BuddyCloud: ObservableObject {
             let shareID = CKRecord.ID(recordName: CKRecordNameZoneWideShare, zoneID: group.zoneID)
             guard let share = try await privateDB.record(for: shareID) as? CKShare else { return }
             share.addParticipant(participant)
-            _ = try await privateDB.modifyRecords(saving: [share], deleting: [])
+            try await save([share], in: privateDB)
             guard let url = share.url else { return }
             let approval = CKRecord(recordType: "BuddyJoinApproval", recordID: CKRecord.ID(recordName: "ok-" + request.recordName))
             approval["shareURL"] = url.absoluteString as NSString
-            _ = try await publicDB.modifyRecords(saving: [approval], deleting: [], savePolicy: .allKeys)
+            try await save([approval], in: publicDB, policy: .allKeys)
             markHandled(request)
             await refresh()
         } catch {
@@ -450,7 +458,7 @@ final class BuddyCloud: ObservableObject {
             for participant in share.participants where participant.userIdentity.userRecordID?.recordName == member.userRecordName {
                 share.removeParticipant(participant)
             }
-            _ = try await privateDB.modifyRecords(saving: [share], deleting: [Self.memberID(member.userRecordName, zone: group.zoneID)])
+            try await save([share], deleting: [Self.memberID(member.userRecordName, zone: group.zoneID)], in: privateDB)
             await refresh()
         } catch {
             message = Self.describe(error)
@@ -514,7 +522,7 @@ final class BuddyCloud: ObservableObject {
         record["streakDays"] = NSNumber(value: totals.streakDays)
         record["hidesRanking"] = NSNumber(value: BuddyProfile.hidesRanking ? 1 : 0)
         // 自分の行は自分だけが書くので、そのまま上書きする
-        _ = try await db.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
+        try await save([record], in: db, policy: .allKeys)
     }
 
     // MARK: - スタンプ
@@ -542,7 +550,7 @@ final class BuddyCloud: ObservableObject {
         record["kind"] = kind.rawValue as NSString
         record["dayKey"] = today as NSString
         do {
-            _ = try await database(for: group).modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
+            try await save([record], in: database(for: group), policy: .allKeys)
             UserDefaults.standard.set([today: sentToday + 1], forKey: Self.sentStampsKey)
             if let index = groups.firstIndex(where: { $0.id == group.id }) {
                 groups[index].stamps.append(Stamp(recordName: name, from: me, to: member.userRecordName, kind: kind, dayKey: today))
@@ -687,7 +695,7 @@ final class BuddyCloud: ObservableObject {
             record["createdAt"] = now as NSDate
             record["expiresAt"] = now.addingTimeInterval(BuddyPhotos.lifetime) as NSDate
             record["image"] = CKAsset(fileURL: file)
-            _ = try await database(for: group).modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
+            try await save([record], in: database(for: group), policy: .allKeys)
             BuddyPhotos.store(data, for: name)
             await refresh()
             return true
@@ -701,7 +709,7 @@ final class BuddyCloud: ObservableObject {
     func deletePhoto(_ photo: Photo, in group: Group) async {
         guard group.isOwner || photo.from == myRecordName else { return }
         do {
-            _ = try await database(for: group).modifyRecords(saving: [], deleting: [CKRecord.ID(recordName: photo.recordName, zoneID: group.zoneID)])
+            try await save([], deleting: [CKRecord.ID(recordName: photo.recordName, zoneID: group.zoneID)], in: database(for: group))
             BuddyPhotos.remove(photo.recordName)
             await refresh()
         } catch {
@@ -715,7 +723,7 @@ final class BuddyCloud: ObservableObject {
         do {
             let record = try await privateDB.record(for: CKRecord.ID(recordName: Self.groupRecordName, zoneID: group.zoneID))
             record["photosEnabled"] = NSNumber(value: enabled ? 1 : 0)
-            _ = try await privateDB.modifyRecords(saving: [record], deleting: [], savePolicy: .changedKeys)
+            try await save([record], in: privateDB, policy: .changedKeys)
             await refresh()
         } catch {
             message = Self.describe(error)
@@ -746,7 +754,7 @@ final class BuddyCloud: ObservableObject {
         }
         defer { if let file { try? FileManager.default.removeItem(at: file) } }
         do {
-            _ = try await publicDB.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
+            try await save([record], in: publicDB, policy: .allKeys)
             return true
         } catch {
             message = Self.describe(error)
@@ -859,6 +867,17 @@ final class BuddyCloud: ObservableObject {
         }
     }
 
+    // modifyRecords は1件ずつの失敗では投げないので、失敗があれば最初のものを投げる（消すときに見つからないのは成功とみなす）
+    private func save(_ records: [CKRecord], deleting: [CKRecord.ID] = [], in db: CKDatabase, policy: CKModifyRecordsOperation.RecordSavePolicy = .ifServerRecordUnchanged) async throws {
+        let result = try await db.modifyRecords(saving: records, deleting: deleting, savePolicy: policy)
+        for (_, item) in result.saveResults {
+            if case .failure(let error) = item { throw error }
+        }
+        for (_, item) in result.deleteResults {
+            if case .failure(let error) = item, (error as? CKError)?.code != .unknownItem { throw error }
+        }
+    }
+
     static func describe(_ error: Error) -> String {
         guard let error = error as? CKError else { return error.localizedDescription }
         switch error.code {
@@ -866,7 +885,7 @@ final class BuddyCloud: ObservableObject {
         case .notAuthenticated: return L10n.string("iCloud にサインインすると使えます")
         case .quotaExceeded: return L10n.string("iCloud の空き容量が足りません")
         case .permissionFailure: return L10n.string("この操作はできません")
-        default: return L10n.string("うまくいきませんでした。しばらくしてからもう一度お試しください")
+        default: return L10n.format("うまくいきませんでした。しばらくしてからもう一度お試しください（コード %d）", error.code.rawValue)
         }
     }
 }

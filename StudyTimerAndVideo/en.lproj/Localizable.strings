@@ -565,7 +565,7 @@
 "iCloud にサインインすると使えます" = "Sign in to iCloud to use this";
 "iCloud の空き容量が足りません" = "Not enough iCloud storage";
 "この操作はできません" = "You can't do this";
-"うまくいきませんでした。しばらくしてからもう一度お試しください" = "Something went wrong. Please try again later";
+"うまくいきませんでした。しばらくしてからもう一度お試しください（コード %d）" = "Something went wrong. Please try again later (code %d)";
 "おつかれ" = "Nice work";
 "がんばれ" = "You got this";
 "すごい" = "Amazing";
@@ -623,3 +623,4 @@
 "公務員試験" = "Civil service exams";
 "%@さんから「%@」" = "%@ sent “%@”";
 "%@さんが勉強を始めました" = "%@ started studying";
+"名前のないグループ" = "Untitled group";
