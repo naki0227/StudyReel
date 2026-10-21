@@ -46,6 +46,17 @@ final class GoalFeatureTests: XCTestCase {
         XCTAssert(bar.exists, "「\(title)」の画面が開きません")
     }
 
+    // 文字を入れる欄を押して、キーボードが来るまで待つ。来なければもう一度押す
+    private func focus(_ field: XCUIElement, at offset: CGVector = CGVector(dx: 0.5, dy: 0.5)) {
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "見つかりません: \(field)")
+        let focused = NSPredicate(format: "hasKeyboardFocus == true")
+        for _ in 0..<3 {
+            field.coordinate(withNormalizedOffset: offset).tap()
+            if XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: focused, object: field)], timeout: 2) == .completed { return }
+        }
+        XCTFail("欄にフォーカスが入りません: \(field)")
+    }
+
     private func shot(_ name: String) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name
@@ -209,11 +220,13 @@ final class GoalFeatureTests: XCTestCase {
         XCTAssertTrue(max.waitForExistence(timeout: 5))
         XCTAssertEqual(max.value as? String, "990", "目標の満点が入っていません")
         shot("score-01-prefilled")
-        tap(max)
-        for _ in 0..<4 { max.typeText(XCUIKeyboardKey.delete.rawValue) }
+        // 先に点数を入れてから、満点の欄の右端を押してカーソルを末尾に置き、990 を消す
         let value = app.textFields["score.value"]
-        tap(value)
+        focus(value)
         value.typeText("820")
+        focus(max, at: CGVector(dx: 0.95, dy: 0.5))
+        max.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4))
+        // 空の欄は見本の「990」を値として返すので、消せたかどうかは score-02 のスクショ（薄い文字）で見る
         pause(0.5)
         shot("score-02-no-max")
         tap(app.buttons["score.save"])
