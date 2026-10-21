@@ -6,8 +6,8 @@
 # アプリのプライバシー（データの収集）と年齢区分は API で変えられないので、App Store Connect の画面で設定する。
 
 app: com.ni.StudyTimerAndVideo
-version: "1.6"
-build: 223            # "latest" にすると、このバージョンで最後に上げたビルド
+version: "1.7"
+build: 224            # "latest" にすると、このバージョンで最後に上げたビルド
 release: manual       # manual: 承認されたら自分で公開 / after_approval: 承認されたらすぐ公開
 submit_for_review: true    # true にしてマージすると、反映したあと審査に出す
 withdraw_to_update: true   # 審査待ちのときにスクリーンショットかビルドが変わっていたら、取り下げて差し替えてから出し直す
@@ -42,19 +42,15 @@ localizations:
   ja:
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
-      ・目標を決めて、本番までの残り日数（D-day）をホームに出せます。勉強時間と過去問の最高点の進み具合も見られます
-      ・過去問や模試の点数を記録できます。同じ問題を解くたびに伸びが分かり、グラフで推移を確かめられます
-      ・目標の宣言・途中経過・点数アップ・達成を1枚のカードにして、勉強垢に共有できます
-      ・テーマカラーを8色から選べます（空色以外はPro）
-      ・画面の見出しと「閉じる」ボタンの位置を、どの画面でも同じにそろえました
+      ・過去問の点数を、満点を入れずに保存したときにも、ホームの最高点とグラフに反映されるようにしました（これまでに保存した記録もそのまま反映されます）
+      ・初めての問題を記録するとき、満点の欄に目標の満点が最初から入るようにしました
+      ・設定から StudyReel のレビューを書けるようにしました
   en-US:
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
-      • Set a goal and see the days left until test day on Home, along with your study hours and best past-paper score
-      • Log past paper and mock exam scores. Retake the same paper to see how much you've improved, with a trend chart
-      • Share your goal, progress, score gains and achievements as a card made for your study feed
-      • Choose from 8 theme colors (colors other than Sky are Pro)
-      • Screen titles and Close buttons now sit in the same place on every screen
+      • Past paper scores saved without a max score now count toward your goal's best score and the chart, including ones you already saved
+      • When you log a new paper, the max score now starts from your goal's max score
+      • You can rate StudyReel from Settings
 
 review:
   demo_account_required: false
