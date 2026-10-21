@@ -6,6 +6,8 @@ struct ScoreRecordSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \PastPaperResult.date) private var results: [PastPaperResult]
+    @Query(filter: #Predicate<StudyGoal> { $0.archivedAt == nil }, sort: \StudyGoal.createdAt, order: .reverse)
+    private var goals: [StudyGoal]
 
     let result: PastPaperResult?
 
@@ -331,9 +333,14 @@ struct ScoreRecordSheet: View {
         }
     }
 
-    // 新しく記録するとき、同じ問題の前回から満点と大問の形を引き継ぐ
+    // 新しく記録するとき、同じ問題の前回から満点と大問の形を引き継ぐ。初めての問題なら、目標の満点を入れておく
+    // （満点の欄が薄い見本の「990」のままだと、入れたつもりで空のまま保存されて、目標の点数に数えられなかった）
     private func fillFromPrevious() {
-        guard result == nil, let last = previous.last else { return }
+        guard result == nil else { return }
+        guard let last = previous.last else {
+            if maxScore.isEmpty, let max = goals.first?.maxScore { maxScore = String(max) }
+            return
+        }
         if maxScore.isEmpty { maxScore = last.maxScore.map(String.init) ?? "" }
         if parts.isEmpty { parts = last.parts.map { ScorePart(name: $0.name, maxScore: $0.maxScore) } }
     }

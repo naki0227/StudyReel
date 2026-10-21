@@ -192,4 +192,33 @@ final class GoalFeatureTests: XCTestCase {
             pause(1)
         }
     }
+
+    // 初めての問題を記録すると、満点の欄に目標の満点（990）が入っている。
+    // 満点を消して保存しても（1.6 で満点が空のまま保存されていた記録と同じ）、ホームの最高点に数える
+    @MainActor
+    func test5ScoreWithoutMaxCountsForGoal() throws {
+        let app = launch(["-StudyReelDemoGoal"])
+        pause(6)
+        tap(app.buttons["home.goal.score"])
+        pause(1.5)
+        let paper = app.textFields["score.paper"]
+        tap(paper)
+        paper.typeText("模試 A")
+        pause(0.5)
+        let max = app.textFields["score.max"]
+        XCTAssertTrue(max.waitForExistence(timeout: 5))
+        XCTAssertEqual(max.value as? String, "990", "目標の満点が入っていません")
+        shot("score-01-prefilled")
+        tap(max)
+        for _ in 0..<4 { max.typeText(XCUIKeyboardKey.delete.rawValue) }
+        let value = app.textFields["score.value"]
+        tap(value)
+        value.typeText("820")
+        pause(0.5)
+        shot("score-02-no-max")
+        tap(app.buttons["score.save"])
+        pause(2)
+        shot("score-03-home")
+        XCTAssertTrue(app.staticTexts["820 / 800点"].waitForExistence(timeout: 5), "満点なしの点数がホームの最高点に入りません")
+    }
 }

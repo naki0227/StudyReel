@@ -21,7 +21,8 @@ struct PastPapersView: View {
     // グラフに出すのは、目標と同じ満点の回（目標がなければ、いちばん多い満点）
     private var chartResults: [PastPaperResult] {
         let scored = results.filter { $0.score != nil }
-        if let max = goal?.maxScore { return scored.filter { $0.maxScore == max } }
+        // 満点を書いていない回は、目標と同じ満点とみなす
+        if let max = goal?.maxScore { return scored.filter { $0.maxScore == nil || $0.maxScore == max } }
         let counts = Dictionary(grouping: scored) { $0.maxScore ?? 0 }
         guard let common = counts.max(by: { $0.value.count < $1.value.count })?.key else { return [] }
         return scored.filter { ($0.maxScore ?? 0) == common }

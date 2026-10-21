@@ -443,7 +443,7 @@ struct GoalShareCard: View {
             }
             .padding(.top, 16)
             if let target = content.goal?.targetScore, let last = series.latest?.score, target > last,
-               content.goal?.maxScore == nil || content.goal?.maxScore == series.latest?.maxScore {
+               content.goal?.maxScore == nil || series.latest?.maxScore == nil || content.goal?.maxScore == series.latest?.maxScore {
                 GoalPill(value: L10n.format("あと%d", target - last), label: L10n.string("目標まで"))
                     .fixedSize()
                     .padding(.top, 6)

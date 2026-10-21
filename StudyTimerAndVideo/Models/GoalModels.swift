@@ -205,9 +205,9 @@ struct GoalProgress {
         let since = sessions.filter { $0.date >= start }
         studiedSeconds = since.reduce(0) { $0 + $1.duration }
 
-        // 目標と満点がそろっている過去問だけで点数を比べる
+        // 目標と満点がそろっている過去問だけで点数を比べる。満点を書いていない回は、目標と同じ満点とみなす
         let comparable = papers
-            .filter { $0.score != nil && (goal.maxScore == nil || $0.maxScore == goal.maxScore) }
+            .filter { $0.score != nil && (goal.maxScore == nil || $0.maxScore == nil || $0.maxScore == goal.maxScore) }
             .sorted { $0.date < $1.date }
         bestScore = comparable.compactMap(\.score).max()
         firstScore = comparable.first?.score
