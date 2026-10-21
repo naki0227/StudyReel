@@ -26,8 +26,8 @@
   <div class="cap" id="l1-cap" style="top: 150px"><div class="no">0 1</div><div class="t serif" data-t="t1"></div><div class="s sans" data-t="s1"></div></div>
   <!-- 寄ったときに見出しへかぶらないよう、見出しより下だけに出す -->
   <div style="position: absolute; inset: 0; -webkit-mask-image: linear-gradient(transparent 500px, #000 600px); mask-image: linear-gradient(transparent 500px, #000 600px)">
-    <div class="shot" id="l1-a" style="transform-origin: 50% 62%"><img data-img="score-prefilled.png"></div>
-    <div class="shot" id="l1-b" style="transform-origin: 50% 62%"><img data-img="score-entered.png"></div>
+    <div class="shot" id="l1-a" style="transform-origin: 50% 53%"><img data-img="score-prefilled.png"></div>
+    <div class="shot" id="l1-b" style="transform-origin: 50% 53%"><img data-img="score-entered.png"></div>
   </div>
 </div>
 
@@ -41,8 +41,12 @@
 <!-- 3: 設定からレビュー -->
 <div class="layer" id="L3">
   <div class="cap" id="l3-cap" style="top: 150px"><div class="no">0 3</div><div class="t serif" data-t="t3"></div><div class="s sans" data-t="s3"></div></div>
-  <div class="shot" id="l3-shot" style="transform-origin: 50% 80%"><img data-img="settings-review.png"></div>
-  <div class="stars" id="stars" style="top: 1660px"><i>★</i><i>★</i><i>★</i><i>★</i><i>★</i></div>
+  <div style="position: absolute; inset: 0; -webkit-mask-image: linear-gradient(transparent 500px, #000 600px); mask-image: linear-gradient(transparent 500px, #000 600px)">
+    <div class="shot" id="l3-shot" style="transform-origin: 50% 69.5%"><img data-img="settings-review.png"></div>
+  </div>
+  <div class="hl" id="l3-hl" style="left: 176px; width: 728px; top: 1196px; height: 108px"></div>
+  <div class="paper" id="l3-stars-bg" style="left: 250px; width: 580px; top: 1420px; height: 150px"></div>
+  <div class="stars" id="stars" style="top: 1436px"><i>★</i><i>★</i><i>★</i><i>★</i><i>★</i></div>
 </div>
 
 <!-- 4: エンディング -->
@@ -81,7 +85,7 @@ window.seek = (t) => {
   set($('L1'), { o: window_(t, 3.0, 9.0, 0.3, 0.4) });
   cap($('l1-cap'), t, 3.1, 9.0);
   const z1 = seg(t, 4.6, 1.6, ease.inOut);
-  const base1 = { y: lerp(560, 300, seg(t, 3.1, 1.0)) + lerp(0, 40, z1), s: lerp(0.96, 1, seg(t, 3.1, 1.2)) * lerp(1, 1.45, z1) };
+  const base1 = { y: lerp(560, 300, seg(t, 3.1, 1.0)) + lerp(0, 60, z1), s: lerp(0.96, 1, seg(t, 3.1, 1.2)) * lerp(1, 1.5, z1) };
   setShot($('l1-a'), { ...base1, o: seg(t, 3.1, 0.5) });
   setShot($('l1-b'), { ...base1, o: seg(t, 6.6, 0.45) });
 
@@ -95,8 +99,11 @@ window.seek = (t) => {
   // 3 レビュー 14.5–18
   set($('L3'), { o: window_(t, 14.5, 18.0, 0.3, 0.4) });
   cap($('l3-cap'), t, 14.6, 18.0);
-  setShot($('l3-shot'), { y: lerp(560, 330, seg(t, 14.6, 1.0)), s: lerp(0.96, 1, seg(t, 14.6, 1.2)), o: seg(t, 14.6, 0.5) });
-  [...$('stars').children].forEach((e, i) => set(e, { y: lerp(30, 0, seg(t, 15.6 + i * 0.16, 0.5)), s: lerp(0.4, 1, seg(t, 15.6 + i * 0.16, 0.5, ease.outBack)), o: seg(t, 15.6 + i * 0.16, 0.25) }));
+  const z3 = seg(t, 15.2, 1.0, ease.inOut);
+  setShot($('l3-shot'), { y: lerp(400, 18, seg(t, 14.6, 1.0)), s: lerp(0.96, 1, seg(t, 14.6, 1.2)) * lerp(1, 1.2, z3), o: seg(t, 14.6, 0.5) });
+  set($('l3-hl'), { s: lerp(1.06, 1, seg(t, 15.9, 0.5, ease.outBack)), o: seg(t, 15.9, 0.3) });
+  set($('l3-stars-bg'), { y: lerp(30, 0, seg(t, 16.2, 0.5)), o: seg(t, 16.2, 0.3) });
+  [...$('stars').children].forEach((e, i) => set(e, { y: lerp(30, 0, seg(t, 16.3 + i * 0.12, 0.5)), s: lerp(0.4, 1, seg(t, 16.3 + i * 0.12, 0.5, ease.outBack)), o: seg(t, 16.3 + i * 0.12, 0.25) }));
 
   // 4 エンディング 18–21
   set($('L4'), { o: window_(t, 18.0, DUR + 1, 0.4, 1) });
