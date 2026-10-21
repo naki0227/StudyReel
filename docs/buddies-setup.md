@@ -19,6 +19,20 @@ entitlements にはすべて書いてあります。TestFlight のワークフ�
 
 ## 2. 開発環境でスキーマを作る
 
+**かんたんな方法**：`docs/cloudkit/schema.ckdb` に、使うレコード型・インデックス・セキュリティロール（3 と 4 の内容）をまとめてあります。
+Mac で次を実行すると、開発環境にそのまま入ります（CloudKit Console の Settings → Tokens で管理トークンを作っておく）。
+
+```sh
+xcrun cktool save-token --type management          # 管理トークンを貼る
+xcrun cktool export-schema --team-id <チームID> --container-id iCloud.com.ni.StudyTimerAndVideo --environment development > /tmp/current.ckdb   # 念のため今のスキーマを保存
+xcrun cktool validate-schema --team-id <チームID> --container-id iCloud.com.ni.StudyTimerAndVideo --environment development --file docs/cloudkit/schema.ckdb
+xcrun cktool import-schema --team-id <チームID> --container-id iCloud.com.ni.StudyTimerAndVideo --environment development --file docs/cloudkit/schema.ckdb
+```
+
+入ったら 5 の本番への反映に進みます（3 と 4 は schema.ckdb に入っているので、コンソールで確かめるだけ）。
+
+**手で作る方法**：
+
 CloudKit は、開発環境（Development）で初めてレコードを書いたときに型ができます。Xcode からデバッグ実行した端末で、次を一通り行います。
 
 | 操作 | できる型 | データベース |
