@@ -220,12 +220,18 @@ final class GoalFeatureTests: XCTestCase {
         XCTAssertTrue(max.waitForExistence(timeout: 5))
         XCTAssertEqual(max.value as? String, "990", "目標の満点が入っていません")
         shot("score-01-prefilled")
+        // キーボード（上の「完了」の帯）が点数の欄に重なるので、欄を移るたびに「完了」で閉じてから押す。
         // 先に点数を入れてから、満点の欄の右端を押してカーソルを末尾に置き、990 を消す
         let value = app.textFields["score.value"]
+        tap(app.buttons["完了"])
+        pause(0.8)
         focus(value)
         value.typeText("820")
+        tap(app.buttons["完了"])
+        pause(0.8)
         focus(max, at: CGVector(dx: 0.95, dy: 0.5))
         max.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4))
+        tap(app.buttons["完了"])
         // 空の欄は見本の「990」を値として返すので、消せたかどうかは score-02 のスクショ（薄い文字）で見る
         pause(0.5)
         shot("score-02-no-max")
