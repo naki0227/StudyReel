@@ -155,4 +155,41 @@ final class StoreScreenshotTests: XCTestCase {
         pause(6)
         shot("12-home-lavender")
     }
+
+    // 1.7 の PV に使う画面。新しい問題を開くと満点に目標の満点が入っている → 点数を入れて保存 → ホームの最高点、設定のレビューの行
+    @MainActor
+    func test9ScoreAndReview() throws {
+        let app = launch(["-StudyReelDemoGoal"])
+        pause(6)
+        tap(app.buttons["home.goal.score"])
+        pause(1.5)
+        let paper = app.textFields["score.paper"]
+        tap(paper)
+        paper.typeText(label("模試 A", "Mock Test A"))
+        // キーボードが点数の欄に重なるので閉じてから撮る
+        tap(app.buttons[label("完了", "Done")])
+        pause(1.2)
+        shot("13-score-prefilled")
+        let value = app.textFields["score.value"]
+        let focused = NSPredicate(format: "hasKeyboardFocus == true")
+        for _ in 0..<3 where !(value.value(forKey: "hasKeyboardFocus") as? Bool ?? false) {
+            value.tap()
+            _ = XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: focused, object: value)], timeout: 2)
+        }
+        value.typeText("820")
+        tap(app.buttons[label("完了", "Done")])
+        pause(1.2)
+        shot("14-score-entered")
+        tap(app.buttons["score.save"])
+        pause(2.5)
+        shot("15-home-score")
+
+        tap(app.buttons["gearshape"])
+        pause(2)
+        app.swipeUp(velocity: .fast)
+        pause(0.8)
+        app.swipeUp(velocity: .fast)
+        pause(1.5)
+        shot("16-settings-review")
+    }
 }
