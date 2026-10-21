@@ -14,8 +14,8 @@ https://developer.apple.com/account/resources/identifiers → `com.ni.StudyTimer
 | Sensitive Content Analysis | `com.apple.developer.sensitivecontentanalysis.client` | 裸などの写真を送らない・出さない |
 | Declared Age Range | `com.apple.developer.declared-age-range` | 18歳未満なら写真を初期オフ |
 
-entitlements にはすべて書いてあります。TestFlight のワークフローは自動署名（`-allowProvisioningUpdates`）なので、App ID に足りない機能があれば足してくれる想定です。
-署名で止まったら、上の画面で手動でチェックを入れてから流し直してください。
+entitlements にはすべて書いてあります。TestFlight のワークフローは自動署名（`-allowProvisioningUpdates`）なので、App ID に足りない機能は自動で入ります（2026-10-21 のビルド 225 で4つとも入っていることを確認済み）。**ふつうは何もしなくてよい。**
+署名で止まったときだけ、上の画面でチェックを確かめてください。
 
 ## 2. 開発環境でスキーマを作る
 
