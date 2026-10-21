@@ -56,7 +56,10 @@ struct BuddiesView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(GridPaperBackground().ignoresSafeArea())
-            .refreshable { await cloud.refresh() }
+            .refreshable {
+                await cloud.refresh()
+                await cloud.refreshExamCounts()
+            }
             .navigationTitle(L10n.string("勉強仲間"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -98,6 +101,7 @@ struct BuddiesView: View {
         .task {
             cloud.updateTotals(sessions)
             await cloud.refresh()
+            if !cloud.groups.isEmpty || !cloud.pendingJoins.isEmpty { await BuddyNotifier.requestAuthorization() }
         }
     }
 
@@ -126,7 +130,8 @@ struct BuddiesView: View {
             if !cloud.groups.isEmpty || !cloud.pendingJoins.isEmpty {
                 createButton
             }
-            Text(L10n.string("勉強仲間に見えるのは、ニックネーム、アイコン、いま勉強中かどうか、今日と今週の勉強時間、連続日数だけです。動画や写真、メモは見えません。"))
+            BuddyExamCard()
+            Text(L10n.string("勉強仲間に見えるのは、ニックネーム、アイコン、いま勉強中かどうか、今日と今週の勉強時間、連続日数だけです。動画やメモは見えません。写真は、オーナーがオンにしたグループで、自分で選んだ1コマ（顔にモザイク）だけを見せられます。"))
                 .font(ReelTheme.sans(11))
                 .foregroundColor(ReelTheme.secondary)
                 .padding(.top, 4)
@@ -411,6 +416,7 @@ struct BuddyProfileView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     BuddyProfileEditor(onSave: { dismiss() })
+                    BuddySettingsCard()
                     if !cloud.blocked.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(L10n.string("ブロックした人"))
@@ -469,5 +475,120 @@ struct BuddyAvatar: View {
             .foregroundColor(ReelTheme.accentDeep)
             .frame(width: size, height: size)
             .background(Circle().fill(ReelTheme.accentSoft))
+    }
+}
+
+// 写真と通知の設定
+struct BuddySettingsCard: View {
+    @State private var photosOn = BuddyProfile.photosOn
+    @State private var stamps = BuddyProfile.notifiesStamps
+    @State private var studying = BuddyProfile.notifiesStudying
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Toggle(isOn: $photosOn) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.string("写真を見せ合う"))
+                        .font(ReelTheme.sans(14))
+                        .foregroundColor(ReelTheme.ink)
+                    Text(BuddyProfile.isUnder18
+                         ? L10n.string("18歳未満の人は、初めはオフになっています。オンにする前に、おうちの人と相談してください。")
+                         : L10n.string("オフにすると、仲間の写真が出ず、自分も出せません。"))
+                        .font(ReelTheme.sans(11))
+                        .foregroundColor(ReelTheme.secondary)
+                }
+            }
+            .onChange(of: photosOn) { _, value in BuddyProfile.photosOn = value }
+            Divider()
+            Toggle(isOn: $stamps) {
+                Text(L10n.string("スタンプが届いたら通知"))
+                    .font(ReelTheme.sans(14))
+                    .foregroundColor(ReelTheme.ink)
+            }
+            .onChange(of: stamps) { _, value in BuddyProfile.notifiesStamps = value }
+            Toggle(isOn: $studying) {
+                Text(L10n.string("仲間が勉強を始めたら通知"))
+                    .font(ReelTheme.sans(14))
+                    .foregroundColor(ReelTheme.ink)
+            }
+            .onChange(of: studying) { _, value in BuddyProfile.notifiesStudying = value }
+        }
+        .tint(ReelTheme.accentDeep)
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.white))
+    }
+}
+
+// 資格ごとの、いま勉強中の人数。名前やアイコンは出さない
+struct BuddyExamCard: View {
+    @ObservedObject private var cloud = BuddyCloud.shared
+    @State private var exam = BuddyProfile.exam
+
+    private var rows: [(BuddyExam, Int)] {
+        BuddyExam.allCases
+            .map { ($0, cloud.examCounts[$0] ?? 0) }
+            .filter { $0.1 > 0 || $0.0 == exam }
+            .sorted { $0.1 == $1.1 ? $0.0 == exam : $0.1 > $1.1 }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            GoalScript(text: "exams ✦", size: 14)
+            Text(L10n.string("資格ごとの、いま勉強中の人数"))
+                .font(ReelTheme.serif(17))
+                .foregroundColor(ReelTheme.ink)
+            Menu {
+                Button(L10n.string("数えない")) { choose(nil) }
+                ForEach(BuddyExam.allCases) { item in
+                    Button(item.title) { choose(item) }
+                }
+            } label: {
+                HStack {
+                    Text(L10n.string("自分を数える資格"))
+                        .font(ReelTheme.sans(13))
+                        .foregroundColor(ReelTheme.secondary)
+                    Spacer()
+                    Text(exam?.title ?? L10n.string("数えない"))
+                        .font(ReelTheme.sans(14, weight: .medium))
+                        .foregroundColor(ReelTheme.accentDeep)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 10))
+                        .foregroundColor(ReelTheme.accentDeep)
+                }
+            }
+            .accessibilityIdentifier("buddies.exam")
+            if rows.isEmpty {
+                Text(L10n.string("いま勉強中の人はいません"))
+                    .font(ReelTheme.sans(12))
+                    .foregroundColor(ReelTheme.secondary)
+            } else {
+                ForEach(rows, id: \.0) { row in
+                    let (item, count) = row
+                    HStack {
+                        Text(item.title)
+                            .font(ReelTheme.sans(14, weight: item == exam ? .semibold : .regular))
+                            .foregroundColor(ReelTheme.ink)
+                        Spacer()
+                        Text(L10n.format("いま %d人", count))
+                            .font(ReelTheme.serif(15))
+                            .foregroundColor(count > 0 ? ReelTheme.accentDeep : ReelTheme.secondary)
+                            .monospacedDigit()
+                    }
+                }
+            }
+            Text(L10n.string("資格を選ぶと、勉強中だけ人数に数えられます。名前やアイコンは、だれにも出ません。"))
+                .font(ReelTheme.sans(11))
+                .foregroundColor(ReelTheme.secondary)
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.white))
+        .task { await cloud.refreshExamCounts() }
+    }
+
+    private func choose(_ item: BuddyExam?) {
+        exam = item
+        BuddyProfile.exam = item
+        cloud.updatePresence()
+        Task { await cloud.refreshExamCounts() }
     }
 }

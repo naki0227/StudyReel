@@ -33,6 +33,8 @@ final class BuddyCloud: ObservableObject {
         var isOwner: Bool
         var members: [Member]
         var stamps: [Stamp]
+        var photos: [Photo]
+        var photosEnabled: Bool
         var participantCount: Int
         var id: String { zoneID.ownerName + "/" + zoneID.zoneName }
     }
@@ -72,6 +74,18 @@ final class BuddyCloud: ObservableObject {
         var id: String { recordName }
     }
 
+    // 仲間に見せる1コマ。画像は見るときに取ってくる（BuddyPhotos）
+    struct Photo: Identifiable, Equatable {
+        let recordName: String
+        var from: String
+        var nickname: String
+        var code: Int
+        var createdAt: Date
+        var expiresAt: Date
+        var id: String { recordName }
+        var isExpired: Bool { expiresAt <= Date() }
+    }
+
     struct JoinRequest: Identifiable, Equatable {
         let recordName: String
         var token: String
@@ -96,11 +110,14 @@ final class BuddyCloud: ObservableObject {
     @Published private(set) var isLoading = false
     @Published var message: String?
     @Published private(set) var myRecordName: String?
+    @Published private(set) var examCounts: [BuddyExam: Int] = [:]
+    @Published private(set) var isBannedFromPhotos = false
+    @Published private(set) var bannedSenders: Set<String> = []
 
-    private let container = CKContainer(identifier: BuddyCloud.containerIdentifier)
-    private var privateDB: CKDatabase { container.privateCloudDatabase }
-    private var sharedDB: CKDatabase { container.sharedCloudDatabase }
-    private var publicDB: CKDatabase { container.publicCloudDatabase }
+    let container = CKContainer(identifier: BuddyCloud.containerIdentifier)
+    var privateDB: CKDatabase { container.privateCloudDatabase }
+    var sharedDB: CKDatabase { container.sharedCloudDatabase }
+    var publicDB: CKDatabase { container.publicCloudDatabase }
 
     private static let zonePrefix = "buddies-"
     private static let groupRecordName = "group"
@@ -108,6 +125,7 @@ final class BuddyCloud: ObservableObject {
     private static let blockedKey = "buddy_blocked"
     private static let handledKey = "buddy_handled_requests"
     private static let sentStampsKey = "buddy_sent_stamps"
+    private static let subscribedKey = "buddy_subscribed"
 
     // 勉強中の表示（録画を始めたら書き、止めたら消す）
     private var studyingSince: Date?
@@ -148,6 +166,11 @@ final class BuddyCloud: ObservableObject {
             }
             groups = loaded.sorted { $0.name < $1.name }
             hasLoaded = true
+            await removeExpiredPhotos()
+            await checkPhotoBans()
+            BuddyNotifier.process(groups: groups, me: myRecordName, blocked: blocked, post: notifiesOnNextRefresh)
+            notifiesOnNextRefresh = false
+            if !groups.isEmpty { await subscribeIfNeeded() }
             var found: [String: [JoinRequest]] = [:]
             for group in groups where group.isOwner {
                 found[group.id] = (try? await fetchRequests(token: group.inviteToken)) ?? []
@@ -158,12 +181,21 @@ final class BuddyCloud: ObservableObject {
         }
     }
 
+    // 写真の画像（image）だけは取らない。見るときに1枚ずつ取る
+    private static let listKeys: [CKRecord.FieldKey] = [
+        "name", "inviteToken", "ownerRecordName", "photosEnabled",
+        "userRecordName", "nickname", "icon", "code", "studyingSince", "studyingUntil",
+        "todaySeconds", "todayKey", "weekSeconds", "weekKey", "streakDays", "hidesRanking",
+        "from", "to", "kind", "dayKey", "createdAt", "expiresAt",
+        CKShare.SystemFieldKey.title,
+    ]
+
     private func loadGroup(_ zoneID: CKRecordZone.ID, in db: CKDatabase, isOwner: Bool) async throws -> Group {
         var records: [CKRecord] = []
         var token: CKServerChangeToken?
         var more = true
         while more {
-            let changes = try await db.recordZoneChanges(inZoneWith: zoneID, since: token)
+            let changes = try await db.recordZoneChanges(inZoneWith: zoneID, since: token, desiredKeys: Self.listKeys)
             for (_, result) in changes.modificationResultsByID {
                 if case .success(let modification) = result { records.append(modification.record) }
             }
@@ -175,6 +207,7 @@ final class BuddyCloud: ObservableObject {
         let members = records.filter { $0.recordType == "BuddyMember" }.map(Self.member)
         let today = BuddyTotals.dayKey()
         let stamps = records.filter { $0.recordType == "BuddyStamp" }.compactMap(Self.stamp).filter { $0.dayKey == today }
+        let photos = records.filter { $0.recordType == "BuddyPhoto" }.map(Self.photo).sorted { $0.createdAt > $1.createdAt }
         return Group(
             zoneID: zoneID,
             name: groupRecord?["name"] as? String ?? (share?[CKShare.SystemFieldKey.title] as? String ?? ""),
@@ -182,6 +215,8 @@ final class BuddyCloud: ObservableObject {
             isOwner: isOwner,
             members: members,
             stamps: stamps,
+            photos: photos,
+            photosEnabled: (groupRecord?["photosEnabled"] as? Int ?? 0) == 1,
             participantCount: share?.participants.count ?? members.count
         )
     }
@@ -214,7 +249,19 @@ final class BuddyCloud: ObservableObject {
         )
     }
 
-    private func database(for group: Group) -> CKDatabase { group.isOwner ? privateDB : sharedDB }
+    private static func photo(_ record: CKRecord) -> Photo {
+        let created = record["createdAt"] as? Date ?? record.creationDate ?? Date()
+        return Photo(
+            recordName: record.recordID.recordName,
+            from: record["from"] as? String ?? "",
+            nickname: record["nickname"] as? String ?? "",
+            code: record["code"] as? Int ?? 0,
+            createdAt: created,
+            expiresAt: record["expiresAt"] as? Date ?? created.addingTimeInterval(BuddyPhotos.lifetime)
+        )
+    }
+
+    func database(for group: Group) -> CKDatabase { group.isOwner ? privateDB : sharedDB }
 
     // MARK: - グループを作る・消す・抜ける
 
@@ -416,12 +463,14 @@ final class BuddyCloud: ObservableObject {
         // タイマーは終わる時刻＋10分、ストップウォッチは最大4時間まで「勉強中」
         studyingUntil = start.addingTimeInterval(TimeInterval((plannedSeconds ?? 4 * 3600) + (plannedSeconds == nil ? 0 : 600)))
         pushMyStatus()
+        updatePresence()
     }
 
     func studyEnded() {
         studyingSince = nil
         studyingUntil = nil
         pushMyStatus()
+        updatePresence()
     }
 
     func updateTotals(_ sessions: [StudySession]) {
@@ -499,6 +548,208 @@ final class BuddyCloud: ObservableObject {
             }
         } catch {
             message = Self.describe(error)
+        }
+    }
+
+    // MARK: - 資格ごとの人数（公開データベース。名前は書かない）
+
+    // 勉強中で、資格を選んでいるときだけ「presence-<利用者番号>」を置く。止めたら消す
+    func updatePresence() {
+        guard isActive else { return }
+        let exam = BuddyProfile.exam
+        let until = studyingUntil
+        Task {
+            guard let me = await ensureMe() else { return }
+            let id = CKRecord.ID(recordName: "presence-" + me)
+            if let exam, let until {
+                let record = CKRecord(recordType: "BuddyPresence", recordID: id)
+                record["exam"] = exam.rawValue as NSString
+                record["until"] = until as NSDate
+                _ = try? await publicDB.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
+            } else {
+                _ = try? await publicDB.modifyRecords(saving: [], deleting: [id])
+            }
+        }
+    }
+
+    func refreshExamCounts() async {
+        guard isActive else { return }
+        let query = CKQuery(recordType: "BuddyPresence", predicate: NSPredicate(format: "until > %@", Date() as NSDate))
+        var counts: [BuddyExam: Int] = [:]
+        do {
+            var page = try await publicDB.records(matching: query, desiredKeys: ["exam"], resultsLimit: 200)
+            var pages = 1
+            while true {
+                for (_, result) in page.matchResults {
+                    if case .success(let record) = result, let exam = BuddyExam(rawValue: record["exam"] as? String ?? "") {
+                        counts[exam, default: 0] += 1
+                    }
+                }
+                // 多くても 1000人まで数える
+                guard let cursor = page.queryCursor, pages < 5 else { break }
+                page = try await publicDB.records(continuingMatchFrom: cursor, desiredKeys: ["exam"], resultsLimit: 200)
+                pages += 1
+            }
+            examCounts = counts
+        } catch {
+            // 数えられなかったときは前の数のまま
+        }
+    }
+
+    func ensureMe() async -> String? {
+        if let myRecordName { return myRecordName }
+        guard (try? await container.accountStatus()) == .available,
+              let id = try? await container.userRecordID() else { return nil }
+        myRecordName = id.recordName
+        return id.recordName
+    }
+
+    // MARK: - 通知（CloudKit の変化を静かなプッシュで受け取り、端末の中で通知を出す）
+
+    private var notifiesOnNextRefresh = false
+
+    func handlePush() async {
+        notifiesOnNextRefresh = true
+        await refresh()
+    }
+
+    private func subscribeIfNeeded() async {
+        BuddyNotifier.registerForPush()
+        guard !UserDefaults.standard.bool(forKey: Self.subscribedKey) else { return }
+        do {
+            for (db, id) in [(privateDB, "buddies-private"), (sharedDB, "buddies-shared")] {
+                let subscription = CKDatabaseSubscription(subscriptionID: id)
+                let info = CKSubscription.NotificationInfo()
+                info.shouldSendContentAvailable = true
+                subscription.notificationInfo = info
+                _ = try await db.modifySubscriptions(saving: [subscription], deleting: [])
+            }
+            UserDefaults.standard.set(true, forKey: Self.subscribedKey)
+        } catch {
+            // 次に開いたときにまた試す
+        }
+    }
+
+    // MARK: - 写真
+
+    // 期限が過ぎた写真を消す。オーナーは全部、ほかの人は自分のものだけ消せる
+    private func removeExpiredPhotos() async {
+        for group in groups {
+            let expired = group.photos.filter { $0.isExpired && (group.isOwner || $0.from == myRecordName) }
+            guard !expired.isEmpty else { continue }
+            let ids = expired.map { CKRecord.ID(recordName: $0.recordName, zoneID: group.zoneID) }
+            _ = try? await database(for: group).modifyRecords(saving: [], deleting: ids)
+        }
+        BuddyPhotos.clearOldCache()
+        for index in groups.indices {
+            groups[index].photos.removeAll(where: \.isExpired)
+        }
+    }
+
+    // 開発者が CloudKit のコンソールで置く「ban-<利用者番号>」があれば、写真を送れない・その人の写真は出さない
+    private func checkPhotoBans() async {
+        var names = Set(groups.flatMap(\.photos).map(\.from))
+        if let me = myRecordName { names.insert(me) }
+        guard !names.isEmpty else { return }
+        let ids = names.map { CKRecord.ID(recordName: "ban-" + $0) }
+        guard let results = try? await publicDB.records(for: ids, desiredKeys: []) else { return }
+        var banned = Set<String>()
+        for (id, result) in results {
+            if case .success = result { banned.insert(String(id.recordName.dropFirst(4))) }
+        }
+        bannedSenders = banned
+        isBannedFromPhotos = myRecordName.map { banned.contains($0) } ?? false
+    }
+
+    func hasSentPhotoToday(in group: Group) -> Bool {
+        guard let me = myRecordName else { return false }
+        return group.photos.contains { $0.from == me && !$0.isExpired && Calendar.current.isDateInToday($0.createdAt) }
+    }
+
+    func sendPhoto(_ data: Data, to group: Group) async -> Bool {
+        guard group.photosEnabled, BuddyProfile.photosOn, !hasSentPhotoToday(in: group), let me = myRecordName else { return false }
+        await checkPhotoBans()
+        guard !isBannedFromPhotos else {
+            message = L10n.string("写真の機能は使えなくなっています")
+            return false
+        }
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".jpg")
+        defer { try? FileManager.default.removeItem(at: file) }
+        do {
+            try data.write(to: file)
+            let now = Date()
+            let name = "photo-\(BuddyTotals.dayKey(now))-\(me)"
+            let record = CKRecord(recordType: "BuddyPhoto", recordID: CKRecord.ID(recordName: name, zoneID: group.zoneID))
+            record["from"] = me as NSString
+            record["nickname"] = BuddyProfile.nickname as NSString
+            record["code"] = NSNumber(value: BuddyProfile.code)
+            record["createdAt"] = now as NSDate
+            record["expiresAt"] = now.addingTimeInterval(BuddyPhotos.lifetime) as NSDate
+            record["image"] = CKAsset(fileURL: file)
+            _ = try await database(for: group).modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
+            BuddyPhotos.store(data, for: name)
+            await refresh()
+            return true
+        } catch {
+            message = Self.describe(error)
+            return false
+        }
+    }
+
+    // 写真を消す。オーナーはだれの写真でも、ほかの人は自分の写真だけ
+    func deletePhoto(_ photo: Photo, in group: Group) async {
+        guard group.isOwner || photo.from == myRecordName else { return }
+        do {
+            _ = try await database(for: group).modifyRecords(saving: [], deleting: [CKRecord.ID(recordName: photo.recordName, zoneID: group.zoneID)])
+            BuddyPhotos.remove(photo.recordName)
+            await refresh()
+        } catch {
+            message = Self.describe(error)
+        }
+    }
+
+    // オーナーが、このグループで写真を使うかを決める（初めはオフ）
+    func setPhotosEnabled(_ enabled: Bool, in group: Group) async {
+        guard group.isOwner else { return }
+        do {
+            let record = try await privateDB.record(for: CKRecord.ID(recordName: Self.groupRecordName, zoneID: group.zoneID))
+            record["photosEnabled"] = NSNumber(value: enabled ? 1 : 0)
+            _ = try await privateDB.modifyRecords(saving: [record], deleting: [], savePolicy: .changedKeys)
+            await refresh()
+        } catch {
+            message = Self.describe(error)
+        }
+    }
+
+    // MARK: - 通報（公開データベースに置き、開発者が CloudKit のコンソールで見る。ほかの利用者には見えない設定にする）
+
+    func report(userRecordName: String, nickname: String, code: Int, group: Group, reason: BuddyReportReason, note: String, photo: Photo?, photoData: Data?) async -> Bool {
+        guard let me = await ensureMe() else { return false }
+        let record = CKRecord(recordType: "BuddyReport", recordID: CKRecord.ID(recordName: "report-" + UUID().uuidString))
+        record["reporter"] = me as NSString
+        record["target"] = userRecordName as NSString
+        record["targetNickname"] = nickname as NSString
+        record["targetCode"] = NSNumber(value: code)
+        record["groupName"] = group.name as NSString
+        record["groupZone"] = "\(group.zoneID.ownerName)/\(group.zoneID.zoneName)" as NSString
+        record["reason"] = reason.rawValue as NSString
+        record["note"] = String(note.prefix(1000)) as NSString
+        record["appVersion"] = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") as NSString
+        var file: URL?
+        if let photo, let photoData {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".jpg")
+            try? photoData.write(to: url)
+            file = url
+            record["photo"] = CKAsset(fileURL: url)
+            record["photoCreatedAt"] = photo.createdAt as NSDate
+        }
+        defer { if let file { try? FileManager.default.removeItem(at: file) } }
+        do {
+            _ = try await publicDB.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
+            return true
+        } catch {
+            message = Self.describe(error)
+            return false
         }
     }
 

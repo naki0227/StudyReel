@@ -36,6 +36,40 @@ enum BuddyProfile {
 
     static var isReady: Bool { !nickname.trimmingCharacters(in: .whitespaces).isEmpty }
 
+    // 資格ごとの人数で、自分を数えてもらう資格。選ばなければ数えられない
+    static var exam: BuddyExam? {
+        get { BuddyExam(rawValue: UserDefaults.standard.string(forKey: examKey) ?? "") }
+        set { UserDefaults.standard.set(newValue?.rawValue, forKey: examKey) }
+    }
+
+    // 写真を見せ合うか。18歳未満と分かった人は、自分でオンにするまでオフ
+    static var photosOn: Bool {
+        get { UserDefaults.standard.object(forKey: photosKey) as? Bool ?? !isUnder18 }
+        set { UserDefaults.standard.set(newValue, forKey: photosKey) }
+    }
+
+    // 「年齢の範囲」（iOS 26）で18歳未満と分かったとき
+    static var isUnder18: Bool {
+        get { UserDefaults.standard.bool(forKey: under18Key) }
+        set { UserDefaults.standard.set(newValue, forKey: under18Key) }
+    }
+
+    static var notifiesStamps: Bool {
+        get { UserDefaults.standard.object(forKey: stampNoticeKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: stampNoticeKey) }
+    }
+
+    static var notifiesStudying: Bool {
+        get { UserDefaults.standard.bool(forKey: studyingNoticeKey) }
+        set { UserDefaults.standard.set(newValue, forKey: studyingNoticeKey) }
+    }
+
+    private static let examKey = "buddy_exam"
+    private static let photosKey = "buddy_photos_on"
+    private static let under18Key = "buddy_under18"
+    private static let stampNoticeKey = "buddy_notice_stamps"
+    private static let studyingNoticeKey = "buddy_notice_studying"
+
     static func displayCode(_ code: Int) -> String { "#\(code)" }
 }
 
@@ -63,6 +97,33 @@ enum BuddyIcon: String, CaseIterable, Identifiable {
         case .cup: return "cup.and.saucer"
         case .plane: return "paperplane"
         case .bolt: return "bolt"
+        }
+    }
+}
+
+// 資格ごとの人数を数える資格・試験。一覧はこちらで用意し、利用者は作れない
+enum BuddyExam: String, CaseIterable, Identifiable {
+    case toeic, eiken, toefl, ielts, kyotsu, juken, koukou, takken, boki, fp, fe, ap, itpass, kanken, koumuin
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .toeic: return "TOEIC"
+        case .eiken: return L10n.string("英検")
+        case .toefl: return "TOEFL"
+        case .ielts: return "IELTS"
+        case .kyotsu: return L10n.string("共通テスト")
+        case .juken: return L10n.string("大学受験")
+        case .koukou: return L10n.string("高校受験")
+        case .takken: return L10n.string("宅建")
+        case .boki: return L10n.string("簿記")
+        case .fp: return "FP"
+        case .fe: return L10n.string("基本情報技術者")
+        case .ap: return L10n.string("応用情報技術者")
+        case .itpass: return L10n.string("ITパスポート")
+        case .kanken: return L10n.string("漢検")
+        case .koumuin: return L10n.string("公務員試験")
         }
     }
 }

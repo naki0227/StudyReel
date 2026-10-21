@@ -4,7 +4,6 @@ import SwiftUI
 // 1つの勉強仲間の画面。いま勉強中の人、今日・今週のランキング、スタンプ、参加申請（オーナー）
 struct BuddyGroupView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
     @ObservedObject private var cloud = BuddyCloud.shared
 
     private let groupID: String
@@ -13,6 +12,9 @@ struct BuddyGroupView: View {
     @State private var showInvite = false
     @State private var confirmLeave = false
     @State private var removing: BuddyCloud.Member?
+    @State private var reporting: BuddyReportTarget?
+    @State private var showComposer = false
+    @State private var viewing: BuddyCloud.Photo?
 
     init(groupID: String) {
         self.groupID = groupID
@@ -34,6 +36,9 @@ struct BuddyGroupView: View {
                         requestsCard(requests, group: group)
                     }
                     studyingCard(group)
+                    if group.photosEnabled {
+                        photosCard(group)
+                    }
                     rankingCard(group)
                     footer(group)
                 }
@@ -65,6 +70,23 @@ struct BuddyGroupView: View {
         }
         .sheet(item: $stampTarget) { member in
             if let group { BuddyStampPicker(member: member, group: group) }
+        }
+        .sheet(item: $reporting) { target in
+            BuddyReportSheet(target: target)
+        }
+        .sheet(isPresented: $showComposer) {
+            if let group { BuddyPhotoComposer(group: group) }
+        }
+        .sheet(item: $viewing) { photo in
+            if let group {
+                BuddyPhotoViewer(photo: photo, group: group) { data in
+                    viewing = nil
+                    reporting = BuddyReportTarget(group: group, userRecordName: photo.from, nickname: photo.nickname, code: photo.code, photo: photo, photoData: data)
+                }
+            }
+        }
+        .task(id: group?.photosEnabled) {
+            if group?.photosEnabled == true { await BuddyPhotos.checkAgeIfNeeded() }
         }
         .alert(group?.isOwner == true ? L10n.string("グループを削除しますか？") : L10n.string("グループを抜けますか？"), isPresented: $confirmLeave) {
             Button(group?.isOwner == true ? L10n.string("削除") : L10n.string("抜ける"), role: .destructive) { leave() }
@@ -160,6 +182,65 @@ struct BuddyGroupView: View {
         return L10n.format("%@経過", buddyDuration(Int(Date().timeIntervalSince(since))))
     }
 
+    // MARK: - 写真
+
+    private func visiblePhotos(_ group: BuddyCloud.Group) -> [BuddyCloud.Photo] {
+        let blocked = cloud.blocked
+        return group.photos.filter { !$0.isExpired && !blocked.contains($0.from) && !cloud.bannedSenders.contains($0.from) }
+    }
+
+    private func photosCard(_ group: BuddyCloud.Group) -> some View {
+        let photos = visiblePhotos(group)
+        let canSend = BuddyProfile.photosOn && !cloud.isBannedFromPhotos && !cloud.hasSentPhotoToday(in: group)
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                GoalScript(text: "today's moment ✦", size: 14)
+                Spacer()
+                if canSend {
+                    Button {
+                        showComposer = true
+                    } label: {
+                        Label(L10n.string("1コマ出す"), systemImage: "plus")
+                            .font(ReelTheme.sans(12, weight: .semibold))
+                    }
+                    .accessibilityIdentifier("buddies.photo.add")
+                }
+            }
+            if !BuddyProfile.photosOn {
+                Text(L10n.string("写真を見せ合わない設定になっています。右上の「自分の表示」から変えられます。"))
+                    .font(ReelTheme.sans(12))
+                    .foregroundColor(ReelTheme.secondary)
+            } else if photos.isEmpty {
+                Text(L10n.string("今日の1コマはまだありません。保存したタイムラプスから、出してもいい瞬間を選べます。24時間で消えます。"))
+                    .font(ReelTheme.sans(12))
+                    .foregroundColor(ReelTheme.secondary)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(photos) { photo in
+                            Button {
+                                viewing = photo
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    BuddyPhotoImage(photo: photo, group: group)
+                                        .frame(width: 140, height: 105)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    Text(photo.nickname)
+                                        .font(ReelTheme.sans(11))
+                                        .foregroundColor(ReelTheme.ink)
+                                        .lineLimit(1)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.white))
+    }
+
     // MARK: - ランキング
 
     private func rankingCard(_ group: BuddyCloud.Group) -> some View {
@@ -251,7 +332,7 @@ struct BuddyGroupView: View {
                     Label(L10n.string("ブロック"), systemImage: "hand.raised")
                 }
                 Button {
-                    report(member, group: group)
+                    reporting = BuddyReportTarget(group: group, userRecordName: member.userRecordName, nickname: member.nickname, code: member.code, photo: nil, photoData: nil)
                 } label: {
                     Label(L10n.string("通報"), systemImage: "exclamationmark.bubble")
                 }
@@ -270,6 +351,21 @@ struct BuddyGroupView: View {
 
     private func footer(_ group: BuddyCloud.Group) -> some View {
         VStack(alignment: .leading, spacing: 10) {
+            if group.isOwner {
+                Toggle(isOn: Binding(get: { group.photosEnabled }, set: { value in Task { await cloud.setPhotosEnabled(value, in: group) } })) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L10n.string("このグループで写真を使う"))
+                            .font(ReelTheme.sans(14))
+                            .foregroundColor(ReelTheme.ink)
+                        Text(L10n.string("仲間が自分のタイムラプスから選んだ1コマ（顔にモザイク）を見せ合えます。24時間で消えます。知り合いだけのグループでオンにしてください。"))
+                            .font(ReelTheme.sans(11))
+                            .foregroundColor(ReelTheme.secondary)
+                    }
+                }
+                .tint(ReelTheme.accentDeep)
+                .padding(14)
+                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.white))
+            }
             Text(L10n.string("ブロックすると、その人の名前・勉強状況・スタンプがあなたの画面に出なくなります。相手からあなたの勉強状況は見えたままなので、見せたくないときはグループを抜けるか、オーナーに外してもらってください。"))
                 .font(ReelTheme.sans(11))
                 .foregroundColor(ReelTheme.secondary)
@@ -294,32 +390,10 @@ struct BuddyGroupView: View {
             dismiss()
         }
     }
-
-    // 通報はメールで受け付ける。相手の名前・番号・CloudKit の利用者番号・グループを書いておく
-    private func report(_ member: BuddyCloud.Member, group: BuddyCloud.Group) {
-        let body = """
-        \(L10n.string("通報の理由をここに書いてください"))：
-
-
-        ---
-        \(L10n.string("相手")): \(member.nickname) \(BuddyProfile.displayCode(member.code))
-        ID: \(member.userRecordName)
-        \(L10n.string("グループ")): \(group.name)
-        \(L10n.string("日時")): \(Date().formatted(date: .numeric, time: .shortened))
-        """
-        var components = URLComponents()
-        components.scheme = "mailto"
-        components.path = BuddyReport.address
-        components.queryItems = [
-            URLQueryItem(name: "subject", value: L10n.string("StudyReel 勉強仲間の通報")),
-            URLQueryItem(name: "body", value: body),
-        ]
-        if let url = components.url { openURL(url) }
-    }
 }
 
 enum BuddyReport {
-    // 通報の届け先
+    // 問い合わせ先（通報はアプリの中から送る）
     static let address = "contact@enludus.com"
 }
 

@@ -1,3 +1,4 @@
+import CloudKit
 import SwiftUI
 import UIKit
 
@@ -7,6 +8,13 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
         Self.orientationMask
+    }
+
+    // 勉強仲間の CloudKit の変化（静かなプッシュ）。読み直して、新しいスタンプなどを通知する
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any]) async -> UIBackgroundFetchResult {
+        guard CKNotification(fromRemoteNotificationDictionary: userInfo) != nil else { return .noData }
+        await BuddyCloud.shared.handlePush()
+        return .newData
     }
 }
 
