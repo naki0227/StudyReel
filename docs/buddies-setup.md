@@ -46,6 +46,12 @@ CloudKit は、開発環境（Development）で初めてレコードを書いた
 | 通報する（写真つきでも1回） | `BuddyReport` | 公開 |
 | （開発者がコンソールで作る） | `BuddyPhotoBan`（フィールド `note` など何か1つ） | 公開 |
 
+### 共有の型（cloudkit.share）は schema.ckdb では作れない
+
+共有（CKShare）が使う `cloudkit.share` は、アプリが開発環境で初めて共有を保存したときにだけ CloudKit が作る型です。
+**Xcode から実機（またはシミュレーター）で一度だけ実行して、勉強仲間のグループを1つ作る**と、開発環境に `cloudkit.share` ができます。
+そのあと 5 の本番への反映をします。これがないと、本番（TestFlight・App Store）でグループを作るときに「コード 12（Invalid Arguments）」になります。
+
 ## 3. インデックス
 
 https://icloud.developer.apple.com/dashboard → コンテナ → Development → Schema → Indexes

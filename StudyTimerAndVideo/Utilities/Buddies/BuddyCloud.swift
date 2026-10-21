@@ -885,7 +885,10 @@ final class BuddyCloud: ObservableObject {
         case .notAuthenticated: return L10n.string("iCloud にサインインすると使えます")
         case .quotaExceeded: return L10n.string("iCloud の空き容量が足りません")
         case .permissionFailure: return L10n.string("この操作はできません")
-        default: return L10n.format("うまくいきませんでした。しばらくしてからもう一度お試しください（コード %d）", error.code.rawValue)
+        default:
+            // 原因を調べられるように、CloudKit が返した説明も出す
+            let detail = (error.userInfo[NSLocalizedDescriptionKey] as? String) ?? error.localizedDescription
+            return L10n.format("うまくいきませんでした。しばらくしてからもう一度お試しください（コード %d）", error.code.rawValue) + "\n" + detail
         }
     }
 }
