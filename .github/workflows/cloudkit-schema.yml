@@ -1,0 +1,71 @@
+name: CloudKit schema
+
+# docs/cloudkit/schema.ckdb を CloudKit の開発環境（Development）に取り込む。
+# 本番（Production）への反映は CloudKit Console の「Deploy Schema Changes...」で行う（cktool にはない）。
+# 必要な Secrets:
+#   CLOUDKIT_MANAGEMENT_TOKEN  CloudKit Console → Settings → Tokens & Keys → Management Token
+# Actions の画面から手動で動かすか、コミットメッセージに [cloudkit-schema] を入れて push する
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+
+concurrency:
+  group: cloudkit-schema
+  cancel-in-progress: false
+
+jobs:
+  schema:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[cloudkit-schema]')
+    runs-on: macos-15
+    timeout-minutes: 15
+    env:
+      TEAM_ID: X97ZJZ42VZ
+      CONTAINER_ID: iCloud.com.ni.StudyTimerAndVideo
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -v -i beta | sort -V | tail -1 || true)
+          if [ -z "$xcode" ]; then echo "::error::Xcode 26 が見つかりません"; exit 1; fi
+          sudo xcode-select -s "$xcode"
+          xcrun cktool --help | head -40
+
+      - name: Save management token
+        env:
+          TOKEN: ${{ secrets.CLOUDKIT_MANAGEMENT_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "::error::Secrets に CLOUDKIT_MANAGEMENT_TOKEN がありません"; exit 1; fi
+          printf '%s\n' "$TOKEN" | xcrun cktool save-token --type management --method file
+
+      - name: Export current schema (before)
+        run: |
+          xcrun cktool export-schema --team-id "$TEAM_ID" --container-id "$CONTAINER_ID" --environment development --output-file before.ckdb
+          grep -n "RECORD TYPE" before.ckdb || true
+
+      - name: Validate
+        run: xcrun cktool validate-schema --team-id "$TEAM_ID" --container-id "$CONTAINER_ID" --environment development --file docs/cloudkit/schema.ckdb
+
+      - name: Import
+        run: xcrun cktool import-schema --team-id "$TEAM_ID" --container-id "$CONTAINER_ID" --environment development --file docs/cloudkit/schema.ckdb
+
+      - name: Export schema (after)
+        if: always()
+        run: |
+          xcrun cktool export-schema --team-id "$TEAM_ID" --container-id "$CONTAINER_ID" --environment development --output-file after.ckdb || true
+          grep -n "RECORD TYPE" after.ckdb || true
+
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudkit-schema
+          path: |
+            before.ckdb
+            after.ckdb
+          if-no-files-found: warn
+
+      - name: Remove token
+        if: always()
+        run: xcrun cktool remove-token --type management || true

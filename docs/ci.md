@@ -9,6 +9,7 @@
 | `preview.yml` | App プレビュー動画 | コミットに `[preview]`、または手動 |
 | `review-shot.yml` | 審査用スクリーンショット | コミットに `[review-shot]`、または手動 |
 | `commercial.yml` | 宣伝用の録画 | コミットに `[commercial]`、または手動 |
+| `cloudkit-schema.yml` | `docs/cloudkit/schema.ckdb` を CloudKit の開発環境に取り込む（本番への反映は Console で） | コミットに `[cloudkit-schema]`、または手動 |
 | `testflight.yml` | TestFlight へのアップロード | 手動 |
 | `certs.yml` | 証明書の整理 | 手動 |
 
