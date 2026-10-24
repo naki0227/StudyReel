@@ -6,6 +6,7 @@
 - `v15.html` 1.5 の PV（録画・モザイク・ギャラリー・共有・Vlog）
 - `next.html` 次のアップデートの PV（目標と D-day・過去問・共有カード・テーマカラー）
 - `v17.html` 1.7 の PV（満点が最初から入る・ホームの最高点に反映・レビュー）。画面は StoreScreenshotTests の test9
+- `intro18.html` アプリ紹介（1.8 時点）。アップデートを知らない人向けに、録画→モザイク→目標→勉強仲間→Vlog→共有の順で見せる。画面は store-shots の 1.8（home18 / review18 / goal18 / buddies）
 - `pv.css` / `pv.js` 共通の見た目と、時刻から値を出す道具
 - `assets/` 画面（store-shots / layout-check の成果物）と写真。英語の画面は `assets/en/`（`--lang en` で使う）
 - `fonts/` Shippori Mincho・Zen Kaku Gothic New・Cormorant Garamond（tools/appstore/frames/fonts と同じ。git には入れない）
@@ -14,6 +15,7 @@
 cd tools/pv
 node render.js v15.html out/studyreel-1.5-ja.mp4 --bgm ../../StudyTimerAndVideo/Resources/BGM/Piano.m4a
 node render.js next.html out/studyreel-next-ja.mp4 --bgm ../../StudyTimerAndVideo/Resources/BGM/LofiStudy.m4a
+node render.js intro18.html out/studyreel-intro-1.8-ja.mp4 --bgm ../../StudyTimerAndVideo/Resources/BGM/LofiStudy.m4a   # --lang en で英語
 node snap.js v15.html out/check 1.5 5 9      # 確認用に、その時刻のコマだけ PNG にする
 ```
 

@@ -1,0 +1,201 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="pv.css">
+<style>
+  .shot { width: 640px; }
+  #rec-timer { left: 448px; top: 102px; width: 182px; height: 56px; border-radius: 12px; backdrop-filter: blur(18px); background: rgba(120, 110, 100, .55);
+    color: #fff; font-family: Zen, sans-serif; font-size: 30px; font-weight: 600; letter-spacing: .04em; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  #rec-timer i { width: 12px; height: 12px; border-radius: 50%; background: #FF3B30; }
+  .hook { font-size: 84px; }
+  .photo-big { position: absolute; left: 110px; top: 560px; width: 700px; padding: 22px 22px 26px; }
+  .photo-big .ph { aspect-ratio: 941 / 1672; height: auto; }
+  .photo-big .mos { position: absolute; left: 22px; top: 22px; right: 22px; bottom: 26px; background-size: cover; background-position: center; opacity: 0; }
+  .card { position: absolute; width: 400px; border-radius: 30px; overflow: hidden; box-shadow: 0 30px 70px rgba(46,58,70,.26); will-change: transform, opacity; }
+  .card img { display: block; width: 100%; }
+  .bubble { position: absolute; font-family: Zen, sans-serif; font-size: 34px; color: var(--deep); background: #fff; border-radius: 999px; padding: 16px 32px;
+    box-shadow: 0 14px 30px rgba(46,58,70,.16); display: flex; align-items: center; gap: 12px; will-change: transform, opacity; }
+  .bubble b { font-family: CormI, serif; font-weight: 400; font-size: 30px; color: var(--sub); }
+  .new { display: inline-block; font-family: Corm, serif; font-size: 30px; letter-spacing: .2em; color: #fff; background: var(--deep); border-radius: 999px; padding: 6px 22px; margin-bottom: 18px; }
+  .hash { position: absolute; font-family: Zen, sans-serif; font-size: 34px; color: var(--deep); background: #fff; border-radius: 999px; padding: 14px 30px; box-shadow: 0 14px 30px rgba(46,58,70,.14); }
+  .cut { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; }
+  .cut-label { position: absolute; left: 70px; bottom: 150px; color: #fff; text-shadow: 0 2px 18px rgba(0,0,0,.45); }
+  .cut-label .d { font-family: CormI, serif; font-size: 64px; }
+  .cut-label .m { font-family: Zen, sans-serif; font-size: 34px; opacity: .9; margin-top: 6px; }
+  .store { display: inline-block; font-family: Zen, sans-serif; font-size: 34px; color: #fff; background: var(--deep); border-radius: 999px; padding: 22px 54px; }
+  .points { position: absolute; left: 150px; right: 150px; top: 1220px; display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; }
+  .points span { font-family: Zen, sans-serif; font-size: 28px; color: var(--deep); background: var(--soft); border-radius: 999px; padding: 10px 24px; }
+</style></head>
+<body>
+<div class="grid"></div>
+
+<!-- 0: つかみ → ロゴ -->
+<div class="layer" id="L0">
+  <div class="cap" id="l0-hook" style="top: 820px"><div class="serif hook" data-t="hook"></div></div>
+</div>
+<div class="layer" id="L0b">
+  <div class="tape yellow" style="left: 465px; top: 700px; transform: rotate(-6deg)"></div>
+  <div class="cap" id="l0-logo" style="top: 760px"><div class="logo">StudyReel</div></div>
+  <div class="cap" id="l0-sub" style="top: 930px"><div class="serif-r tagline" style="font-size: 46px" data-t="tagline"></div></div>
+</div>
+
+<!-- 1: 録画 -->
+<div class="layer" id="L1">
+  <div class="cap" id="l1-cap" style="top: 170px"><div class="no">0 1</div><div class="t serif" data-t="t1"></div><div class="s sans" data-t="s1"></div></div>
+  <div class="shot" id="l1-shot"><img data-img="recording.png"><div class="over" id="rec-timer"><i></i><span id="rec-text">00:00</span></div></div>
+</div>
+
+<!-- 2: モザイク -->
+<div class="layer" id="L2">
+  <div class="cap" id="l2-cap" style="top: 170px"><div class="no">0 2</div><div class="t serif" data-t="t2"></div><div class="s sans" data-t="s2"></div></div>
+  <div class="polaroid photo-big" id="l2-photo">
+    <div class="tape pink"></div>
+    <div class="ph" style="background-image: url(assets/photo-home-day.jpg)"></div>
+    <div class="mos" id="l2-mos" style="background-image: url(assets/photo-home-day-mosaic.jpg)"></div>
+    <div class="cap2">Tue 10/14 · 2h 25m</div>
+  </div>
+  <div class="shot" id="l2-shot" style="width: 420px; border-radius: 64px"><img data-img="review18.png"></div>
+</div>
+
+<!-- 3: 目標と D-day -->
+<div class="layer" id="L3">
+  <div class="cap" id="l3-cap" style="top: 170px"><div class="no">0 3</div><div class="t serif" data-t="t3"></div><div class="s sans" data-t="s3"></div></div>
+  <div class="shot" id="l3-shot"><img data-img="home18.png"></div>
+  <div class="card" id="l3-card" style="left: 620px; top: 1150px"><img data-img="card-scoreup.png"></div>
+</div>
+
+<!-- 4: 勉強仲間（1.8） -->
+<div class="layer" id="L4">
+  <div class="cap" id="l4-cap" style="top: 150px"><div class="new">NEW</div><div class="t serif" data-t="t4"></div><div class="s sans" data-t="s4"></div></div>
+  <div class="shot" id="l4-shot"><img data-img="buddies.png"></div>
+  <div class="bubble" id="b1" style="left: 40px; top: 900px"><span data-t="st1"></span><b data-t="n1"></b></div>
+  <div class="bubble" id="b2" style="left: 640px; top: 1180px"><span data-t="st2"></span><b data-t="n2"></b></div>
+  <div class="bubble" id="b3" style="left: 70px; top: 1520px"><span data-t="st3"></span></div>
+</div>
+
+<!-- 5: Vlog（写真を速いカットで → 画面） -->
+<div class="layer" id="L5">
+  <div class="cut" id="c1" style="background-image: url(assets/photo-library-morning.jpg)"></div>
+  <div class="cut" id="c2" style="background-image: url(assets/photo-home-day.jpg)"></div>
+  <div class="cut" id="c3" style="background-image: url(assets/photo-home-night.jpg)"></div>
+  <div class="cut" id="c4" style="background-image: url(assets/photo-library-cloudy.jpg)"></div>
+  <div class="cut-label" id="l5-label"><div class="d" id="l5-d">Mon 10/13</div><div class="m" id="l5-m">2h 25m</div></div>
+  <div class="cap" id="l5-cap" style="top: 170px; color: #fff"><div class="no" style="color: #fff; opacity: .8">0 5</div><div class="t serif" style="text-shadow: 0 2px 24px rgba(0,0,0,.45)" data-t="t5"></div><div class="s sans" style="color: #fff; opacity: .9" data-t="s5"></div></div>
+  <div class="shot" id="l5-shot"><img data-img="vlog.png"></div>
+</div>
+
+<!-- 6: 共有 -->
+<div class="layer" id="L6">
+  <div class="cap" id="l6-cap" style="top: 170px"><div class="no">0 6</div><div class="t serif" data-t="t6"></div><div class="s sans" data-t="s6"></div></div>
+  <div class="shot" id="l6-shot"><img data-img="share.png"></div>
+  <div class="hash" id="h1" style="left: 60px; top: 720px" data-t="h1"></div>
+  <div class="hash" id="h2" style="left: 760px; top: 900px">#studywithme</div>
+  <div class="hash" id="h3" style="left: 80px; top: 1500px">#StudyReel</div>
+</div>
+
+<!-- 7: エンディング -->
+<div class="layer" id="L7">
+  <div class="tape" style="left: 465px; top: 620px; transform: rotate(5deg)"></div>
+  <div class="cap" id="l7-logo" style="top: 680px"><div class="logo">StudyReel</div></div>
+  <div class="cap" id="l7-sub" style="top: 850px"><div class="serif-r tagline" style="font-size: 46px" data-t="tagline"></div></div>
+  <div class="cap" id="l7-store" style="top: 980px"><div class="store" data-t="store"></div></div>
+  <div class="cap" id="l7-dev" style="top: 1100px"><div class="sans-r" style="font-size: 28px; color: var(--sub)">iPhone / iPad</div></div>
+  <div class="points" id="l7-points"><span data-t="p1"></span><span data-t="p2"></span><span data-t="p3"></span><span data-t="p4"></span></div>
+</div>
+
+<script src="pv.js"></script>
+<script>
+// アプリを知らない人向けの紹介（1.8 時点）。アップデートの知らせではなく「何ができるアプリか」を順に見せる
+const DUR = 33;
+const COPY = {
+  ja: { hook: '勉強、<br>続いてますか？', tagline: '努力を、見返したくなる記録に。', store: 'App Store で無料',
+    t1: '机に置いて、<br>始めるだけ。', s1: '勉強の様子が、タイムラプス動画になる',
+    t2: '顔はモザイクで、<br>しっかり隠せる。', s2: 'カット・フィルター・BGMもかんたん',
+    t3: '目標まで、<br>あと何日。', s3: 'D-dayと過去問の点数で、進み具合が見える',
+    t4: '勉強仲間と、<br>一緒にがんばる。', s4: 'いま勉強中の人と、今日の時間が見える',
+    st1: '🔥 がんばれ', st2: '✨ すごい', st3: '👏 おつかれ', n1: 'from はると', n2: 'from みお',
+    t5: '1週間が、<br>1本のVlogに。', s5: '毎日の記録を、自動でまとめます',
+    t6: '今日の記録を、<br>勉強垢へ。', s6: '今日・今週・目標をカードにして共有', h1: '#勉強垢',
+    p1: 'タイムラプス', p2: '顔にモザイク', p3: '目標とD-day', p4: '勉強仲間' },
+  en: { hook: 'Is your study<br>sticking?', tagline: 'Make your effort worth rewatching.', store: 'Free on the App Store',
+    t1: 'Set it down.<br>Press start.', s1: 'Your study session becomes a time-lapse',
+    t2: 'Hide your face<br>with a mosaic.', s2: 'Trim, filters and music in a tap',
+    t3: 'Days to go,<br>at a glance.', s3: 'A countdown and past-paper scores show your progress',
+    t4: 'Study together<br>with friends.', s4: "See who's studying now and everyone's time",
+    st1: '🔥 Keep going', st2: '✨ Amazing', st3: '👏 Nice work', n1: 'from Haruto', n2: 'from Mio',
+    t5: 'A week,<br>in one vlog.', s5: 'Your sessions, stitched together',
+    t6: 'Share today with<br>your study circle.', s6: 'Today, this week, or your goal as a card', h1: '#studygram',
+    p1: 'Time-lapse', p2: 'Face mosaic', p3: 'Goals & D-day', p4: 'Study Buddies' },
+};
+window.setup = () => { applyLang(COPY); return ready().then(() => DUR); };
+// 字幕の下に画面がかからないように、画面を少し下げる（英語は見出しが大きいので多めに）
+const DY = LANG === 'en' ? 60 : 30;
+
+const cap = (el, t, start, end) => set(el, { y: lerp(30, 0, seg(t, start, 0.7)) - lerp(0, 20, seg(t, end - 0.4, 0.4, ease.in)), o: window_(t, start, end, 0.6, 0.4) });
+
+window.seek = (t) => {
+  // 0 つかみ 0–1.8 → ロゴ 1.8–4
+  set($('L0'), { o: window_(t, 0, 1.8, 0.01, 0.35) });
+  set($('l0-hook'), { y: lerp(30, 0, seg(t, 0.1, 0.8)), o: seg(t, 0.1, 0.6) });
+  set($('L0b'), { o: window_(t, 1.8, 4.0, 0.3, 0.4) });
+  set($('l0-logo'), { y: lerp(40, 0, seg(t, 1.9, 0.9)), o: seg(t, 1.9, 0.6) });
+  set($('l0-sub'), { y: lerp(24, 0, seg(t, 2.4, 0.8)), o: seg(t, 2.4, 0.6) });
+
+  // 1 録画 4–8.5
+  set($('L1'), { o: window_(t, 4.0, 8.5, 0.3, 0.4) });
+  cap($('l1-cap'), t, 4.1, 8.5);
+  setShot($('l1-shot'), { y: DY + lerp(520, 236, seg(t, 4.1, 1.0)), r: lerp(-4, 0, seg(t, 4.1, 1.2)), s: lerp(0.96, 1, seg(t, 4.1, 1.2)), o: seg(t, 4.1, 0.5) });
+  // 4.5秒で 2時間ぶん進む（タイムラプスらしく）
+  $('rec-text').textContent = mmss(Math.max(0, t - 4.8) * 1600 % 6000);
+
+  // 2 モザイク 8.5–12.5
+  set($('L2'), { o: window_(t, 8.5, 12.5, 0.3, 0.4) });
+  cap($('l2-cap'), t, 8.6, 12.5);
+  set($('l2-photo'), { r: -2, y: lerp(60, 0, seg(t, 8.6, 0.9)), o: seg(t, 8.6, 0.6), s: lerp(1, 1.03, seg(t, 8.6, 4, ease.linear)) });
+  $('l2-mos').style.opacity = seg(t, 9.7, 0.35);
+  setShot($('l2-shot'), { x: lerp(620, 290, seg(t, 10.5, 0.9)), y: 470, r: lerp(10, 6, seg(t, 10.5, 0.9)), o: seg(t, 10.5, 0.5) });
+
+  // 3 目標 12.5–17
+  set($('L3'), { o: window_(t, 12.5, 17.0, 0.3, 0.4) });
+  cap($('l3-cap'), t, 12.6, 17.0);
+  setShot($('l3-shot'), { x: lerp(0, -90, seg(t, 14.2, 0.8)), y: DY + lerp(330, 236, seg(t, 12.6, 1.0)), s: lerp(0.96, 1, seg(t, 12.6, 1.0)), o: seg(t, 12.6, 0.5) });
+  set($('l3-card'), { r: lerp(12, 5, seg(t, 14.2, 0.8)), x: lerp(200, 0, seg(t, 14.2, 0.8)), s: lerp(0.8, 1, seg(t, 14.2, 0.8, ease.outBack)), o: seg(t, 14.2, 0.4) });
+
+  // 4 勉強仲間 17–21.5
+  set($('L4'), { o: window_(t, 17.0, 21.5, 0.3, 0.4) });
+  cap($('l4-cap'), t, 17.1, 21.5);
+  setShot($('l4-shot'), { y: DY + lerp(330, 260, seg(t, 17.1, 1.0)), s: lerp(0.96, 1, seg(t, 17.1, 1.0)), o: seg(t, 17.1, 0.5) });
+  [['b1', 18.2, -4], ['b2', 18.7, 3], ['b3', 19.2, -2]].forEach(([id, st, rot]) =>
+    set($(id), { r: rot, y: lerp(30, 0, seg(t, st, 0.6)) + Math.sin((t - st) * 2.2) * 6, s: lerp(0.6, 1, seg(t, st, 0.6, ease.outBack)), o: seg(t, st, 0.3) }));
+
+  // 5 Vlog 21.5–25.5（0.4秒ごとに写真、最後に画面）
+  set($('L5'), { o: window_(t, 21.5, 25.5, 0.3, 0.4) });
+  const cutStart = 21.5, cutLen = 0.4, cuts = 6, cutEnd = 23.9;
+  const k = Math.min(cuts - 1, Math.max(0, Math.floor((t - cutStart) / cutLen)));
+  const order = [0, 1, 2, 3, 0, 2];
+  const labels = [['Mon 10/13', '2h 25m'], ['Tue 10/14', '1h 50m'], ['Wed 10/15', '3h 05m'], ['Thu 10/16', '2h 10m'], ['Fri 10/17', '1h 35m'], ['Sat 10/18', '4h 20m']];
+  for (let i = 0; i < 4; i++) {
+    const el = $('c' + (i + 1));
+    el.style.opacity = order[k] === i && t < cutEnd ? 1 : 0;
+    el.style.transform = `scale(${1 + ((t - cutStart) % cutLen) / cutLen * 0.04})`;
+  }
+  $('l5-d').textContent = labels[k][0]; $('l5-m').textContent = labels[k][1];
+  set($('l5-label'), { o: t < cutEnd ? 1 : 0 });
+  cap($('l5-cap'), t, 21.6, cutEnd);
+  setShot($('l5-shot'), { s: lerp(0.8, 1, seg(t, cutEnd - 0.2, 0.8)), o: seg(t, cutEnd - 0.2, 0.4) });
+
+  // 6 共有 25.5–29.5
+  set($('L6'), { o: window_(t, 25.5, 29.5, 0.3, 0.4) });
+  cap($('l6-cap'), t, 25.6, 29.5);
+  setShot($('l6-shot'), { y: DY + lerp(300, 236, seg(t, 25.6, 1.0)), s: lerp(0.96, 1, seg(t, 25.6, 1.2)), o: seg(t, 25.6, 0.5) });
+  [['h1', 26.4, -5], ['h2', 26.7, 4], ['h3', 27.0, -3]].forEach(([id, st, rot]) =>
+    set($(id), { r: rot, y: lerp(30, 0, seg(t, st, 0.6)) + Math.sin((t - st) * 2) * 6, s: lerp(0.7, 1, seg(t, st, 0.6, ease.outBack)), o: seg(t, st, 0.3) }));
+
+  // 7 エンディング 29.5–33
+  set($('L7'), { o: window_(t, 29.5, DUR + 1, 0.4, 1) });
+  set($('l7-logo'), { y: lerp(30, 0, seg(t, 29.6, 0.9)), o: seg(t, 29.6, 0.6) });
+  set($('l7-sub'), { y: lerp(20, 0, seg(t, 30.0, 0.8)), o: seg(t, 30.0, 0.6) });
+  set($('l7-store'), { s: lerp(0.8, 1, seg(t, 30.4, 0.6, ease.outBack)), o: seg(t, 30.4, 0.3) });
+  set($('l7-dev'), { o: seg(t, 30.8, 0.5) });
+  set($('l7-points'), { y: lerp(20, 0, seg(t, 31.0, 0.6)), o: seg(t, 31.0, 0.5) });
+};
+</script>
+</body></html>
