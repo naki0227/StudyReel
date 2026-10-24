@@ -116,6 +116,16 @@ final class StoreScreenshotTests: XCTestCase {
         shot("03-review")
     }
 
+    // 勉強仲間（デモのグループ。CloudKit は使わない）
+    @MainActor
+    func test10Buddies() throws {
+        let app = launch(["-StudyReelDemoScreen", "buddies"])
+        pause(6)
+        tap(app.staticTexts[label("受験仲間", "Exam Buddies")])
+        pause(3)
+        shot("08-buddies")
+    }
+
     // 目標の宣言カード（共有画面）
     @MainActor
     func test5GoalCard() throws {

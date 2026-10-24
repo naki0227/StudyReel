@@ -304,6 +304,9 @@ struct StartView: View {
             case "materials": showMaterials = true
             case "papers": showPapers = true
             case "goalShare": sharingGoal = try? modelContext.fetch(FetchDescriptor<StudyGoal>()).first
+            case "buddies":
+                BuddyCloud.shared.loadDemo()
+                showBuddies = true
             default: break
             }
         }

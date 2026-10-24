@@ -764,6 +764,52 @@ final class BuddyCloud: ObservableObject {
         }
     }
 
+    // MARK: - スクショ用のデモ（-StudyReelDemoScreen buddies）。CloudKit には何も書かない
+
+    func loadDemo() {
+        guard DemoMode.isActive else { return }
+        let en = Locale.preferredLanguages.first?.hasPrefix("en") == true
+        BuddyProfile.nickname = en ? "Yu" : "ゆう"
+        BuddyProfile.icon = .pencil
+        myRecordName = "demo-me"
+        availability = .available
+        let now = Date()
+        let day = BuddyTotals.dayKey(now)
+        let week = BuddyTotals.weekKey(now)
+        func member(_ id: String, _ ja: String, _ english: String, _ icon: BuddyIcon, studyingFor minutes: Int?, today: Int, week weekMinutes: Int, streak: Int) -> Member {
+            Member(
+                userRecordName: id, nickname: en ? english : ja, icon: icon, code: 1000 + abs(id.hashValue % 9000),
+                studyingSince: minutes.map { now.addingTimeInterval(TimeInterval(-$0 * 60)) },
+                studyingUntil: minutes.map { _ in now.addingTimeInterval(3600) },
+                todaySeconds: today * 60, todayKey: day, weekSeconds: weekMinutes * 60, weekKey: week,
+                streakDays: streak, hidesRanking: false
+            )
+        }
+        let members = [
+            member("demo-me", "ゆう", "Yu", .pencil, studyingFor: nil, today: 95, week: 610, streak: 12),
+            member("demo-2", "はると", "Haruto", .flame, studyingFor: 72, today: 152, week: 720, streak: 21),
+            member("demo-3", "みお", "Mio", .leaf, studyingFor: 25, today: 64, week: 480, streak: 5),
+            member("demo-4", "そうた", "Sota", .star, studyingFor: nil, today: 40, week: 355, streak: 3),
+        ]
+        func stamp(_ kind: BuddyStampKind, from: String, to: String) -> Stamp {
+            Stamp(recordName: "demo-\(kind.rawValue)-\(from)-\(to)", from: from, to: to, kind: kind, dayKey: day)
+        }
+        groups = [Group(
+            zoneID: CKRecordZone.ID(zoneName: Self.zonePrefix + "demo", ownerName: CKCurrentUserDefaultName),
+            name: en ? "Exam Buddies" : "受験仲間",
+            inviteToken: "demo",
+            isOwner: true,
+            members: members,
+            stamps: [stamp(.ganbare, from: "demo-2", to: "demo-me"), stamp(.sugoi, from: "demo-3", to: "demo-me"),
+                     stamp(.otsukare, from: "demo-me", to: "demo-2"), stamp(.issho, from: "demo-4", to: "demo-3")],
+            photos: [],
+            photosEnabled: false,
+            participantCount: members.count
+        )]
+        examCounts = [.toeic: 23, .eiken: 14, .kyotsu: 41]
+        BuddyProfile.exam = .kyotsu
+    }
+
     // MARK: - これから作る機能への反応（開発者がコンソールで数える。名前は送らない）
 
     // 1人1件（「interest-<機能>-<利用者番号>」）。答えを変えたら上書きする
