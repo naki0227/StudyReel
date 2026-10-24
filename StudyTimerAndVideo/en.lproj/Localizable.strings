@@ -631,3 +631,5 @@
 "テーマカラーを選ぶ" = "Choose a theme color";
 "iCloud にバックアップ" = "Back up to iCloud";
 "勉強仲間（グループ1つ）" = "Study Buddies (1 group)";
+"集中しやすい時間帯：%d時台" = "Best focus time: %d:00";
+"教科ごとの時間と先週比、集中しやすい時間帯を見られます" = "See time by subject, change from last week, and your best focus hours";
