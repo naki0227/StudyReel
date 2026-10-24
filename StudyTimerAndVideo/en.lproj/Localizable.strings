@@ -633,3 +633,14 @@
 "勉強仲間（グループ1つ）" = "Study Buddies (1 group)";
 "集中しやすい時間帯：%d時台" = "Best focus time: %d:00";
 "教科ごとの時間と先週比、集中しやすい時間帯を見られます" = "See time by subject, change from last week, and your best focus hours";
+"作れるグループは%d個までです" = "You can create up to %d groups";
+"参加できるグループは%d個までです" = "You can join up to %d groups";
+"勉強仲間のグループを %d つまで作れる" = "Create up to %d Study Buddies groups";
+"勉強仲間（グループを1つ作れる・参加は%dまで）" = "Study Buddies (create 1 group, join up to %d)";
+"教科ごとの先週比と集中しやすい時間帯、ロゴなしの動画、勉強仲間のグループを5つまで作れる。" = "Week-over-week stats by subject, your best focus hours, videos without the logo, and up to 5 Study Buddies groups of your own.";
+"保護者に共有（準備中）" = "Share with a parent (coming soon)";
+"勉強時間と、いま勉強中かどうかだけを、おうちの人のスマホに見せられる機能を考えています。動画や写真は見せません。始めるのも止めるのも、あなたが決められます。使ってみたいですか？" = "We're thinking about letting a parent see only your study time and whether you're studying now, on their phone. Never your videos or photos. You decide when to start and stop sharing. Would you use it?";
+"いまはいい" = "Not now";
+"使ってみたい" = "I'd use it";
+"ありがとうございます。作るときの参考にします。" = "Thanks! We'll use this to decide what to build.";
+"答えてくれてありがとうございます。" = "Thanks for answering.";

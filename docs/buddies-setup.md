@@ -77,6 +77,7 @@ Schema → Security Roles。公開データベースは、初めは「だれで�
 | `BuddyPhotoBan` | Read | **なし** | なし | 利用者が勝手に他人を締め出せないようにする。作るのは開発者だけ |
 | `BuddyPresence` | Read | Create | Write | 人数を数えるのに読む。名前は入っていない |
 | `BuddyJoinRequest` / `Approval` / `Denial` | Read | Create | Write | 今のまま |
+| `BuddyInterest` | **なし** | Create | Write | 「保護者に共有」などへの反応。開発者だけがコンソールで数える |
 
 ## 5. 本番環境に反映する
 

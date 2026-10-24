@@ -70,7 +70,7 @@ struct PaywallView: View {
                 .font(ReelTheme.serif(26))
                 .foregroundColor(ReelTheme.ink)
 
-            Text(L10n.string("教科ごとの先週比と集中しやすい時間帯、ロゴなしの動画、勉強仲間のグループを5つまで。"))
+            Text(L10n.string("教科ごとの先週比と集中しやすい時間帯、ロゴなしの動画、勉強仲間のグループを5つまで作れる。"))
                 .font(ReelTheme.sans(13))
                 .foregroundColor(ReelTheme.secondary)
 
@@ -392,7 +392,7 @@ enum ProFeature {
         [
             Row(title: L10n.string("教科別の内訳・先週比・集中しやすい時間帯"), free: false),
             Row(title: L10n.string("ロゴなしで保存"), free: false),
-            Row(title: L10n.format("勉強仲間のグループ %d つまで", BuddyCloud.proGroupLimit), free: false),
+            Row(title: L10n.format("勉強仲間のグループを %d つまで作れる", BuddyCloud.proOwnedLimit), free: false),
             Row(title: L10n.string("全部録画（等速）"), free: false),
             Row(title: L10n.string("動画のフォントを選ぶ"), free: false),
             Row(title: L10n.string("顔をスタンプで隠す"), free: false),
@@ -403,7 +403,7 @@ enum ProFeature {
             Row(title: L10n.string("カット・フィルター・BGM 2曲"), free: true),
             Row(title: L10n.string("統計・カレンダー・推移グラフ"), free: true),
             Row(title: L10n.string("iCloud にバックアップ"), free: true),
-            Row(title: L10n.string("勉強仲間（グループ1つ）"), free: true),
+            Row(title: L10n.format("勉強仲間（グループを1つ作れる・参加は%dまで）", BuddyCloud.joinLimit), free: true),
         ]
     }
 }

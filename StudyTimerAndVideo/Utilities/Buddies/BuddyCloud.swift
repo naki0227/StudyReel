@@ -18,8 +18,10 @@ final class BuddyCloud: ObservableObject {
 
     static let containerIdentifier = "iCloud.com.ni.StudyTimerAndVideo"
     static let maxMembers = 20
-    static let freeGroupLimit = 1
-    static let proGroupLimit = 5
+    // 作れる（オーナーになれる）グループは無料1つ・Pro 5つ。参加できるグループはプランにかかわらず10まで
+    static let freeOwnedLimit = 1
+    static let proOwnedLimit = 5
+    static let joinLimit = 10
     static let dailyStampLimit = 30
 
     enum Availability: Equatable {
@@ -753,6 +755,24 @@ final class BuddyCloud: ObservableObject {
             record["photoCreatedAt"] = photo.createdAt as NSDate
         }
         defer { if let file { try? FileManager.default.removeItem(at: file) } }
+        do {
+            try await save([record], in: publicDB, policy: .allKeys)
+            return true
+        } catch {
+            message = Self.describe(error)
+            return false
+        }
+    }
+
+    // MARK: - これから作る機能への反応（開発者がコンソールで数える。名前は送らない）
+
+    // 1人1件（「interest-<機能>-<利用者番号>」）。答えを変えたら上書きする
+    func recordInterest(feature: String, wants: Bool, source: String) async -> Bool {
+        guard isActive, let me = await ensureMe() else { return false }
+        let record = CKRecord(recordType: "BuddyInterest", recordID: CKRecord.ID(recordName: "interest-\(feature)-\(me)"))
+        record["feature"] = feature as NSString
+        record["answer"] = (wants ? "yes" : "no") as NSString
+        record["source"] = source as NSString
         do {
             try await save([record], in: publicDB, policy: .allKeys)
             return true

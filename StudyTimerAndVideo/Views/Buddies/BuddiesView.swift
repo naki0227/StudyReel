@@ -34,8 +34,10 @@ struct BuddiesView: View {
         _joinLink = State(initialValue: joinLink)
     }
 
-    private var groupLimit: Int { storeKit.isProUnlocked ? BuddyCloud.proGroupLimit : BuddyCloud.freeGroupLimit }
-    private var usedSlots: Int { cloud.groups.count + cloud.pendingJoins.count }
+    private var ownedLimit: Int { storeKit.isProUnlocked ? BuddyCloud.proOwnedLimit : BuddyCloud.freeOwnedLimit }
+    private var ownedCount: Int { cloud.groups.filter(\.isOwner).count }
+    // 参加の申請中も、参加できる数に数える
+    private var joinedCount: Int { cloud.groups.filter { !$0.isOwner }.count + cloud.pendingJoins.count }
 
     var body: some View {
         NavigationStack {
@@ -131,6 +133,7 @@ struct BuddiesView: View {
                 createButton
             }
             BuddyExamCard()
+            ParentShareTeaser(source: "buddies")
             Text(L10n.string("勉強仲間に見えるのは、ニックネーム、アイコン、いま勉強中かどうか、今日と今週の勉強時間、連続日数だけです。動画やメモは見えません。写真は、オーナーがオンにしたグループで、自分で選んだ1コマ（顔にモザイク）だけを見せられます。"))
                 .font(ReelTheme.sans(11))
                 .foregroundColor(ReelTheme.secondary)
@@ -157,9 +160,10 @@ struct BuddiesView: View {
 
     private var createButton: some View {
         Button {
-            if usedSlots >= groupLimit {
+            if ownedCount >= ownedLimit {
+                // 無料で2つ目を作ろうとしたときに Pro を案内する
                 if storeKit.isProUnlocked {
-                    cloud.message = L10n.format("入れるグループは%d個までです", groupLimit)
+                    cloud.message = L10n.format("作れるグループは%d個までです", ownedLimit)
                 } else {
                     showPaywall = true
                 }
@@ -287,12 +291,8 @@ struct BuddiesView: View {
     }
 
     private func requestJoin(_ link: BuddyJoinLink) {
-        guard usedSlots < groupLimit else {
-            if storeKit.isProUnlocked {
-                cloud.message = L10n.format("入れるグループは%d個までです", groupLimit)
-            } else {
-                showPaywall = true
-            }
+        guard joinedCount < BuddyCloud.joinLimit else {
+            cloud.message = L10n.format("参加できるグループは%d個までです", BuddyCloud.joinLimit)
             return
         }
         sentJoin = true
