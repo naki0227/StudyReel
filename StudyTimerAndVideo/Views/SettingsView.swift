@@ -157,6 +157,10 @@ struct SettingsView: View {
                         }
                     }
 
+                    if !DemoMode.isActive {
+                        ParentShareTeaser(source: "settings")
+                    }
+
                     sectionTitle(L10n.string("その他"))
                     card {
                         Button {

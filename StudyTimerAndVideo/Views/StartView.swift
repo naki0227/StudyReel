@@ -26,6 +26,8 @@ struct StartView: View {
     @State private var sharingGoal: StudyGoal?
     @State private var showScoreRecord = false
     @State private var showPapers = false
+    @State private var showBuddies = false
+    @State private var buddyJoinLink: BuddyJoinLink?
 
     // タイマー設定値(時・分・秒)
     @State private var hours = 0
@@ -85,7 +87,13 @@ struct StartView: View {
                         onShare: { sharingGoal = $0 }
                     )
                     .padding(.top, 6)
-                    .padding(.bottom, 16)
+                    .padding(.bottom, DemoMode.isActive ? 16 : 10)
+
+                    // 勉強仲間（スクショ用のデモでは出さない）
+                    if !DemoMode.isActive {
+                        HomeBuddiesRow { showBuddies = true }
+                            .padding(.bottom, 16)
+                    }
 
                     todayStrip
                         .coachMark("home.today")
@@ -201,6 +209,16 @@ struct StartView: View {
             .sheet(isPresented: $showPapers) {
                 PastPapersView()
             }
+            .sheet(isPresented: $showBuddies, onDismiss: { buddyJoinLink = nil }) {
+                BuddiesView(joinLink: buddyJoinLink)
+            }
+            // 記録が増えたり消えたりしたら、勉強仲間に見せる今日・今週の合計を更新する
+            .onChange(of: sessions.count) {
+                BuddyCloud.shared.updateTotals(sessions)
+            }
+            .task {
+                BuddyCloud.shared.updateTotals(sessions)
+            }
             .sheet(isPresented: $showCalendar) {
                 CalendarView(subjectManager: subjectManager)
             }
@@ -286,6 +304,9 @@ struct StartView: View {
             case "materials": showMaterials = true
             case "papers": showPapers = true
             case "goalShare": sharingGoal = try? modelContext.fetch(FetchDescriptor<StudyGoal>()).first
+            case "buddies":
+                BuddyCloud.shared.loadDemo()
+                showBuddies = true
             default: break
             }
         }
@@ -600,6 +621,9 @@ struct StartView: View {
             )
         } else if url.host == "paywall" {
             showPaywall = true
+        } else if url.host == "buddies", let link = BuddyJoinLink(url: url) {
+            buddyJoinLink = link
+            showBuddies = true
         }
     }
 

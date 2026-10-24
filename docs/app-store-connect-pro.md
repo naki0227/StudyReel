@@ -1,13 +1,16 @@
 # App Store Connect: StudyReel Pro
 
-StudyReel Pro は 3 つの商品で構成します。月額・年額は自動更新サブスクリプション、買い切りは非消耗型です。
-アプリは `Transaction.currentEntitlements` でどれか 1 つでも有効なら Pro として扱います。
+StudyReel Pro は月額・年額の自動更新サブスクリプションで売ります（2026-10-24 決定）。
+買い切り（非消耗型 `com.ni.StudyReel.pro.lifetime`）は売りません。Apple の制約で一度も審査に出せておらず、購入者もいません。
+アプリは `Transaction.currentEntitlements` でどれか 1 つでも有効なら Pro として扱います（`StoreKitManager.productIDs` には買い切りも残す）。
 
 | 種類 | Product ID | 価格 | お試し |
 | --- | --- | --- | --- |
-| 自動更新（1か月） | `com.ni.StudyReel.pro.monthly` | ¥300 | 1週間無料 |
-| 自動更新（1年） | `com.ni.StudyReel.pro.yearly` | ¥2,000 | 1週間無料 |
-| 非消耗型 | `com.ni.StudyReel.pro.lifetime` | ¥3,000 | なし |
+| 自動更新（1か月） | `com.ni.StudyReel.pro.monthly` | **¥600**（旧 ¥300） | 1週間無料 |
+| 自動更新（1年） | `com.ni.StudyReel.pro.yearly` | **¥4,800**（旧 ¥2,000、月あたり ¥400） | 1週間無料 |
+
+価格は App Store Connect の画面で変える（サブスクリプション → 価格 → 変更）。購読者がいないので、「既存の顧客の価格を保持」はどちらでもよい。
+App Store Small Business Program に入っているか（手数料 15%）もあわせて確かめる。
 
 ## Subscription Group
 
@@ -38,7 +41,7 @@ StudyReel Pro は 3 つの商品で構成します。月額・年額は自動更
   - EN: `A full year of StudyReel Pro.`
   - JA: `StudyReel Pro を1年間使えます。`
 
-## Product 3: Lifetime（非消耗型）
+## Product 3: Lifetime（非消耗型・売らない。参考に残す）
 
 - In-App Purchases → `+` → `Non-Consumable`
 - Reference Name: `StudyReel Pro Lifetime`
@@ -50,33 +53,40 @@ StudyReel Pro は 3 つの商品で構成します。月額・年額は自動更
 
 ## What Pro Includes
 
+アプリのペイウォールの表（`PaywallView.swift` の `ProFeature.rows`）が正本。並びは価値の高い順。
+
+- 教科別の内訳・先週比・集中しやすい時間帯
 - 透かし（右下の「StudyReel」）なしで動画を保存
-- 動画に入れる文字のフォントを選ぶ
+- 勉強仲間のグループを 5 つまで作れる（無料は 1 つ。参加できるのはプランにかかわらず 10 まで）
 - 全部録画（タイムラプスではなく等速で全部記録）
+- 動画に入れる文字のフォントを選ぶ
 - 顔をスタンプで隠す
-- 教科別の先週比・集中しやすい時間帯
+- BGM 全 4 曲
+- テーマカラーを選ぶ
 
 ## What Stays Free
 
-- タイマー・ストップウォッチ
+- タイマー・ストップウォッチ、ウィジェット
 - 時刻入りのタイムラプス（透かしあり）
 - 顔に自動でモザイク（録画後に位置を調整できる）
+- カット・フィルター・BGM 2 曲
 - 統計・カレンダー・推移グラフ
-- ウィジェット
+- iCloud にバックアップ
+- 勉強仲間（グループを 1 つ作れる・参加は 10 まで）
 
 ## Review Notes
 
 - EN:
-  `StudyReel Pro removes the watermark from exported videos, unlocks additional overlay fonts and full-length (real-time) recording, and adds face stickers and per-subject insights. Face mosaic (on-device Vision, nothing stored or sent), timer, time-lapse recording, stats, calendar, and trend charts remain free. Pro is available as monthly or yearly auto-renewable subscriptions (each with a 1-week free trial) or as a one-time lifetime purchase. Restore Purchases is on the paywall.`
+  `StudyReel Pro removes the watermark from exported videos, unlocks additional overlay fonts and full-length (real-time) recording, and adds face stickers, per-subject insights (week-over-week change and best focus hours) and up to 5 Study Buddies groups. Face mosaic (on-device Vision, nothing stored or sent), timer, time-lapse recording, stats, calendar, and trend charts remain free. Pro is available as monthly or yearly auto-renewable subscriptions, each with a 1-week free trial. Restore Purchases is on the paywall.`
 - JA:
-  `StudyReel Pro では、動画の透かしを外して保存できるほか、文字のフォント選択、全部録画（等速）、顔のスタンプ、教科別の分析が使えます。顔のモザイク（端末内のVisionで検出し、保存・送信なし）、タイマー、タイムラプス、統計、カレンダー、推移グラフは無料です。月額・年額の自動更新サブスクリプション（各1週間の無料体験つき）と、買い切りから選べます。購入の復元は課金画面にあります。`
+  `StudyReel Pro では、動画の透かしを外して保存できるほか、文字のフォント選択、全部録画（等速）、顔のスタンプ、教科別の分析（先週比・集中しやすい時間帯）、勉強仲間のグループ5つまでが使えます。顔のモザイク（端末内のVisionで検出し、保存・送信なし）、タイマー、タイムラプス、統計、カレンダー、推移グラフは無料です。月額・年額の自動更新サブスクリプション（各1週間の無料体験つき）から選べます。購入の復元は課金画面にあります。`
 
 ## Checklist
 
 1. `Agreements, Tax, and Banking` が完了しているか確認する。
 2. サブスクリプショングループ `StudyReel Pro` に月額・年額を用意する（既存の商品は説明文を更新）。
 3. 月額・年額に 1 週間の無料お試し（Introductory Offer）を設定する。
-4. 非消耗型 `com.ni.StudyReel.pro.lifetime` を追加する。
+4. 価格を月額 ¥600・年額 ¥4,800 にする。
 5. 日本語・英語のローカライズを入れる。
-6. 3 つとも `Ready to Submit` にして、アプリのバージョンに紐づけて審査に出す。
+6. 2 つとも `Ready to Submit` にして、アプリのバージョンに紐づけて審査に出す。
 7. 審査用のスクリーンショット（課金画面）を最新の画面に差し替える。

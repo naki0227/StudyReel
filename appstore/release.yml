@@ -6,51 +6,104 @@
 # アプリのプライバシー（データの収集）と年齢区分は API で変えられないので、App Store Connect の画面で設定する。
 
 app: com.ni.StudyTimerAndVideo
-version: "1.7"
-build: 224            # "latest" にすると、このバージョンで最後に上げたビルド
+version: "1.8"
+build: 229            # "latest" にすると、このバージョンで最後に上げたビルド
 release: manual       # manual: 承認されたら自分で公開 / after_approval: 承認されたらすぐ公開
 submit_for_review: true    # true にしてマージすると、反映したあと審査に出す
 withdraw_to_update: true   # 審査待ちのときにスクリーンショットかビルドが変わっていたら、取り下げて差し替えてから出し直す
 
 # Pro の課金アイテム（StoreKitManager.swift の productIDs と同じ）。
 # 状態を確かめて、まだ審査に出していないもの（READY_TO_SUBMIT）はバージョンと一緒に審査に出す
+# 買い切り（lifetime）は売らない（2026-10-24 決定）。StoreKitManager の productIDs には残す（買った人がいたときに Pro を失わないように）
 purchases:
   - com.ni.StudyReel.pro.monthly
   - com.ni.StudyReel.pro.yearly
-  - com.ni.StudyReel.pro.lifetime
 
-# App Store Connect にまだない課金アイテムはここに書くと作られる。価格・表示名・販売地域・審査用スクリーンショットもそろえる
-create_purchases:
-  - product_id: com.ni.StudyReel.pro.lifetime
-    reference_name: Pro Lifetime
-    type: NON_CONSUMABLE
-    price_jpy: 4800          # 日本の価格。ほかの国は Apple が自動で換算する
-    family_sharable: false
-    review_screenshot: appstore/purchases/lifetime-review.png
-    review_note: |
-      One-time purchase that unlocks all Pro features (no watermark, video fonts, face stamps, all 4 BGM tracks, full-speed recording, per-subject stats).
-      Shown in Settings > StudyReel Pro alongside the monthly and yearly subscriptions.
-    localizations:
-      ja:
-        name: StudyReel Pro（買い切り）
-        description: 一度の購入でProの機能がずっと使えます
-      en-US:
-        name: StudyReel Pro Lifetime
-        description: Unlock every Pro feature with one purchase
-
+# ASO（docs/aso.md）。名前・サブタイトル・キーワードは検索の対象。同じ言葉を2か所に入れない
+# 名前・サブタイトルは 30 文字まで、キーワードは 100 バイトまで（日本語は1文字3バイト）
 localizations:
   ja:
+    name: StudyReel - 勉強タイムラプス記録
+    subtitle: 受験生のためのVlog・集中タイマーと過去問管理
+    keywords: 勉強垢,自習,習慣,継続,教材,成績,グラフ,モザイク,モチベ,努力,資格,仲間
+    promotional_text: 勉強を撮ると、努力が動画になる。タイムラプスで記録して、勉強仲間と応援し合おう。
+    description: |
+      勉強を「撮る」記録アプリ。
+      机に置いて始めるだけで、勉強の様子がタイムラプス動画になります。
+      続けた努力が、見返せる形で積み上がる。
+
+      【こんな人に】
+      ・受験生、資格の勉強をしている人
+      ・勉強垢で毎日の記録を発信している人
+      ・スマホを触らずに集中したい人
+
+      【主な機能】
+      ■ タイムラプス撮影：時刻入りのタイムラプス動画を端末の中で作ります。顔は自動でモザイクにできます
+      ■ 集中タイマー：タイマーとストップウォッチ。集中サウンドつき
+      ■ 目標と D-day：試験日までの残り日数と、過去問の点数の伸びをグラフで
+      ■ 教材：本のバーコードを読むだけで登録。教材ごとに勉強時間を積み上げ
+      ■ 統計とカレンダー：毎日の勉強時間、教科ごとの内訳、推移グラフ
+      ■ 勉強仲間：友達と QR コードでグループを作って、いま勉強中の人や今日・今週の勉強時間を見せ合えます。応援はスタンプで（参加はオーナーの許可制、チャットはありません）
+      ■ 1週間の Vlog：1週間分の記録が1本の動画に
+      ■ 共有カード：今日の記録を画像にして、勉強垢へ
+      ■ iCloud バックアップ：記録は自分の iCloud Drive に保存
+
+      【使い方】
+      1. 机にスマホを置いて、タイマーを決める
+      2. シャッターを押して勉強する
+      3. 終わったら動画と記録を見返す
+
+      【StudyReel Pro】
+      教科ごとの先週比と集中しやすい時間帯、ロゴなしの動画、勉強仲間のグループを5つまで作れる、全部録画、動画のフォント、顔スタンプ、BGM 全4曲、テーマカラー。月額・年額（1週間の無料体験つき）
+
+      利用規約: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+      プライバシーポリシー: https://enludus.com/products/studyreel-privacy
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
-      ・過去問の点数を、満点を入れずに保存したときにも、ホームの最高点とグラフに反映されるようにしました（これまでに保存した記録もそのまま反映されます）
-      ・初めての問題を記録するとき、満点の欄に目標の満点が最初から入るようにしました
-      ・設定から StudyReel のレビューを書けるようにしました
+      ・勉強仲間：友達と QR コードでグループを作って、いま勉強中の人や今日・今週の勉強時間を見せ合えます。スタンプで応援もできます（参加はオーナーの許可制）
+      ・資格ごとに、いま勉強している人数が分かるようになりました（名前は出ません）
+      ・統計に、教科ごとの先週比と、集中しやすい時間帯を出すようにしました（Pro）
   en-US:
+    name: StudyReel - Study Timelapse
+    subtitle: Focus timer & study vlog
+    keywords: pomodoro,tracker,habit,exam,buddies,group,productivity,stopwatch,motivation,student,homework,log
+    promotional_text: Film your study session and watch your effort turn into a timelapse. Study together with friends in Study Buddies.
+    description: |
+      The study tracker that films your effort.
+      Set your phone on the desk and start — your study session becomes a timelapse video.
+      Keep the proof of every hour you put in.
+
+      WHO IT'S FOR
+      • Students preparing for exams and certifications
+      • Study accounts that post their progress every day
+      • Anyone who wants to stay off their phone while studying
+
+      FEATURES
+      ■ Timelapse recording with the time on screen, made on your device. Faces can be pixelated automatically
+      ■ Focus timer and stopwatch with focus sounds
+      ■ Goals and countdown to exam day, with past-paper score charts
+      ■ Books: scan the barcode to add a book and track time per book
+      ■ Stats and calendar: daily time, time by subject, trend charts
+      ■ Study Buddies: make a group with friends by QR code and see who's studying now and everyone's time today and this week. Cheer each other on with stamps (owners approve who joins; no chat)
+      ■ Weekly vlog: your week becomes one video
+      ■ Share cards for your study account
+      ■ iCloud backup to your own iCloud Drive
+
+      HOW IT WORKS
+      1. Put your phone on the desk and pick a timer
+      2. Press the shutter and study
+      3. Look back at your video and records
+
+      STUDYREEL PRO
+      Week-over-week stats by subject and your best focus hours, videos without the logo, up to 5 Study Buddies groups of your own, full-length recording, video fonts, face stickers, all 4 BGM tracks and theme colors. Monthly or yearly, each with a 1-week free trial.
+
+      Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+      Privacy Policy: https://enludus.com/products/studyreel-privacy
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
-      • Past paper scores saved without a max score now count toward your goal's best score and the chart, including ones you already saved
-      • When you log a new paper, the max score now starts from your goal's max score
-      • You can rate StudyReel from Settings
+      • Study Buddies: make a group with friends by QR code and see who's studying now and everyone's time today and this week. Cheer each other on with stamps (owners approve who joins)
+      • See how many people are studying for each exam right now (no names shown)
+      • Stats now show each subject's change from last week and your best time to focus (Pro)
 
 review:
   demo_account_required: false
@@ -60,6 +113,11 @@ review:
     - Book lookup: when adding a book, only the ISBN is sent to openBD (api.openbd.jp) and the National Diet Library (ndlsearch.ndl.go.jp) to get the title and cover. Cover text recognition runs on the device.
     - Backup: records are copied to the user's own iCloud Drive (Files app > StudyReel). Nothing is sent to our servers.
     - Pro features are an in-app purchase and can be restored from Settings.
+    - Study Buddies (new): small private groups that share only a nickname, a chosen icon, whether someone is studying now, today's/this week's study time and preset stamps. There is no chat. Data is stored with Apple CloudKit in the group owner's iCloud; we run no servers and cannot read group data. It requires an iCloud sign-in.
+      - Joining: the owner shows a QR code / link; the person asks to join and the owner approves them after checking a nickname and 4-digit number. Owners can remove members and reset the invite.
+      - Safety (Guideline 1.2): nicknames and group names pass a word filter; any member can be blocked (long-press a member) or reported. Reports, with the photo if any, reach the developer, who reviews them within 24 hours and can bar the sender from sharing photos. Contact: contact@enludus.com.
+      - Photos are off by default per group. When the owner turns them on, a member can share one frame they pick from their own time-lapse, with faces pixelated; photos disappear after 24 hours. Frames flagged by Apple's Sensitive Content Analysis are not sent or shown. Photos start off for users under 18 (Declared Age Range).
+      - To try it with one device: Home > "勉強仲間と一緒にがんばる" > set a nickname > "グループを作る", then tap the QR icon. Joining needs a second iCloud account.
     To try it: tap + on the home screen, choose a timer, then press the round shutter button. Press it again to finish and see the review screen.
 
 # 動画のプレビュー。IPHONE_67 は App Store Connect の「6.9インチ」の枠（886x1920、30秒以内）
@@ -70,7 +128,7 @@ previews:
   en-US:
     IPHONE_67: appstore/previews/en-iphone67.mp4
 
-# ストアのスクリーンショット。書いた順に並ぶ（1〜3枚目が検索結果に出る）
+# ストアのスクリーンショット。書いた順に並ぶ（1〜3枚目が検索結果に出る）。並びと見出しは tools/appstore/frames/copy.json
 # 素材は store-shots.yml で撮り、tools/appstore/frames/compose.js で見出しをつける
 # APP_IPHONE_67 は「6.9インチ」（1320x2868）、APP_IPAD_PRO_3GEN_129 は「13インチ」（2064x2752）の枠
 # ほかのサイズの iPhone・iPad には、この2つの枠の画像が自動で使われる
@@ -85,6 +143,7 @@ screenshots:
       - appstore/screenshots/ja/iphone-05.png
       - appstore/screenshots/ja/iphone-06.png
       - appstore/screenshots/ja/iphone-07.png
+      - appstore/screenshots/ja/iphone-08.png
     APP_IPAD_PRO_3GEN_129:
       - appstore/screenshots/ja/ipad-01.png
       - appstore/screenshots/ja/ipad-02.png
@@ -93,6 +152,7 @@ screenshots:
       - appstore/screenshots/ja/ipad-05.png
       - appstore/screenshots/ja/ipad-06.png
       - appstore/screenshots/ja/ipad-07.png
+      - appstore/screenshots/ja/ipad-08.png
   en-US:
     APP_IPHONE_67:
       - appstore/screenshots/en/iphone-01.png
@@ -102,6 +162,7 @@ screenshots:
       - appstore/screenshots/en/iphone-05.png
       - appstore/screenshots/en/iphone-06.png
       - appstore/screenshots/en/iphone-07.png
+      - appstore/screenshots/en/iphone-08.png
     APP_IPAD_PRO_3GEN_129:
       - appstore/screenshots/en/ipad-01.png
       - appstore/screenshots/en/ipad-02.png
@@ -110,3 +171,4 @@ screenshots:
       - appstore/screenshots/en/ipad-05.png
       - appstore/screenshots/en/ipad-06.png
       - appstore/screenshots/en/ipad-07.png
+      - appstore/screenshots/en/ipad-08.png

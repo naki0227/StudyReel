@@ -1,7 +1,7 @@
 /* Japanese localization for Info.plist permission strings */
 
 /* Camera Usage Description */
-"NSCameraUsageDescription" = "勉強している様子をタイムラプス動画にするため、また教材のバーコードや表紙を読み取るためにカメラを使います。映像が端末の外に送信されることはありません。";
+"NSCameraUsageDescription" = "勉強している様子をタイムラプス動画にするため、また教材のバーコードや表紙を読み取るためにカメラを使います。映像は端末の中だけに置かれます（勉強仲間に、自分で選んだ1コマを見せる場合を除きます）。";
 
 /* Photo Library Add Usage Description */
 "NSPhotoLibraryAddUsageDescription" = "記録したタイムラプス動画を、セッション終了時に「写真」へ自動で保存します。";

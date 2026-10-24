@@ -2,17 +2,23 @@ name: Layout check
 
 # 横向きの録画画面と確認画面で、押せる部品が左右のセーフエリアに収まっているかを確かめる（LandscapeLayoutTests）。
 # Dynamic Island のある iPhone のシミュレータで動かし、撮った画面は成果物に残す。
-# 画面のレイアウトを変えたときに走る。Actions の画面から手動でも動かせる
+# 画面の見た目が変わる PR のときだけ走る（画面・文言・色・画像・デモの中身）。
+# 中身の処理だけの変更（Models、Utilities の多く）では走らない。そちらは build.yml がコンパイルを確かめる。
+# 担当の分け方は docs/ci.md。Actions の画面から手動でも動かせる
 on:
   workflow_dispatch:
   pull_request:
     paths:
       - "StudyTimerAndVideo/Views/**"
       - "StudyTimerAndVideo/ContentView.swift"
+      - "StudyTimerAndVideo/*.lproj/**"
+      - "StudyTimerAndVideo/Assets.xcassets/**"
+      - "StudyTimerAndVideo/Utilities/ReelTheme.swift"
+      - "StudyTimerAndVideo/Utilities/AppPalette.swift"
+      - "StudyTimerAndVideo/Utilities/ThemeColor.swift"
+      - "StudyTimerAndVideo/Utilities/DemoContent.swift"
       - "StudyTimerAndVideoUITests/LandscapeLayoutTests.swift"
       - "StudyTimerAndVideoUITests/GoalFeatureTests.swift"
-      - "StudyTimerAndVideo/Models/**"
-      - "StudyTimerAndVideo/Utilities/**"
       - ".github/workflows/layout-check.yml"
 
 jobs:

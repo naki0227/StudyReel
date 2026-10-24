@@ -1,9 +1,10 @@
 name: Build
 
-# push のたびに、署名なしでシミュレータ向けにビルドしてコンパイルエラーを見つける
+# 署名なしでシミュレータ向けにビルドしてコンパイルエラーを見つける。どの変更でも走る。
+# PR と main への push で走る（作業ブランチへの push でも走らせると PR と二重になるので外した）
 on:
   push:
-    branches: ["main", "claude/**"]
+    branches: ["main"]
   pull_request:
   workflow_dispatch:
 

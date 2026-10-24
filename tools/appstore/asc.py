@@ -579,6 +579,29 @@ def submit(app_id, version_id):
     print("審査に提出しました")
 
 
+def show_current(app_id):
+    """dry run のとき、いま App Store に出ている版の文言を出す（ASO の見直しで今の値と比べるため）"""
+    versions = api("GET", f"/v1/apps/{app_id}/appStoreVersions",
+                   params={"filter[platform]": "IOS", "filter[appStoreState]": "READY_FOR_SALE", "limit": 1})["data"]
+    print("::group::いまのストアの文言")
+    if versions:
+        v = versions[0]
+        print(f"公開中のバージョン {v['attributes']['versionString']}")
+        for loc in api("GET", f"/v1/appStoreVersions/{v['id']}/appStoreVersionLocalizations")["data"]:
+            a = loc["attributes"]
+            print(f"--- {a['locale']}")
+            for key in ("keywords", "promotionalText", "description"):
+                print(f"[{key}]\n{a.get(key) or ''}")
+    infos = api("GET", f"/v1/apps/{app_id}/appInfos")["data"]
+    for info in infos:
+        cat = api("GET", f"/v1/appInfos/{info['id']}/primaryCategory").get("data") or {}
+        print(f"アプリ情報（{info['attributes'].get('state') or info['attributes'].get('appStoreState')}） カテゴリ: {cat.get('id')}")
+        for loc in api("GET", f"/v1/appInfos/{info['id']}/appInfoLocalizations")["data"]:
+            a = loc["attributes"]
+            print(f"  {a['locale']}: name={a.get('name')!r} subtitle={a.get('subtitle')!r}")
+    print("::endgroup::")
+
+
 def main():
     cfg_path = next(a for a in sys.argv[1:] if not a.startswith("--"))
     cfg = yaml.safe_load(open(cfg_path))
@@ -587,6 +610,8 @@ def main():
         print("dry run: App Store Connect は読むだけで、何も変えません")
 
     app_id = find_app(cfg["app"])
+    if DRY:
+        show_current(app_id)
     for spec in cfg.get("create_purchases") or []:
         ensure_purchase(app_id, spec, root)
     purchases = check_purchases(app_id, cfg.get("purchases") or [])

@@ -66,11 +66,11 @@ struct PaywallView: View {
                 .font(ReelTheme.serif(15))
                 .foregroundColor(ReelTheme.accentDeep)
 
-            Text(L10n.string("勉強Vlogを、もっと自由に。"))
+            Text(L10n.string("努力を、見返したくなる記録に。"))
                 .font(ReelTheme.serif(26))
                 .foregroundColor(ReelTheme.ink)
 
-            Text(L10n.string("透かしなしの動画、フォント選び、全部録画、テーマカラーが使えます。"))
+            Text(L10n.string("教科ごとの先週比と集中しやすい時間帯、ロゴなしの動画、勉強仲間のグループを5つまで作れる。"))
                 .font(ReelTheme.sans(13))
                 .foregroundColor(ReelTheme.secondary)
 
@@ -107,26 +107,11 @@ struct PaywallView: View {
             .foregroundColor(.secondary)
             .padding(.bottom, 8)
 
-            comparisonRow(L10n.string("時刻入りのタイムラプス"), free: true)
-            Divider()
-            comparisonRow(L10n.string("顔にモザイク"), free: true)
-            Divider()
-            comparisonRow(L10n.string("カット・フィルター・BGM 2曲"), free: true)
-            Divider()
-            comparisonRow(L10n.string("統計・カレンダー・推移グラフ"), free: true)
-            Divider()
-            comparisonRow(L10n.string("ロゴなしで保存"), free: false)
-            Divider()
-            comparisonRow(L10n.string("動画のフォントを選ぶ"), free: false)
-            Divider()
-            comparisonRow(L10n.string("顔をスタンプで隠す"), free: false)
-            Divider()
-            comparisonRow(L10n.string("BGM 全4曲"), free: false)
-            Divider()
-            comparisonRow(L10n.string("全部録画（等速）"), free: false)
-            Divider()
-            comparisonRow(L10n.string("教科別の内訳"), free: false)
-            Divider()
+            // 価値の高い順。App Store の説明（docs/app-store-connect-pro.md）もこの並びに合わせる
+            ForEach(Array(ProFeature.rows.enumerated()), id: \.offset) { index, row in
+                if index > 0 { Divider() }
+                comparisonRow(row.title, free: row.free)
+            }
         }
         .padding(20)
         .background(cardBackground)
@@ -263,10 +248,6 @@ struct PaywallView: View {
                 .font(.caption2)
                 .foregroundColor(.secondary)
 
-            Text(L10n.string("買い切りは一度の購入でずっと使えます。"))
-                .font(.caption2)
-                .foregroundColor(.secondary)
-
             HStack(spacing: 16) {
                 Link(L10n.string("利用規約"), destination: termsOfUseURL)
                 Link(L10n.string("プライバシーポリシー"), destination: privacyPolicyURL)
@@ -398,4 +379,31 @@ struct PaywallView: View {
         .background(cardBackground)
     }
     #endif
+}
+
+// Free と Pro の違いの一覧。ペイウォールの表と説明文の正本
+enum ProFeature {
+    struct Row {
+        let title: String
+        let free: Bool
+    }
+
+    static var rows: [Row] {
+        [
+            Row(title: L10n.string("教科別の内訳・先週比・集中しやすい時間帯"), free: false),
+            Row(title: L10n.string("ロゴなしで保存"), free: false),
+            Row(title: L10n.format("勉強仲間のグループを %d つまで作れる", BuddyCloud.proOwnedLimit), free: false),
+            Row(title: L10n.string("全部録画（等速）"), free: false),
+            Row(title: L10n.string("動画のフォントを選ぶ"), free: false),
+            Row(title: L10n.string("顔をスタンプで隠す"), free: false),
+            Row(title: L10n.string("BGM 全4曲"), free: false),
+            Row(title: L10n.string("テーマカラーを選ぶ"), free: false),
+            Row(title: L10n.string("時刻入りのタイムラプス"), free: true),
+            Row(title: L10n.string("顔にモザイク"), free: true),
+            Row(title: L10n.string("カット・フィルター・BGM 2曲"), free: true),
+            Row(title: L10n.string("統計・カレンダー・推移グラフ"), free: true),
+            Row(title: L10n.string("iCloud にバックアップ"), free: true),
+            Row(title: L10n.format("勉強仲間（グループを1つ作れる・参加は%dまで）", BuddyCloud.joinLimit), free: true),
+        ]
+    }
 }

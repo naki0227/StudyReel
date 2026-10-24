@@ -177,7 +177,7 @@ struct StudyStatsView: View {
         }
     }
 
-    // 教科ごとの内訳は Pro
+    // 教科ごとの内訳・先週比と、集中しやすい時間帯は Pro
     @ViewBuilder
     private var subjectSection: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -203,11 +203,19 @@ struct StudyStatsView: View {
                     VStack(spacing: 10) {
                         ForEach(totals, id: \.subject) { item in
                             HStack(spacing: 10) {
-                                Text(item.subject)
-                                    .font(ReelTheme.sans(13))
-                                    .foregroundColor(ReelTheme.ink)
-                                    .frame(width: 84, alignment: .leading)
-                                    .lineLimit(1)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item.subject)
+                                        .font(ReelTheme.sans(13))
+                                        .foregroundColor(ReelTheme.ink)
+                                        .lineLimit(1)
+                                    // 先週比は表示中の期間にかかわらず、今週と先週で比べる
+                                    Text(StudyInsights.weeklyComparisonText(for: sessions, subject: item.subject))
+                                        .font(ReelTheme.sans(10))
+                                        .foregroundColor(ReelTheme.secondary)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.8)
+                                }
+                                .frame(width: 84, alignment: .leading)
                                 GeometryReader { geometry in
                                     Capsule()
                                         .fill(ReelTheme.accent)
@@ -224,6 +232,19 @@ struct StudyStatsView: View {
                     }
                     .padding(16)
                     .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
+                    if let hour = bestHour {
+                        HStack(spacing: 8) {
+                            Image(systemName: "clock")
+                                .foregroundColor(ReelTheme.accentDeep)
+                            Text(L10n.format("集中しやすい時間帯：%d時台", hour))
+                                .font(ReelTheme.sans(13))
+                                .foregroundColor(ReelTheme.ink)
+                            Spacer()
+                        }
+                        .padding(14)
+                        .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
+                        .accessibilityIdentifier("stats.bestHour")
+                    }
                 }
             } else {
                 Button {
@@ -231,7 +252,7 @@ struct StudyStatsView: View {
                 } label: {
                     HStack {
                         Image(systemName: "lock")
-                        Text(L10n.string("どの教科にどれだけ時間を使ったかを見られます"))
+                        Text(L10n.string("教科ごとの時間と先週比、集中しやすい時間帯を見られます"))
                         Spacer()
                         Image(systemName: "chevron.right")
                     }
@@ -323,6 +344,13 @@ struct StudyStatsView: View {
             }
         }
         return totals
+    }
+
+    // 表示中の期間で、勉強した時間がいちばん長い時間帯（0〜23時）
+    private var bestHour: Int? {
+        let totals = hourTotals
+        guard let peak = totals.max(), peak > 0 else { return nil }
+        return totals.firstIndex(of: peak)
     }
 
     private var subjectTotals: [(subject: String, seconds: Int)] {
