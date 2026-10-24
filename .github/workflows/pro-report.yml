@@ -1,0 +1,36 @@
+name: Pro report
+
+# Pro のダウンロード・お試し・有料化の数を、App Store Connect の売上レポートから週に1回まとめる（docs/pro-value.md）
+# 必要な Secrets: ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_P8（App Store と同じ）、ASC_VENDOR_NUMBER
+# あれば使う: SLACK_WEBHOOK_URL（同じ内容を Slack に送る）
+on:
+  schedule:
+    - cron: "17 0 * * 1"   # 月曜 9:17（日本時間）
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "何日分読むか"
+        default: "28"
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install "pyjwt[crypto]==2.15.1" "pyyaml==6.0.2" "requests==2.34.2"
+
+      - name: Report
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_VENDOR_NUMBER: ${{ secrets.ASC_VENDOR_NUMBER }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python3 tools/appstore/report.py appstore/release.yml "${{ inputs.days || '28' }}"

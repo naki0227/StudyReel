@@ -643,7 +643,6 @@
 "保護者・塾に共有" = "Share with Parents & Tutors";
 "勉強時間だけを、おうちの人や塾の先生に見せる" = "Show only your study time to family or a tutor";
 "勉強時間といま勉強中かどうかだけを、おうちの人や塾の先生に見せられます。保護者・先生の方は、ここから見守りを始めます。" = "Show only your study time and whether you're studying now to family or a tutor. Parents and teachers start following here.";
-"見せるのは、いま勉強中かどうか、今日・今週の勉強時間（曜日ごと）、連続日数、最後に勉強した日、ニックネームと番号だけです。動画、写真、メモ、記録のタイトル、勉強仲間の中身は見せません。始めるのも止めるのも、見せる人が決めます。" = "Only whether you're studying now, today's and this week's study time (by day), your streak, the last day you studied, and your nickname and number are shown. Videos, photos, notes, session titles and your Study Buddies are never shown. The person sharing decides when to start and stop.";
 "見せるのをやめますか？" = "Stop Sharing?";
 "相手には、あなたの勉強状況が見えなくなります。また見せるときは、QR コードを読み直してください。" = "They will no longer see your study status. To share again, scan the QR code again.";
 "勉強状況を見せている相手" = "Sharing your study status with";
@@ -652,7 +651,6 @@
 "もう見せています。" = "You're already sharing.";
 "先に、相手に見せる名前とアイコンを決めてください。" = "First, choose the name and icon they'll see.";
 "見せるもの" = "Shown";
-"いま勉強中かどうか、今日・今週の勉強時間（曜日ごと）、連続日数、最後に勉強した日。名前は「%@ %@」と出ます。" = "Whether you're studying now, today's and this week's study time (by day), your streak, and the last day you studied. You'll appear as \"%@ %@\".";
 "見せないもの" = "Never shown";
 "動画、写真、メモ、記録のタイトル、勉強仲間の中身" = "Videos, photos, notes, session titles, and your Study Buddies";
 "いつでもやめられます。見せている間は、ホームに「共有中」と出ます。" = "You can stop anytime. While sharing, Home shows that you're sharing.";
@@ -726,3 +724,16 @@
 "この塾コードは期限が切れています" = "This school code has expired";
 "塾コードが見つかりません。もう一度確かめてください" = "School code not found. Please check it again";
 "名前,番号,今日（分）,今週（分）,連続日数,最後に勉強した日" = "Name,Number,Today (min),This week (min),Streak (days),Last studied";
+"ファミリー共有で、家族も Pro を使えます（最大6人）" = "With Family Sharing, up to six family members get Pro";
+"保護者：教科ごとの時間・4週間の推移" = "Parents: time by subject and 4-week trend";
+"保護者・塾に共有（今日・今週・連続日数）" = "Share with parents & tutors (today, week, streak)";
+"今週の教科ごとの時間も見せる" = "Also show this week's time by subject";
+"教科の名前と時間だけです。オフにすると、次に記録を保存したときに消えます。" = "Only subject names and times. If you turn this off, they're removed the next time you save a session.";
+"教科ごとの時間と4週間の推移は Pro で見られます" = "See time by subject and the 4-week trend with Pro";
+"4週間の推移" = "Last 4 weeks";
+"%d週前" = "%d wk ago";
+"今週の教科ごとの時間" = "This week by subject";
+"お子さんが「教科ごとの時間も見せる」をオンにすると出ます。" = "Appears when your child turns on showing time by subject.";
+"生徒が「教科ごとの時間も見せる」をオンにすると出ます。" = "Appears when the student turns on showing time by subject.";
+"いま勉強中かどうか、今日・今週の勉強時間（曜日ごと）、4週間の推移、連続日数、最後に勉強した日。教科ごとの時間は、あとで自分でオンにしたときだけ。名前は「%@ %@」と出ます。" = "Whether you're studying now, today's and this week's study time (by day), the last 4 weeks, your streak, and the last day you studied. Time by subject only if you turn it on later. You'll appear as \"%@ %@\".";
+"見せるのは、いま勉強中かどうか、今日・今週の勉強時間（曜日ごと）、4週間の推移、連続日数、最後に勉強した日、ニックネームと番号だけです（教科ごとの時間は、見せる人がオンにしたときだけ）。動画、写真、メモ、記録のタイトル、勉強仲間の中身は見せません。始めるのも止めるのも、見せる人が決めます。" = "Only whether you're studying now, today's and this week's study time (by day), the last 4 weeks, your streak, the last day you studied, and your nickname and number are shown (time by subject only if the person sharing turns it on). Videos, photos, notes, session titles and your Study Buddies are never shown. The person sharing decides when to start and stop.";

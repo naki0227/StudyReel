@@ -57,6 +57,9 @@ final class BuddyCloud: ObservableObject {
         // 見守り（保護者・塾）のゾーンにだけ書く：今週の曜日ごとの秒数と、最後に勉強した日時
         var weekDays: [Int] = []
         var lastStudiedAt: Date?
+        // 4週間の週ごとの秒数（古い順）と、今週の教科ごとの秒数（本人が見せると決めたときだけ）
+        var pastWeeks: [Int] = []
+        var subjects: [String: Int] = [:]
         var id: String { userRecordName }
 
         var isStudyingNow: Bool {
@@ -193,7 +196,7 @@ final class BuddyCloud: ObservableObject {
         "userRecordName", "nickname", "icon", "code", "studyingSince", "studyingUntil",
         "todaySeconds", "todayKey", "weekSeconds", "weekKey", "streakDays", "hidesRanking",
         "from", "to", "kind", "dayKey", "createdAt", "expiresAt",
-        "weekDays", "lastStudiedAt", "token", "viewer", "viewerName", "schoolName",
+        "weekDays", "lastStudiedAt", "pastWeeks", "subjectsWeek", "token", "viewer", "viewerName", "schoolName",
         CKShare.SystemFieldKey.title,
     ]
 
@@ -247,7 +250,9 @@ final class BuddyCloud: ObservableObject {
             streakDays: record["streakDays"] as? Int ?? 0,
             hidesRanking: (record["hidesRanking"] as? Int ?? 0) == 1,
             weekDays: record["weekDays"] as? [Int] ?? [],
-            lastStudiedAt: record["lastStudiedAt"] as? Date
+            lastStudiedAt: record["lastStudiedAt"] as? Date,
+            pastWeeks: record["pastWeeks"] as? [Int] ?? [],
+            subjects: (record["subjectsWeek"] as? String).flatMap { try? JSONDecoder().decode([String: Int].self, from: Data($0.utf8)) } ?? [:]
         )
     }
 
@@ -541,6 +546,14 @@ final class BuddyCloud: ObservableObject {
             record["weekDays"] = totals.weekDays as NSArray
             if let last = totals.lastStudiedAt {
                 record["lastStudiedAt"] = last as NSDate
+            }
+            record["pastWeeks"] = totals.pastWeeks as NSArray
+            // 教科の名前は本人が付けたものなので、見せると決めたときだけ書く
+            if BuddyProfile.watchShowsSubjects,
+               let json = try? JSONEncoder().encode(totals.subjects), let text = String(data: json, encoding: .utf8) {
+                record["subjectsWeek"] = text as NSString
+            } else {
+                record["subjectsWeek"] = nil
             }
         }
         return record

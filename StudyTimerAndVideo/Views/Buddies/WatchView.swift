@@ -23,6 +23,7 @@ struct WatchView: View {
 
     @State private var joinLink: WatchJoinLink?
     @State private var stopping: WatchCloud.Sharing?
+    @State private var showsSubjects = BuddyProfile.watchShowsSubjects
 
     init(joinLink: WatchJoinLink? = nil) {
         _joinLink = State(initialValue: joinLink)
@@ -48,7 +49,7 @@ struct WatchView: View {
                         }
                         WatchFamilyCard()
                         WatchSchoolCard()
-                        Text(L10n.string("見せるのは、いま勉強中かどうか、今日・今週の勉強時間（曜日ごと）、連続日数、最後に勉強した日、ニックネームと番号だけです。動画、写真、メモ、記録のタイトル、勉強仲間の中身は見せません。始めるのも止めるのも、見せる人が決めます。"))
+                        Text(L10n.string("見せるのは、いま勉強中かどうか、今日・今週の勉強時間（曜日ごと）、4週間の推移、連続日数、最後に勉強した日、ニックネームと番号だけです（教科ごとの時間は、見せる人がオンにしたときだけ）。動画、写真、メモ、記録のタイトル、勉強仲間の中身は見せません。始めるのも止めるのも、見せる人が決めます。"))
                             .font(ReelTheme.sans(11))
                             .foregroundColor(ReelTheme.secondary)
                             .padding(.top, 4)
@@ -130,6 +131,21 @@ struct WatchView: View {
                 .padding(12)
                 .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(ReelTheme.accentSoft.opacity(0.5)))
             }
+            Toggle(isOn: $showsSubjects) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.string("今週の教科ごとの時間も見せる"))
+                        .font(ReelTheme.sans(14))
+                        .foregroundColor(ReelTheme.ink)
+                    Text(L10n.string("教科の名前と時間だけです。オフにすると、次に記録を保存したときに消えます。"))
+                        .font(ReelTheme.sans(11))
+                        .foregroundColor(ReelTheme.secondary)
+                }
+            }
+            .tint(ReelTheme.accentDeep)
+            .onChange(of: showsSubjects) { _, value in
+                BuddyProfile.watchShowsSubjects = value
+                cloud.profileChanged()
+            }
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.white))
@@ -174,7 +190,7 @@ struct WatchJoinCard: View {
                             .foregroundColor(ReelTheme.secondary)
                         BuddyProfileEditor(onSave: { profileReady = BuddyProfile.isReady })
                     } else {
-                        detail(L10n.string("見せるもの"), L10n.string("いま勉強中かどうか、今日・今週の勉強時間（曜日ごと）、連続日数、最後に勉強した日。名前は「%@ %@」と出ます。"), format: true)
+                        detail(L10n.string("見せるもの"), L10n.string("いま勉強中かどうか、今日・今週の勉強時間（曜日ごと）、4週間の推移、連続日数、最後に勉強した日。教科ごとの時間は、あとで自分でオンにしたときだけ。名前は「%@ %@」と出ます。"), format: true)
                         detail(L10n.string("見せないもの"), L10n.string("動画、写真、メモ、記録のタイトル、勉強仲間の中身"), format: false)
                         Text(L10n.string("いつでもやめられます。見せている間は、ホームに「共有中」と出ます。"))
                             .font(ReelTheme.sans(11))
@@ -697,6 +713,7 @@ struct WatchedCard: View {
                 figure(L10n.string("連続"), L10n.format("%d日", member.streakDays))
             }
             WatchWeekBars(seconds: member.weekKey == BuddyTotals.weekKey() ? member.weekDays : [])
+            WatchInsights(item: item)
             HStack(spacing: 8) {
                 ForEach(WatchCloud.stampKinds) { kind in
                     let enabled = watch.canSend(kind, to: item)
@@ -937,5 +954,109 @@ struct HomeWatchRow: View {
                 : L10n.format("%@さん：今日 %@", only.member.nickname, buddyDuration(only.member.today))
         }
         return studyingCount > 0 ? L10n.format("見守り：いま%d人が勉強中", studyingCount) : L10n.format("見守り：%d人", watch.watched.count)
+    }
+}
+
+// 4週間の推移と、今週の教科ごとの時間。保護者は Pro、先生（塾）はそのまま見られる
+struct WatchInsights: View {
+    @EnvironmentObject private var storeKit: StoreKitManager
+    let item: WatchCloud.Watched
+    @State private var showPaywall = false
+
+    private var member: BuddyCloud.Member { item.member }
+    private var isCurrent: Bool { member.weekKey == BuddyTotals.weekKey() }
+
+    var body: some View {
+        if item.kind == .school || storeKit.isProUnlocked {
+            VStack(alignment: .leading, spacing: 10) {
+                weeks
+                subjects
+            }
+        } else {
+            Button {
+                showPaywall = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "lock")
+                        .font(.system(size: 12))
+                    Text(L10n.string("教科ごとの時間と4週間の推移は Pro で見られます"))
+                        .font(ReelTheme.sans(12))
+                        .multilineTextAlignment(.leading)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .foregroundColor(ReelTheme.accentDeep)
+                .padding(10)
+                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(ReelTheme.accent.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("watch.insights.locked")
+            .sheet(isPresented: $showPaywall) { PaywallView() }
+        }
+    }
+
+    // 4週間の推移（今週がまだ届いていないときは、前の週の値がずれて見えないように出さない）
+    @ViewBuilder
+    private var weeks: some View {
+        let values = isCurrent && member.pastWeeks.count == 4 ? member.pastWeeks : []
+        if !values.isEmpty {
+            let top = max(values.max() ?? 0, 3600)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L10n.string("4週間の推移"))
+                    .font(ReelTheme.sans(11, weight: .semibold))
+                    .foregroundColor(ReelTheme.secondary)
+                ForEach(0..<4, id: \.self) { index in
+                    HStack(spacing: 8) {
+                        Text(index == 3 ? L10n.string("今週") : L10n.format("%d週前", 3 - index))
+                            .font(ReelTheme.sans(11))
+                            .foregroundColor(ReelTheme.secondary)
+                            .frame(width: 44, alignment: .leading)
+                        GeometryReader { proxy in
+                            Capsule()
+                                .fill(index == 3 ? ReelTheme.accentDeep : ReelTheme.accent.opacity(0.55))
+                                .frame(width: max(4, proxy.size.width * CGFloat(values[index]) / CGFloat(top)))
+                        }
+                        .frame(height: 8)
+                        Text(buddyDuration(values[index]))
+                            .font(ReelTheme.sans(11))
+                            .foregroundColor(ReelTheme.ink)
+                            .monospacedDigit()
+                            .frame(width: 76, alignment: .trailing)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var subjects: some View {
+        let rows = isCurrent ? member.subjects.sorted { $0.value > $1.value } : []
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L10n.string("今週の教科ごとの時間"))
+                .font(ReelTheme.sans(11, weight: .semibold))
+                .foregroundColor(ReelTheme.secondary)
+            if rows.isEmpty {
+                Text(item.kind == .family
+                     ? L10n.string("お子さんが「教科ごとの時間も見せる」をオンにすると出ます。")
+                     : L10n.string("生徒が「教科ごとの時間も見せる」をオンにすると出ます。"))
+                    .font(ReelTheme.sans(11))
+                    .foregroundColor(ReelTheme.secondary)
+            } else {
+                ForEach(rows.prefix(6), id: \.key) { row in
+                    HStack {
+                        Text(row.key)
+                            .font(ReelTheme.sans(12))
+                            .foregroundColor(ReelTheme.ink)
+                            .lineLimit(1)
+                        Spacer()
+                        Text(buddyDuration(row.value))
+                            .font(ReelTheme.sans(12))
+                            .foregroundColor(ReelTheme.ink)
+                            .monospacedDigit()
+                    }
+                }
+            }
+        }
     }
 }

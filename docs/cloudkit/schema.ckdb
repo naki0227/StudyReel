@@ -64,6 +64,8 @@ DEFINE SCHEMA
         hidesRanking    INT64,
         weekDays        LIST<INT64>,
         lastStudiedAt   TIMESTAMP,
+        pastWeeks       LIST<INT64>,
+        subjectsWeek    STRING,
         GRANT WRITE TO "_creator",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"

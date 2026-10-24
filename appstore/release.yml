@@ -18,6 +18,9 @@ withdraw_to_update: true   # 審査待ちのときにスクリーンショット
 purchases:
   - com.ni.StudyReel.pro.monthly
   - com.ni.StudyReel.pro.yearly
+# サブスクのファミリー共有。保護者が買えば、家族（最大6人）も Pro を使える（保護者・塾に共有と組み合わせる）
+# 一度オンにすると開発者は戻せない。家族と分けるかは、買った人が iPhone の設定（サブスクリプション）で選べる
+family_sharing: true
 
 # ASO（docs/aso.md）。名前・サブタイトル・キーワードは検索の対象。同じ言葉を2か所に入れない
 # 名前・サブタイトルは 30 文字まで、キーワードは 100 バイトまで（日本語は1文字3バイト）

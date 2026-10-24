@@ -75,6 +75,13 @@ enum BuddyProfile {
         set { UserDefaults.standard.set(newValue, forKey: watchWeeklyKey) }
     }
 
+    // 見守りの相手に、今週の教科ごとの時間も見せるか（初めはオフ）
+    static var watchShowsSubjects: Bool {
+        get { UserDefaults.standard.bool(forKey: watchSubjectsKey) }
+        set { UserDefaults.standard.set(newValue, forKey: watchSubjectsKey) }
+    }
+
+    private static let watchSubjectsKey = "watch_shows_subjects"
     private static let watchStartKey = "watch_notice_start"
     private static let watchWeeklyKey = "watch_notice_weekly"
     private static let examKey = "buddy_exam"
@@ -195,6 +202,9 @@ struct BuddyTotals: Equatable {
     // 今週の曜日ごと（週の初めの日から7日）の秒数と、最後に勉強した日時。見守り（保護者・塾）にだけ見せる
     var weekDays = Array(repeating: 0, count: 7)
     var lastStudiedAt: Date?
+    // 4週間の週ごとの秒数（古い順、最後が今週）と、今週の教科ごとの秒数
+    var pastWeeks = Array(repeating: 0, count: 4)
+    var subjects: [String: Int] = [:]
 
     static func make(from sessions: [StudySession], now: Date = Date(), calendar: Calendar = .current) -> BuddyTotals {
         let today = calendar.startOfDay(for: now)
@@ -211,6 +221,18 @@ struct BuddyTotals: Equatable {
                 if (0..<7).contains(index) { totals.weekDays[index] += session.duration }
             }
             if totals.lastStudiedAt.map({ session.date > $0 }) ?? true { totals.lastStudiedAt = session.date }
+            if let week {
+                // 何週前の記録か（今週が0）。3週前までを数える
+                if let start = calendar.dateInterval(of: .weekOfYear, for: session.date)?.start,
+                   let days = calendar.dateComponents([.day], from: start, to: week.start).day {
+                    let weeksAgo = Int((Double(days) / 7).rounded())
+                    if (0...3).contains(weeksAgo) { totals.pastWeeks[3 - weeksAgo] += session.duration }
+                }
+                if week.contains(session.date) {
+                    let subject = session.subject.trimmingCharacters(in: .whitespacesAndNewlines)
+                    totals.subjects[subject.isEmpty ? L10n.string("その他") : subject, default: 0] += session.duration
+                }
+            }
         }
         // 今日まだ勉強していなくても、昨日まで続いていれば連続とみなす
         var day = days.contains(today) ? today : (calendar.date(byAdding: .day, value: -1, to: today) ?? today)

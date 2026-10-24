@@ -155,6 +155,13 @@ struct PaywallView: View {
                     planRow(product)
                 }
 
+                // App Store Connect でファミリー共有をオンにしたプランだけ（docs/app-store-connect-pro.md）
+                if storeKit.products.contains(where: \.isFamilyShareable) {
+                    Label(L10n.string("ファミリー共有で、家族も Pro を使えます（最大6人）"), systemImage: "person.2")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
                 purchaseButton
             }
 
@@ -393,6 +400,7 @@ enum ProFeature {
             Row(title: L10n.string("教科別の内訳・先週比・集中しやすい時間帯"), free: false),
             Row(title: L10n.string("ロゴなしで保存"), free: false),
             Row(title: L10n.format("勉強仲間のグループを %d つまで作れる", BuddyCloud.proOwnedLimit), free: false),
+            Row(title: L10n.string("保護者：教科ごとの時間・4週間の推移"), free: false),
             Row(title: L10n.string("全部録画（等速）"), free: false),
             Row(title: L10n.string("動画のフォントを選ぶ"), free: false),
             Row(title: L10n.string("顔をスタンプで隠す"), free: false),
@@ -404,6 +412,7 @@ enum ProFeature {
             Row(title: L10n.string("統計・カレンダー・推移グラフ"), free: true),
             Row(title: L10n.string("iCloud にバックアップ"), free: true),
             Row(title: L10n.format("勉強仲間（グループを1つ作れる・参加は%dまで）", BuddyCloud.joinLimit), free: true),
+            Row(title: L10n.string("保護者・塾に共有（今日・今週・連続日数）"), free: true),
         ]
     }
 }
