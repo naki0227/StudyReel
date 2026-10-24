@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 A = os.path.join(HERE, "assets")
-PHOTOS = ["photo-library-morning.jpg", "photo-home-day.jpg", "photo-home-night.jpg", "photo-library-cloudy.jpg"]
+PHOTOS = ["tl-morning.jpg", "tl-noon.jpg", "tl-night.jpg", "tl-stretch.jpg"]
 
 # 画面 → [(左, 上, 右, 下, 角の丸み, 写真の番号, 右下の文字)]
 SPOTS = {

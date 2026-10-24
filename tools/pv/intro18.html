@@ -2,10 +2,17 @@
 <html><head><meta charset="utf-8"><link rel="stylesheet" href="pv.css">
 <style>
   .shot { width: 640px; }
-  #rec-timer { left: 448px; top: 102px; width: 182px; height: 56px; border-radius: 12px; backdrop-filter: blur(18px); background: rgba(120, 110, 100, .55);
+  #rec-timer { left: 418px; top: 96px; width: 200px; height: 56px; border-radius: 12px; backdrop-filter: blur(18px); background: rgba(120, 110, 100, .55);
     color: #fff; font-family: Zen, sans-serif; font-size: 30px; font-weight: 600; letter-spacing: .04em; display: flex; align-items: center; justify-content: center; gap: 8px; }
   #rec-timer i { width: 12px; height: 12px; border-radius: 50%; background: #FF3B30; }
   .hook { font-size: 84px; }
+  /* 録画中の画面（タイムラプスのコマの上に、タイマーと録画ボタン） */
+  .cam { aspect-ratio: 9 / 19.5; background: #000; }
+  .cam #l1-vid { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .cam .ctl { position: absolute; left: 50%; bottom: 70px; width: 120px; height: 120px; margin-left: -60px; border-radius: 50%; border: 8px solid rgba(255,255,255,.9);
+    display: flex; align-items: center; justify-content: center; }
+  .cam .ctl i { width: 44px; height: 44px; border-radius: 10px; background: #FF3B30; }
+  .cam .tl { position: absolute; left: 40px; top: 108px; font-family: CormI, serif; font-size: 34px; color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.4); }
   .photo-big { position: absolute; left: 110px; top: 560px; width: 700px; padding: 22px 22px 26px; }
   .photo-big .ph { aspect-ratio: 941 / 1672; height: auto; }
   .photo-big .mos { position: absolute; left: 22px; top: 22px; right: 22px; bottom: 26px; background-size: cover; background-position: center; opacity: 0; }
@@ -17,6 +24,7 @@
   .new { display: inline-block; font-family: Corm, serif; font-size: 30px; letter-spacing: .2em; color: #fff; background: var(--deep); border-radius: 999px; padding: 6px 22px; margin-bottom: 18px; }
   .hash { position: absolute; font-family: Zen, sans-serif; font-size: 34px; color: var(--deep); background: #fff; border-radius: 999px; padding: 14px 30px; box-shadow: 0 14px 30px rgba(46,58,70,.14); }
   .cut { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; }
+  .shade { position: absolute; left: 0; right: 0; top: 0; height: 700px; background: linear-gradient(rgba(20,26,32,.55), rgba(20,26,32,0)); }
   .cut-label { position: absolute; left: 70px; bottom: 150px; color: #fff; text-shadow: 0 2px 18px rgba(0,0,0,.45); }
   .cut-label .d { font-family: CormI, serif; font-size: 64px; }
   .cut-label .m { font-family: Zen, sans-serif; font-size: 34px; opacity: .9; margin-top: 6px; }
@@ -40,7 +48,7 @@
 <!-- 1: 録画 -->
 <div class="layer" id="L1">
   <div class="cap" id="l1-cap" style="top: 170px"><div class="no">0 1</div><div class="t serif" data-t="t1"></div><div class="s sans" data-t="s1"></div></div>
-  <div class="shot" id="l1-shot"><img data-img="recording.png"><div class="over" id="rec-timer"><i></i><span id="rec-text">00:00</span></div></div>
+  <div class="shot cam" id="l1-shot"><img id="l1-vid" src="out/timelapse/0001.jpg"><div class="tl">time-lapse</div><div class="over" id="rec-timer"><i></i><span id="rec-text">00:00</span></div><div class="ctl"><i></i></div></div>
 </div>
 
 <!-- 2: モザイク -->
@@ -48,8 +56,8 @@
   <div class="cap" id="l2-cap" style="top: 170px"><div class="no">0 2</div><div class="t serif" data-t="t2"></div><div class="s sans" data-t="s2"></div></div>
   <div class="polaroid photo-big" id="l2-photo">
     <div class="tape pink"></div>
-    <div class="ph" style="background-image: url(assets/photo-home-day.jpg)"></div>
-    <div class="mos" id="l2-mos" style="background-image: url(assets/photo-home-day-mosaic.jpg)"></div>
+    <div class="ph" style="background-image: url(assets/tl-morning.jpg)"></div>
+    <div class="mos" id="l2-mos" style="background-image: url(assets/tl-morning-mosaic.jpg)"></div>
     <div class="cap2">Tue 10/14 · 2h 25m</div>
   </div>
 </div>
@@ -72,10 +80,11 @@
 
 <!-- 5: Vlog（写真を速いカットで → 画面） -->
 <div class="layer" id="L5">
-  <div class="cut" id="c1" style="background-image: url(assets/photo-library-morning.jpg)"></div>
-  <div class="cut" id="c2" style="background-image: url(assets/photo-home-day.jpg)"></div>
-  <div class="cut" id="c3" style="background-image: url(assets/photo-home-night.jpg)"></div>
-  <div class="cut" id="c4" style="background-image: url(assets/photo-library-cloudy.jpg)"></div>
+  <div class="cut" id="c1" style="background-image: url(assets/tl-morning.jpg)"></div>
+  <div class="cut" id="c2" style="background-image: url(assets/tl-noon.jpg)"></div>
+  <div class="cut" id="c3" style="background-image: url(assets/tl-stretch.jpg)"></div>
+  <div class="cut" id="c4" style="background-image: url(assets/tl-night.jpg)"></div>
+  <div class="shade" id="l5-shade"></div>
   <div class="cut-label" id="l5-label"><div class="d" id="l5-d">Mon 10/13</div><div class="m" id="l5-m">2h 25m</div></div>
   <div class="cap" id="l5-cap" style="top: 170px; color: #fff"><div class="no" style="color: #fff; opacity: .8">0 5</div><div class="t serif" style="text-shadow: 0 2px 24px rgba(0,0,0,.45)" data-t="t5"></div><div class="s sans" style="color: #fff; opacity: .9" data-t="s5"></div></div>
   <div class="shot" id="l5-shot"><img data-img="vlog-photo.png"></div>
@@ -104,6 +113,8 @@
 <script>
 // アプリを知らない人向けの紹介（1.8 時点）。アップデートの知らせではなく「何ができるアプリか」を順に見せる
 const DUR = 33;
+// assets/study-timelapse.mp4 のコマ数（python3 timelapse.py で out/timelapse/ に書き出す）
+const VIDEO_FRAMES = 170;
 const COPY = {
   ja: { hook: '勉強、<br>続いてますか？', tagline: '努力を、見返したくなる記録に。', store: 'App Store で無料',
     t1: '机に置いて、<br>始めるだけ。', s1: '勉強の様子が、タイムラプス動画になる',
@@ -142,8 +153,14 @@ window.seek = (t) => {
   set($('L1'), { o: window_(t, 4.0, 8.5, 0.3, 0.4) });
   cap($('l1-cap'), t, 4.1, 8.5);
   setShot($('l1-shot'), { y: DY + lerp(520, 236, seg(t, 4.1, 1.0)), r: lerp(-4, 0, seg(t, 4.1, 1.2)), s: lerp(0.96, 1, seg(t, 4.1, 1.2)), o: seg(t, 4.1, 0.5) });
-  // 4.5秒で 2時間ぶん進む（タイムラプスらしく）
-  $('rec-text').textContent = mmss(Math.max(0, t - 4.8) * 1600 % 6000);
+  // 動画（170コマ）を場面のあいだに流し切る。タイマーは朝から夜まで約5時間ぶん進む
+  const p1 = clamp((t - 4.2) / 4.2);
+  const frame = 1 + Math.round(p1 * (VIDEO_FRAMES - 1));
+  const sec = p1 * 5 * 3600;
+  $('rec-text').textContent = `${Math.floor(sec / 3600)}:${pad2((sec % 3600) / 60)}:${pad2(sec % 60)}`;
+  const vid = $('l1-vid'), src = `out/timelapse/${String(frame).padStart(4, '0')}.jpg`;
+  let wait = null;
+  if (!vid.src.endsWith(src)) { vid.src = src; wait = vid.decode().catch(() => {}); }
 
   // 2 モザイク 8.5–12.5
   set($('L2'), { o: window_(t, 8.5, 12.5, 0.3, 0.4) });
@@ -177,6 +194,7 @@ window.seek = (t) => {
   }
   $('l5-d').textContent = labels[k][0]; $('l5-m').textContent = labels[k][1];
   set($('l5-label'), { o: t < cutEnd ? 1 : 0 });
+  set($('l5-shade'), { o: t < cutEnd ? 1 : 0 });
   cap($('l5-cap'), t, 21.6, cutEnd);
   setShot($('l5-shot'), { s: lerp(0.8, 1, seg(t, cutEnd - 0.2, 0.8)), o: seg(t, cutEnd - 0.2, 0.4) });
 
@@ -194,6 +212,8 @@ window.seek = (t) => {
   set($('l7-store'), { s: lerp(0.8, 1, seg(t, 30.4, 0.6, ease.outBack)), o: seg(t, 30.4, 0.3) });
   set($('l7-dev'), { o: seg(t, 30.8, 0.5) });
   set($('l7-points'), { y: lerp(20, 0, seg(t, 31.0, 0.6)), o: seg(t, 31.0, 0.5) });
+  // 録画の場面のコマが読み込まれるのを待ってから撮る
+  return wait;
 };
 </script>
 </body></html>
