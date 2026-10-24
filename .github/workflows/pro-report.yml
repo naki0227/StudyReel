@@ -3,7 +3,10 @@ name: Pro report
 # Pro のダウンロード・お試し・有料化の数を、App Store Connect の売上レポートから週に1回まとめる（docs/pro-value.md）
 # 必要な Secrets: ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_P8（App Store と同じ）、ASC_VENDOR_NUMBER
 # あれば使う: SLACK_WEBHOOK_URL（同じ内容を Slack に送る）
+# 作業ブランチでは、コミットメッセージに [pro-report] を入れて push しても動く（手動実行は main に入ってから）
 on:
+  push:
+    branches: ["claude/**"]
   schedule:
     - cron: "17 0 * * 1"   # 月曜 9:17（日本時間）
   workflow_dispatch:
@@ -14,6 +17,7 @@ on:
 
 jobs:
   report:
+    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[pro-report]')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
