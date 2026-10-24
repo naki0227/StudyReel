@@ -31,6 +31,8 @@ xcrun cktool import-schema --team-id <チームID> --container-id iCloud.com.ni.
 
 入ったら 5 の本番への反映に進みます（3 と 4 は schema.ckdb に入っているので、コンソールで確かめるだけ）。
 
+**GitHub Actions で入れる方法**：Secrets に `CLOUDKIT_MANAGEMENT_TOKEN` を入れておき、コミットメッセージに `[cloudkit-schema]` を入れて push するか、Actions の「CloudKit schema」を手動で動かす。開発環境に取り込まれるので、そのあと 5 の本番への反映を Console で行う。
+
 **手で作る方法**：
 
 CloudKit は、開発環境（Development）で初めてレコードを書いたときに型ができます。Xcode からデバッグ実行した端末で、次を一通り行います。
