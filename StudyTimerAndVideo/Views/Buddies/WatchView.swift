@@ -376,9 +376,16 @@ struct WatchSchoolCard: View {
                 .font(ReelTheme.serif(17))
                 .foregroundColor(ReelTheme.ink)
             if let school = watch.school, school.isValid {
-                Text(school.name)
-                    .font(ReelTheme.sans(14, weight: .semibold))
-                    .foregroundColor(ReelTheme.ink)
+                HStack {
+                    Text(school.name)
+                        .font(ReelTheme.sans(14, weight: .semibold))
+                        .foregroundColor(ReelTheme.ink)
+                    Spacer()
+                    // 別の塾のコードに入れ替える（作ったクラスと生徒はそのまま残る）
+                    Button(L10n.string("塾コードを変える")) { watch.forgetSchool() }
+                        .font(ReelTheme.sans(12))
+                        .foregroundColor(ReelTheme.secondary)
+                }
                 if watch.classes.isEmpty {
                     Text(L10n.string("クラスを作って QR コードを生徒に読んでもらうと、生徒の勉強時間が見られます。生徒どうしはおたがいに見えません。"))
                         .font(ReelTheme.sans(12))
