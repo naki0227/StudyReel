@@ -52,13 +52,12 @@
     <div class="mos" id="l2-mos" style="background-image: url(assets/photo-home-day-mosaic.jpg)"></div>
     <div class="cap2">Tue 10/14 · 2h 25m</div>
   </div>
-  <div class="shot" id="l2-shot" style="width: 420px; border-radius: 64px"><img data-img="review18.png"></div>
 </div>
 
 <!-- 3: 目標と D-day -->
 <div class="layer" id="L3">
   <div class="cap" id="l3-cap" style="top: 170px"><div class="no">0 3</div><div class="t serif" data-t="t3"></div><div class="s sans" data-t="s3"></div></div>
-  <div class="shot" id="l3-shot"><img data-img="home18.png"></div>
+  <div class="shot" id="l3-shot"><img data-img="home18-photo.png"></div>
   <div class="card" id="l3-card" style="left: 620px; top: 1150px"><img data-img="card-scoreup.png"></div>
 </div>
 
@@ -79,13 +78,13 @@
   <div class="cut" id="c4" style="background-image: url(assets/photo-library-cloudy.jpg)"></div>
   <div class="cut-label" id="l5-label"><div class="d" id="l5-d">Mon 10/13</div><div class="m" id="l5-m">2h 25m</div></div>
   <div class="cap" id="l5-cap" style="top: 170px; color: #fff"><div class="no" style="color: #fff; opacity: .8">0 5</div><div class="t serif" style="text-shadow: 0 2px 24px rgba(0,0,0,.45)" data-t="t5"></div><div class="s sans" style="color: #fff; opacity: .9" data-t="s5"></div></div>
-  <div class="shot" id="l5-shot"><img data-img="vlog.png"></div>
+  <div class="shot" id="l5-shot"><img data-img="vlog-photo.png"></div>
 </div>
 
 <!-- 6: 共有 -->
 <div class="layer" id="L6">
   <div class="cap" id="l6-cap" style="top: 170px"><div class="no">0 6</div><div class="t serif" data-t="t6"></div><div class="s sans" data-t="s6"></div></div>
-  <div class="shot" id="l6-shot"><img data-img="share.png"></div>
+  <div class="shot" id="l6-shot"><img data-img="share-photo.png"></div>
   <div class="hash" id="h1" style="left: 60px; top: 720px" data-t="h1"></div>
   <div class="hash" id="h2" style="left: 760px; top: 900px">#studywithme</div>
   <div class="hash" id="h3" style="left: 80px; top: 1500px">#StudyReel</div>
@@ -151,7 +150,6 @@ window.seek = (t) => {
   cap($('l2-cap'), t, 8.6, 12.5);
   set($('l2-photo'), { r: -2, y: lerp(60, 0, seg(t, 8.6, 0.9)), o: seg(t, 8.6, 0.6), s: lerp(1, 1.03, seg(t, 8.6, 4, ease.linear)) });
   $('l2-mos').style.opacity = seg(t, 9.7, 0.35);
-  setShot($('l2-shot'), { x: lerp(620, 290, seg(t, 10.5, 0.9)), y: 470, r: lerp(10, 6, seg(t, 10.5, 0.9)), o: seg(t, 10.5, 0.5) });
 
   // 3 目標 12.5–17
   set($('L3'), { o: window_(t, 12.5, 17.0, 0.3, 0.4) });
