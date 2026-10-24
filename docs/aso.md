@@ -30,5 +30,5 @@
 ## まだやること
 
 - スクリーンショットの1枚目を「タイムラプスで撮る」画面にして、見出しに「タイムラプス」を入れる（`tools/appstore/frames/copy.json`）。勉強仲間の画面も1枚入れる
-- 変更から4週間、App Store Connect の App Analytics で、表示回数・ページ表示・転換率・流入元を前と比べる
+- 変更から4週間、App Store Connect の App Analytics で、表示回数・ページ表示・転換率・流入元を前と比べる（1.8 は 2026-10-24 公開。11-21 ごろに見る）
 - 週のダウンロードが 30 件を超えたら、スクリーンショット1枚目の A/B テスト（Product Page Optimization）
