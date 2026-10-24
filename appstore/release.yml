@@ -19,14 +19,86 @@ purchases:
   - com.ni.StudyReel.pro.monthly
   - com.ni.StudyReel.pro.yearly
 
+# ASO（docs/aso.md）。名前・サブタイトル・キーワードは検索の対象。同じ言葉を2か所に入れない
+# 名前・サブタイトルは 30 文字まで、キーワードは 100 バイトまで（日本語は1文字3バイト）
 localizations:
   ja:
+    name: StudyReel - 勉強タイムラプス記録
+    subtitle: 受験生のためのVlog・集中タイマーと過去問管理
+    keywords: 勉強垢,自習,習慣,継続,教材,成績,グラフ,モザイク,モチベ,努力,資格,仲間
+    promotional_text: 勉強を撮ると、努力が動画になる。タイムラプスで記録して、勉強仲間と応援し合おう。
+    description: |
+      勉強を「撮る」記録アプリ。
+      机に置いて始めるだけで、勉強の様子がタイムラプス動画になります。
+      続けた努力が、見返せる形で積み上がる。
+
+      【こんな人に】
+      ・受験生、資格の勉強をしている人
+      ・勉強垢で毎日の記録を発信している人
+      ・スマホを触らずに集中したい人
+
+      【主な機能】
+      ■ タイムラプス撮影：時刻入りのタイムラプス動画を端末の中で作ります。顔は自動でモザイクにできます
+      ■ 集中タイマー：タイマーとストップウォッチ。集中サウンドつき
+      ■ 目標と D-day：試験日までの残り日数と、過去問の点数の伸びをグラフで
+      ■ 教材：本のバーコードを読むだけで登録。教材ごとに勉強時間を積み上げ
+      ■ 統計とカレンダー：毎日の勉強時間、教科ごとの内訳、推移グラフ
+      ■ 勉強仲間：友達と QR コードでグループを作って、いま勉強中の人や今日・今週の勉強時間を見せ合えます。応援はスタンプで（参加はオーナーの許可制、チャットはありません）
+      ■ 1週間の Vlog：1週間分の記録が1本の動画に
+      ■ 共有カード：今日の記録を画像にして、勉強垢へ
+      ■ iCloud バックアップ：記録は自分の iCloud Drive に保存
+
+      【使い方】
+      1. 机にスマホを置いて、タイマーを決める
+      2. シャッターを押して勉強する
+      3. 終わったら動画と記録を見返す
+
+      【StudyReel Pro】
+      教科ごとの先週比と集中しやすい時間帯、ロゴなしの動画、勉強仲間のグループ5つまで、全部録画、動画のフォント、顔スタンプ、BGM 全4曲、テーマカラー。月額・年額（1週間の無料体験つき）
+
+      利用規約: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+      プライバシーポリシー: https://enludus.com/products/studyreel-privacy
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
       ・勉強仲間：友達と QR コードでグループを作って、いま勉強中の人や今日・今週の勉強時間を見せ合えます。スタンプで応援もできます（参加はオーナーの許可制）
       ・資格ごとに、いま勉強している人数が分かるようになりました（名前は出ません）
       ・統計に、教科ごとの先週比と、集中しやすい時間帯を出すようにしました（Pro）
   en-US:
+    name: StudyReel - Study Timelapse
+    subtitle: Focus timer & study vlog
+    keywords: pomodoro,tracker,habit,exam,buddies,group,productivity,stopwatch,motivation,student,homework,log
+    promotional_text: Film your study session and watch your effort turn into a timelapse. Study together with friends in Study Buddies.
+    description: |
+      The study tracker that films your effort.
+      Set your phone on the desk and start — your study session becomes a timelapse video.
+      Keep the proof of every hour you put in.
+
+      WHO IT'S FOR
+      • Students preparing for exams and certifications
+      • Study accounts that post their progress every day
+      • Anyone who wants to stay off their phone while studying
+
+      FEATURES
+      ■ Timelapse recording with the time on screen, made on your device. Faces can be pixelated automatically
+      ■ Focus timer and stopwatch with focus sounds
+      ■ Goals and countdown to exam day, with past-paper score charts
+      ■ Books: scan the barcode to add a book and track time per book
+      ■ Stats and calendar: daily time, time by subject, trend charts
+      ■ Study Buddies: make a group with friends by QR code and see who's studying now and everyone's time today and this week. Cheer each other on with stamps (owners approve who joins; no chat)
+      ■ Weekly vlog: your week becomes one video
+      ■ Share cards for your study account
+      ■ iCloud backup to your own iCloud Drive
+
+      HOW IT WORKS
+      1. Put your phone on the desk and pick a timer
+      2. Press the shutter and study
+      3. Look back at your video and records
+
+      STUDYREEL PRO
+      Week-over-week stats by subject and your best focus hours, videos without the logo, up to 5 Study Buddies groups, full-length recording, video fonts, face stickers, all 4 BGM tracks and theme colors. Monthly or yearly, each with a 1-week free trial.
+
+      Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+      Privacy Policy: https://enludus.com/products/studyreel-privacy
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
       • Study Buddies: make a group with friends by QR code and see who's studying now and everyone's time today and this week. Cheer each other on with stamps (owners approve who joins)
