@@ -22,6 +22,8 @@ jobs:
     env:
       TEAM_ID: X97ZJZ42VZ
       CONTAINER_ID: iCloud.com.ni.StudyTimerAndVideo
+      # cktool はこの環境変数からトークンを読む（save-token は対話が要るので CI では使えない）
+      CLOUDKIT_MANAGEMENT_TOKEN: ${{ secrets.CLOUDKIT_MANAGEMENT_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -32,12 +34,9 @@ jobs:
           sudo xcode-select -s "$xcode"
           xcrun cktool --help | head -40
 
-      - name: Save management token
-        env:
-          TOKEN: ${{ secrets.CLOUDKIT_MANAGEMENT_TOKEN }}
+      - name: Check token
         run: |
-          if [ -z "$TOKEN" ]; then echo "::error::Secrets に CLOUDKIT_MANAGEMENT_TOKEN がありません"; exit 1; fi
-          printf '%s\n' "$TOKEN" | xcrun cktool save-token --type management --method file
+          if [ -z "$CLOUDKIT_MANAGEMENT_TOKEN" ]; then echo "::error::Secrets に CLOUDKIT_MANAGEMENT_TOKEN がありません"; exit 1; fi
 
       - name: Export current schema (before)
         run: |
@@ -66,6 +65,3 @@ jobs:
             after.ckdb
           if-no-files-found: warn
 
-      - name: Remove token
-        if: always()
-        run: xcrun cktool remove-token --type management || true
