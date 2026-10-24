@@ -624,3 +624,10 @@
 "%@さんから「%@」" = "%@ sent “%@”";
 "%@さんが勉強を始めました" = "%@ started studying";
 "名前のないグループ" = "Untitled group";
+"努力を、見返したくなる記録に。" = "Make your effort worth looking back on.";
+"教科ごとの先週比と集中しやすい時間帯、ロゴなしの動画、勉強仲間のグループを5つまで。" = "Week-over-week stats by subject, your best focus hours, videos without the logo, and up to 5 Study Buddies groups.";
+"教科別の内訳・先週比・集中しやすい時間帯" = "Subject breakdown, weekly change and best focus hours";
+"勉強仲間のグループ %d つまで" = "Up to %d Study Buddies groups";
+"テーマカラーを選ぶ" = "Choose a theme color";
+"iCloud にバックアップ" = "Back up to iCloud";
+"勉強仲間（グループ1つ）" = "Study Buddies (1 group)";

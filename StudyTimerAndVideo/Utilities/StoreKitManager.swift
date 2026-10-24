@@ -8,6 +8,8 @@ final class StoreKitManager: ObservableObject {
     static let lifetimeID = "com.ni.StudyReel.pro.lifetime"
 
     static let productIDs = [monthlyID, yearlyID, lifetimeID]
+    // 売るのは月額と年額だけ。買い切りは売らないが、買った人の Pro を判定できるように productIDs には残す
+    static let saleIDs = [monthlyID, yearlyID]
 
     @Published private(set) var products: [Product] = []
     @Published private(set) var purchasedProductIDs = Set<String>()
@@ -53,7 +55,7 @@ final class StoreKitManager: ObservableObject {
         defer { isLoading = false }
 
         do {
-            products = try await Product.products(for: Self.productIDs)
+            products = try await Product.products(for: Self.saleIDs)
                 .sorted { $0.price < $1.price }
             await updatePurchasedProducts()
             await updateTrialEligibility()
