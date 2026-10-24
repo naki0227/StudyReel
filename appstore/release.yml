@@ -6,51 +6,32 @@
 # アプリのプライバシー（データの収集）と年齢区分は API で変えられないので、App Store Connect の画面で設定する。
 
 app: com.ni.StudyTimerAndVideo
-version: "1.7"
-build: 224            # "latest" にすると、このバージョンで最後に上げたビルド
+version: "1.8"
+build: 228            # "latest" にすると、このバージョンで最後に上げたビルド
 release: manual       # manual: 承認されたら自分で公開 / after_approval: 承認されたらすぐ公開
-submit_for_review: true    # true にしてマージすると、反映したあと審査に出す
+submit_for_review: false   # true にしてマージすると、反映したあと審査に出す
 withdraw_to_update: true   # 審査待ちのときにスクリーンショットかビルドが変わっていたら、取り下げて差し替えてから出し直す
 
 # Pro の課金アイテム（StoreKitManager.swift の productIDs と同じ）。
 # 状態を確かめて、まだ審査に出していないもの（READY_TO_SUBMIT）はバージョンと一緒に審査に出す
+# 買い切り（lifetime）は売らない（2026-10-24 決定）。StoreKitManager の productIDs には残す（買った人がいたときに Pro を失わないように）
 purchases:
   - com.ni.StudyReel.pro.monthly
   - com.ni.StudyReel.pro.yearly
-  - com.ni.StudyReel.pro.lifetime
-
-# App Store Connect にまだない課金アイテムはここに書くと作られる。価格・表示名・販売地域・審査用スクリーンショットもそろえる
-create_purchases:
-  - product_id: com.ni.StudyReel.pro.lifetime
-    reference_name: Pro Lifetime
-    type: NON_CONSUMABLE
-    price_jpy: 4800          # 日本の価格。ほかの国は Apple が自動で換算する
-    family_sharable: false
-    review_screenshot: appstore/purchases/lifetime-review.png
-    review_note: |
-      One-time purchase that unlocks all Pro features (no watermark, video fonts, face stamps, all 4 BGM tracks, full-speed recording, per-subject stats).
-      Shown in Settings > StudyReel Pro alongside the monthly and yearly subscriptions.
-    localizations:
-      ja:
-        name: StudyReel Pro（買い切り）
-        description: 一度の購入でProの機能がずっと使えます
-      en-US:
-        name: StudyReel Pro Lifetime
-        description: Unlock every Pro feature with one purchase
 
 localizations:
   ja:
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
-      ・過去問の点数を、満点を入れずに保存したときにも、ホームの最高点とグラフに反映されるようにしました（これまでに保存した記録もそのまま反映されます）
-      ・初めての問題を記録するとき、満点の欄に目標の満点が最初から入るようにしました
-      ・設定から StudyReel のレビューを書けるようにしました
+      ・勉強仲間：友達と QR コードでグループを作って、いま勉強中の人や今日・今週の勉強時間を見せ合えます。スタンプで応援もできます（参加はオーナーの許可制）
+      ・資格ごとに、いま勉強している人数が分かるようになりました（名前は出ません）
+      ・統計に、教科ごとの先週比と、集中しやすい時間帯を出すようにしました（Pro）
   en-US:
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
-      • Past paper scores saved without a max score now count toward your goal's best score and the chart, including ones you already saved
-      • When you log a new paper, the max score now starts from your goal's max score
-      • You can rate StudyReel from Settings
+      • Study Buddies: make a group with friends by QR code and see who's studying now and everyone's time today and this week. Cheer each other on with stamps (owners approve who joins)
+      • See how many people are studying for each exam right now (no names shown)
+      • Stats now show each subject's change from last week and your best time to focus (Pro)
 
 review:
   demo_account_required: false
@@ -60,6 +41,11 @@ review:
     - Book lookup: when adding a book, only the ISBN is sent to openBD (api.openbd.jp) and the National Diet Library (ndlsearch.ndl.go.jp) to get the title and cover. Cover text recognition runs on the device.
     - Backup: records are copied to the user's own iCloud Drive (Files app > StudyReel). Nothing is sent to our servers.
     - Pro features are an in-app purchase and can be restored from Settings.
+    - Study Buddies (new): small private groups that share only a nickname, a chosen icon, whether someone is studying now, today's/this week's study time and preset stamps. There is no chat. Data is stored with Apple CloudKit in the group owner's iCloud; we run no servers and cannot read group data. It requires an iCloud sign-in.
+      - Joining: the owner shows a QR code / link; the person asks to join and the owner approves them after checking a nickname and 4-digit number. Owners can remove members and reset the invite.
+      - Safety (Guideline 1.2): nicknames and group names pass a word filter; any member can be blocked (long-press a member) or reported. Reports, with the photo if any, reach the developer, who reviews them within 24 hours and can bar the sender from sharing photos. Contact: contact@enludus.com.
+      - Photos are off by default per group. When the owner turns them on, a member can share one frame they pick from their own time-lapse, with faces pixelated; photos disappear after 24 hours. Frames flagged by Apple's Sensitive Content Analysis are not sent or shown. Photos start off for users under 18 (Declared Age Range).
+      - To try it with one device: Home > "勉強仲間と一緒にがんばる" > set a nickname > "グループを作る", then tap the QR icon. Joining needs a second iCloud account.
     To try it: tap + on the home screen, choose a timer, then press the round shutter button. Press it again to finish and see the review screen.
 
 # 動画のプレビュー。IPHONE_67 は App Store Connect の「6.9インチ」の枠（886x1920、30秒以内）
