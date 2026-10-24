@@ -51,7 +51,7 @@ Records → Public → `BuddyPhotoBan` → New Record
 
 ## これから作る機能への反応を数える
 
-「保護者に共有（準備中）」の案内で押された答えは、公開データベースの `BuddyInterest` に1人1件で残る（名前は入らない）。
+1.8 の「保護者に共有（準備中）」の案内で押された答えは、公開データベースの `BuddyInterest` に1人1件で残る（名前は入らない）。
 
 - Records → Public → `BuddyInterest`、`feature` が `parent` のもの
 - `answer`：`yes`（使ってみたい）/ `no`（いまはいい）、`source`：`settings` / `buddies`（どこで押したか）

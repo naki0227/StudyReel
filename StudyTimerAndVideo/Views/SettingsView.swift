@@ -24,6 +24,7 @@ struct SettingsView: View {
 
     @State private var quietReminderEnabled = StudyNotificationManager.shared.isQuietReminderEnabled
     @State private var showPaywall = false
+    @State private var showWatch = false
     // Pro の色を使っている Pro でない人が、ほかの色に変えようとしたとき
     @State private var pendingTheme: ThemeColor?
     @State private var showSubjects = false
@@ -158,7 +159,14 @@ struct SettingsView: View {
                     }
 
                     if !DemoMode.isActive {
-                        ParentShareTeaser(source: "settings")
+                        sectionTitle(L10n.string("保護者・塾に共有"))
+                        card {
+                            Button { showWatch = true } label: {
+                                ReelRow(systemImage: "figure.2.and.child.holdinghands", title: L10n.string("保護者・塾に共有")) { chevron }
+                            }
+                            .accessibilityIdentifier("settings.watch")
+                        }
+                        note(L10n.string("勉強時間といま勉強中かどうかだけを、おうちの人や塾の先生に見せられます。保護者・先生の方は、ここから見守りを始めます。"))
                     }
 
                     sectionTitle(L10n.string("その他"))
@@ -214,6 +222,9 @@ struct SettingsView: View {
                         quietReminderEnabled = resolved
                     }
                 }
+            }
+            .sheet(isPresented: $showWatch) {
+                WatchView()
             }
             .sheet(isPresented: $showPaywall) {
                 PaywallView()

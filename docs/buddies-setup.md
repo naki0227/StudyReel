@@ -66,6 +66,10 @@ https://icloud.developer.apple.com/dashboard → コンテナ → Development �
 | `BuddyPresence` | `recordName` | QUERYABLE | クエリに必要 |
 | `BuddyReport` | `recordName` | QUERYABLE | コンソールで一覧する |
 | `BuddyReport` | `createdTimestamp` | SORTABLE | 新しい順に見る |
+| `BuddyWatchCode` | `viewer` | QUERYABLE | 見る人が自分のコードを一覧する |
+| `BuddyWatchCode` | `recordName` | QUERYABLE | クエリに必要 |
+| `BuddyWatchOffer` | `token` | QUERYABLE | 見る人が申し出を一覧する |
+| `BuddyWatchOffer` | `recordName` | QUERYABLE | クエリに必要 |
 
 ## 4. セキュリティロール（公開データベース）— 必ず変える
 
@@ -78,6 +82,8 @@ Schema → Security Roles。公開データベースは、初めは「だれで�
 | `BuddyPresence` | Read | Create | Write | 人数を数えるのに読む。名前は入っていない |
 | `BuddyJoinRequest` / `Approval` / `Denial` | Read | Create | Write | 今のまま |
 | `BuddyInterest` | **なし** | Create | Write | 「保護者に共有」などへの反応。開発者だけがコンソールで数える |
+| `BuddyWatchCode` / `BuddyWatchOffer` | Read | Create | Write | 見守りの QR と申し出（docs/family-and-school.md） |
+| `BuddySchoolCode` | Read | **なし** | なし | 塾コード。作るのは開発者だけ |
 
 ## 5. 本番環境に反映する
 
@@ -97,3 +103,4 @@ TestFlight と App Store のアプリは Production を使うので、これを�
 - 開発者には共有の中身は見えない。見えるのは公開 DB（申請、人数、通報）だけ
 - CI のシミュレーターは iCloud にサインインしていないので、共有の動きは TestFlight で2台・2アカウント使って確かめる
 - 通報の受け方と締め出し方は docs/buddies-moderation.md
+- 保護者・塾に共有（見守り）は `watch-` で始まるゾーン。しくみと塾コードの発行は docs/family-and-school.md

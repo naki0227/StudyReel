@@ -64,6 +64,19 @@ enum BuddyProfile {
         set { UserDefaults.standard.set(newValue, forKey: studyingNoticeKey) }
     }
 
+    // 見守り（保護者・先生）の通知
+    static var watchNotifiesStart: Bool {
+        get { UserDefaults.standard.bool(forKey: watchStartKey) }
+        set { UserDefaults.standard.set(newValue, forKey: watchStartKey) }
+    }
+
+    static var watchNotifiesWeekly: Bool {
+        get { UserDefaults.standard.object(forKey: watchWeeklyKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: watchWeeklyKey) }
+    }
+
+    private static let watchStartKey = "watch_notice_start"
+    private static let watchWeeklyKey = "watch_notice_weekly"
     private static let examKey = "buddy_exam"
     private static let photosKey = "buddy_photos_on"
     private static let under18Key = "buddy_under18"
@@ -179,6 +192,9 @@ struct BuddyTotals: Equatable {
     var todaySeconds = 0
     var weekSeconds = 0
     var streakDays = 0
+    // 今週の曜日ごと（週の初めの日から7日）の秒数と、最後に勉強した日時。見守り（保護者・塾）にだけ見せる
+    var weekDays = Array(repeating: 0, count: 7)
+    var lastStudiedAt: Date?
 
     static func make(from sessions: [StudySession], now: Date = Date(), calendar: Calendar = .current) -> BuddyTotals {
         let today = calendar.startOfDay(for: now)
@@ -189,7 +205,12 @@ struct BuddyTotals: Equatable {
             let day = calendar.startOfDay(for: session.date)
             days.insert(day)
             if day == today { totals.todaySeconds += session.duration }
-            if let week, week.contains(session.date) { totals.weekSeconds += session.duration }
+            if let week, week.contains(session.date) {
+                totals.weekSeconds += session.duration
+                let index = calendar.dateComponents([.day], from: calendar.startOfDay(for: week.start), to: day).day ?? 0
+                if (0..<7).contains(index) { totals.weekDays[index] += session.duration }
+            }
+            if totals.lastStudiedAt.map({ session.date > $0 }) ?? true { totals.lastStudiedAt = session.date }
         }
         // 今日まだ勉強していなくても、昨日まで続いていれば連続とみなす
         var day = days.contains(today) ? today : (calendar.date(byAdding: .day, value: -1, to: today) ?? today)

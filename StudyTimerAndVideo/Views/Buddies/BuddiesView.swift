@@ -29,6 +29,7 @@ struct BuddiesView: View {
     @State private var showPaywall = false
     @State private var newGroupName = ""
     @State private var sentJoin = false
+    @State private var showWatch = false
 
     init(joinLink: BuddyJoinLink? = nil) {
         _joinLink = State(initialValue: joinLink)
@@ -86,6 +87,9 @@ struct BuddiesView: View {
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
             }
+            .sheet(isPresented: $showWatch) {
+                WatchView()
+            }
             .alert(L10n.string("グループを作る"), isPresented: $showCreate) {
                 TextField(L10n.string("グループの名前"), text: $newGroupName)
                 Button(L10n.string("作る")) { create() }
@@ -133,12 +137,41 @@ struct BuddiesView: View {
                 createButton
             }
             BuddyExamCard()
-            ParentShareTeaser(source: "buddies")
+            watchRow
             Text(L10n.string("勉強仲間に見えるのは、ニックネーム、アイコン、いま勉強中かどうか、今日と今週の勉強時間、連続日数だけです。動画やメモは見えません。写真は、オーナーがオンにしたグループで、自分で選んだ1コマ（顔にモザイク）だけを見せられます。"))
                 .font(ReelTheme.sans(11))
                 .foregroundColor(ReelTheme.secondary)
                 .padding(.top, 4)
         }
+    }
+
+    // 保護者・塾に共有（見守り）への入り口
+    private var watchRow: some View {
+        Button {
+            showWatch = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "figure.2.and.child.holdinghands")
+                    .foregroundColor(ReelTheme.accentDeep)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.string("保護者・塾に共有"))
+                        .font(ReelTheme.sans(14, weight: .semibold))
+                        .foregroundColor(ReelTheme.ink)
+                    Text(L10n.string("勉強時間だけを、おうちの人や塾の先生に見せる"))
+                        .font(ReelTheme.sans(11))
+                        .foregroundColor(ReelTheme.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(ReelTheme.secondary)
+            }
+            .padding(16)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.white))
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("buddies.watch")
     }
 
     private var emptyState: some View {

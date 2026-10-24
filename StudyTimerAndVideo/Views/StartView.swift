@@ -28,6 +28,8 @@ struct StartView: View {
     @State private var showPapers = false
     @State private var showBuddies = false
     @State private var buddyJoinLink: BuddyJoinLink?
+    @State private var showWatch = false
+    @State private var watchJoinLink: WatchJoinLink?
 
     // タイマー設定値(時・分・秒)
     @State private var hours = 0
@@ -92,7 +94,10 @@ struct StartView: View {
                     // 勉強仲間（スクショ用のデモでは出さない）
                     if !DemoMode.isActive {
                         HomeBuddiesRow { showBuddies = true }
-                            .padding(.bottom, 16)
+                            .padding(.bottom, 8)
+                        // 保護者・塾に共有しているあいだは必ず出す
+                        HomeWatchRow { showWatch = true }
+                            .padding(.bottom, 8)
                     }
 
                     todayStrip
@@ -212,12 +217,17 @@ struct StartView: View {
             .sheet(isPresented: $showBuddies, onDismiss: { buddyJoinLink = nil }) {
                 BuddiesView(joinLink: buddyJoinLink)
             }
+            .sheet(isPresented: $showWatch, onDismiss: { watchJoinLink = nil }) {
+                WatchView(joinLink: watchJoinLink)
+            }
             // 記録が増えたり消えたりしたら、勉強仲間に見せる今日・今週の合計を更新する
             .onChange(of: sessions.count) {
                 BuddyCloud.shared.updateTotals(sessions)
             }
             .task {
                 BuddyCloud.shared.updateTotals(sessions)
+                // 保護者・塾に共有中の表示と、見守っている人の様子
+                await WatchCloud.shared.refresh()
             }
             .sheet(isPresented: $showCalendar) {
                 CalendarView(subjectManager: subjectManager)
@@ -624,6 +634,9 @@ struct StartView: View {
         } else if url.host == "buddies", let link = BuddyJoinLink(url: url) {
             buddyJoinLink = link
             showBuddies = true
+        } else if url.host == "watch", let link = WatchJoinLink(url: url) {
+            watchJoinLink = link
+            showWatch = true
         }
     }
 
