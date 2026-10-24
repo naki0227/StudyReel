@@ -7,9 +7,9 @@
 
 app: com.ni.StudyTimerAndVideo
 version: "1.8"
-build: 228            # "latest" にすると、このバージョンで最後に上げたビルド
+build: 229            # "latest" にすると、このバージョンで最後に上げたビルド
 release: manual       # manual: 承認されたら自分で公開 / after_approval: 承認されたらすぐ公開
-submit_for_review: false   # true にしてマージすると、反映したあと審査に出す
+submit_for_review: true    # true にしてマージすると、反映したあと審査に出す
 withdraw_to_update: true   # 審査待ちのときにスクリーンショットかビルドが変わっていたら、取り下げて差し替えてから出し直す
 
 # Pro の課金アイテム（StoreKitManager.swift の productIDs と同じ）。
