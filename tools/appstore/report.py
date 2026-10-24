@@ -26,7 +26,13 @@ from asc import BASE, api, token  # noqa: E402
 DOWNLOAD_TYPES = {"1", "1F", "1T", "F1"}
 
 
+# 一度も購読がないアカウントでは、サブスクのレポートが「ベンダー番号が違う」（400）で断られる。1回だけ知らせて、あとは読まない
+skipped = set()
+
+
 def fetch(report_type, version, date, vendor):
+    if report_type in skipped:
+        return []
     params = {
         "filter[frequency]": "DAILY", "filter[reportDate]": date, "filter[reportSubType]": "SUMMARY",
         "filter[reportType]": report_type, "filter[vendorNumber]": vendor, "filter[version]": version,
@@ -43,6 +49,10 @@ def fetch(report_type, version, date, vendor):
         return []
     # その日の分がまだない・取引がなかった日は 404
     if res.status_code == 404:
+        return []
+    if res.status_code == 400 and report_type.startswith("SUBSCRIPTION") and "vendor number" in res.text.lower():
+        print(f"::notice::{report_type} のレポートはまだありません（購読が1件もないと作られません）")
+        skipped.add(report_type)
         return []
     if res.status_code >= 400:
         print(f"::warning::{report_type} {date} -> {res.status_code}: {res.text[:300]}")
@@ -76,6 +86,7 @@ def main():
     end = datetime.date.today() - datetime.timedelta(days=2)
     weeks = {}
     latest_active = None
+    types = {}
     for offset in range(days):
         day = end - datetime.timedelta(days=offset)
         date = day.isoformat()
@@ -83,7 +94,11 @@ def main():
         week = (day - datetime.timedelta(days=day.weekday())).isoformat()
         w = weeks.setdefault(week, {"downloads": 0, "trials": 0, "converted": 0, "direct": 0, "cancels": 0, "renewals": 0})
         for row in fetch("SALES", "1_1", date, vendor):
-            if row.get("Apple Identifier") == app_id and row.get("Product Type Identifier") in DOWNLOAD_TYPES:
+            if row.get("Apple Identifier") != app_id:
+                continue
+            kind = row.get("Product Type Identifier") or "?"
+            types[kind] = types.get(kind, 0) + number(row, "Units")
+            if kind in DOWNLOAD_TYPES:
                 w["downloads"] += number(row, "Units")
         for row in fetch("SUBSCRIPTION_EVENT", "1_3", date, vendor):
             if row.get("App Apple ID") not in (app_id, None) and row.get("Parent Identifier") not in (sku, None):
@@ -126,6 +141,9 @@ def main():
         lines.append(f"- お試しから有料になった割合：{total['converted'] / total['trials']:.1%}（1週間遅れで数えるので、直近の週は低めに出る）")
     if latest_active:
         lines.append(f"- {latest_active['date']} 時点：有料 {latest_active['paid']} 人、お試し中 {latest_active['trial']} 人")
+    if types:
+        # 1F: 初めてのダウンロード、3F: 再ダウンロード、7F: アップデート（Apple の Product Type Identifier）
+        lines.append("- 種類ごとの数（StudyReel）：" + "、".join(f"{k} {v}" for k, v in sorted(types.items())))
     lines.append("- 目安と、数字を見て何を決めるかは docs/pro-value.md")
     text = "\n".join(lines)
     print(text)
