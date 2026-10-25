@@ -11,7 +11,26 @@ enum RecordingSettings {
     static let autoMosaicKey = "auto_mosaic"
     static let saveToPhotosKey = "save_to_photos"
 
-    static let intervalOptions: [Double] = [2, 5, 10, 30]
+    // 6秒は「1分が1秒」（10fps で書き出すので、間隔×10倍の速さになる）
+    static let intervalOptions: [Double] = [2, 5, 6, 10, 30]
+    static let outputFrameRate: Double = 10
+
+    // 1時間撮ったときの動画の長さ（秒）
+    static func videoSecondsPerHour(interval: Double) -> Int {
+        Int((3600 / interval / outputFrameRate).rounded())
+    }
+
+    // 1時間撮ったときの動画の長さ（「1分12秒」）
+    static func lengthPerHour(interval: Double) -> String {
+        let seconds = videoSecondsPerHour(interval: interval)
+        if seconds < 60 { return L10n.format("%d秒", seconds) }
+        return seconds % 60 == 0 ? L10n.format("%d分", seconds / 60) : L10n.format("%d分%d秒", seconds / 60, seconds % 60)
+    }
+
+    // 「1時間 → 1分12秒」のような見せ方。6秒は「1分が1秒」
+    static func speedTitle(interval: Double) -> String {
+        interval == 6 ? L10n.string("1分が1秒") : L10n.format("1時間 → %@", lengthPerHour(interval: interval))
+    }
 
     static var interval: Double {
         let value = UserDefaults.standard.double(forKey: intervalKey)

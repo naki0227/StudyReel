@@ -161,8 +161,8 @@ struct StartView: View {
                     onFinish: {
                         sessionBootstrap = nil
                         // 記録を保存してホームに戻った、いちばん気分のよいところでレビューを頼む（保存せずに閉じたときは頼まない）
-                        if let saved = sessions.first?.recordedAt, Date().timeIntervalSince(saved) < 10 * 60 {
-                            ReviewRequest.askIfDeserved(sessionCount: sessions.count)
+                        if let latest = sessions.first, let saved = latest.recordedAt, Date().timeIntervalSince(saved) < 10 * 60 {
+                            ReviewRequest.askIfDeserved(sessionCount: sessions.count, latestHasVideo: latest.videoFileName != nil, latestSeconds: latest.duration)
                         }
                     },
                     mode: bootstrap.mode,

@@ -738,3 +738,8 @@
 "いま勉強中かどうか、今日・今週の勉強時間（曜日ごと）、4週間の推移、連続日数、最後に勉強した日。教科ごとの時間は、あとで自分でオンにしたときだけ。名前は「%@ %@」と出ます。" = "Whether you're studying now, today's and this week's study time (by day), the last 4 weeks, your streak, and the last day you studied. Time by subject only if you turn it on later. You'll appear as \"%@ %@\".";
 "見せるのは、いま勉強中かどうか、今日・今週の勉強時間（曜日ごと）、4週間の推移、連続日数、最後に勉強した日、ニックネームと番号だけです（教科ごとの時間は、見せる人がオンにしたときだけ）。動画、写真、メモ、記録のタイトル、勉強仲間の中身は見せません。始めるのも止めるのも、見せる人が決めます。" = "Only whether you're studying now, today's and this week's study time (by day), the last 4 weeks, your streak, the last day you studied, and your nickname and number are shown (time by subject only if the person sharing turns it on). Videos, photos, notes, session titles and your Study Buddies are never shown. The person sharing decides when to start and stop.";
 "塾コードを変える" = "Change School Code";
+"タイムラプスの速さ" = "Time-lapse Speed";
+"1分が1秒" = "1 min → 1 sec";
+"1時間 → %@" = "1 hour → %@";
+"%@（%d秒ごとに1枚）" = "%@ (a frame every %ds)";
+"いまの速さだと、1時間の勉強が%@の動画になります。" = "At this speed, an hour of study becomes a %@ video.";

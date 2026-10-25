@@ -49,13 +49,13 @@ struct SettingsView: View {
 
                     sectionTitle(L10n.string("撮影設定"))
                     card {
-                        ReelRow(systemImage: "timer", title: L10n.string("撮影間隔")) {
+                        ReelRow(systemImage: "timer", title: L10n.string("タイムラプスの速さ")) {
                             Menu {
                                 ForEach(RecordingSettings.intervalOptions, id: \.self) { value in
-                                    Button(L10n.format("%d秒", Int(value))) { interval = value }
+                                    Button(L10n.format("%@（%d秒ごとに1枚）", RecordingSettings.speedTitle(interval: value), Int(value))) { interval = value }
                                 }
                             } label: {
-                                valueLabel(L10n.format("%d秒", Int(RecordingSettings.intervalOptions.contains(interval) ? interval : 5)))
+                                valueLabel(RecordingSettings.speedTitle(interval: currentInterval))
                             }
                         }
                         divider
@@ -102,6 +102,7 @@ struct SettingsView: View {
                             }
                         }
                     }
+                    note(L10n.format("いまの速さだと、1時間の勉強が%@の動画になります。", RecordingSettings.lengthPerHour(interval: currentInterval)))
 
                     sectionTitle(L10n.string("モザイク設定"))
                     card {
@@ -405,6 +406,8 @@ struct SettingsView: View {
             .font(.system(size: 12))
             .foregroundColor(ReelTheme.secondary)
     }
+
+    private var currentInterval: Double { RecordingSettings.intervalOptions.contains(interval) ? interval : 5 }
 
     private func valueLabel(_ text: String) -> some View {
         HStack(spacing: 6) {
