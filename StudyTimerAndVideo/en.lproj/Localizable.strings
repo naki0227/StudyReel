@@ -795,3 +795,8 @@
 "小さめ" = "Quiet";
 "ふつう" = "Normal";
 "大きめ" = "Loud";
+
+/* 1か月の Vlog */
+"先月" = "Last month";
+"今月の勉強" = "This month’s study";
+"先月の勉強" = "Last month’s study";
