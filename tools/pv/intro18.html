@@ -5,7 +5,18 @@
   #rec-timer { left: 418px; top: 96px; width: 200px; height: 56px; border-radius: 12px; backdrop-filter: blur(18px); background: rgba(120, 110, 100, .55);
     color: #fff; font-family: Zen, sans-serif; font-size: 30px; font-weight: 600; letter-spacing: .04em; display: flex; align-items: center; justify-content: center; gap: 8px; }
   #rec-timer i { width: 12px; height: 12px; border-radius: 50%; background: #FF3B30; }
-  .hook { font-size: 84px; }
+  /* 最初に「何を紹介するか」を出す目次 */
+  .kind { font-family: Zen, sans-serif; font-size: 36px; color: var(--sub); letter-spacing: .12em; }
+  .can { font-family: Mincho, serif; font-size: 60px; letter-spacing: .06em; }
+  .agenda { position: absolute; left: 130px; right: 130px; top: 1000px; }
+  .agenda .row { display: flex; align-items: center; gap: 28px; background: #fff; border-radius: 26px; padding: 30px 40px; margin-bottom: 22px;
+    box-shadow: 0 14px 34px rgba(46,58,70,.10); will-change: transform, opacity; }
+  .agenda .n { font-family: Corm, serif; font-size: 56px; color: var(--deep); width: 40px; text-align: center; }
+  .agenda .x { font-family: Zen, sans-serif; font-size: 38px; color: var(--ink); }
+  .agenda .x small { font-size: 26px; color: #fff; background: var(--deep); border-radius: 999px; padding: 4px 14px; margin-left: 12px; vertical-align: 4px; }
+  /* 各場面の「何番目の紹介か」 */
+  .no2 { display: inline-block; font-family: Zen, sans-serif; font-size: 30px; color: var(--deep); background: var(--soft); border-radius: 999px; padding: 8px 26px; margin-bottom: 22px; letter-spacing: .06em; }
+  body.en .agenda .x, body.en .no2 { font-family: ZenR, sans-serif; }
   /* 録画中の画面（タイムラプスのコマの上に、タイマーと録画ボタン） */
   .cam { aspect-ratio: 9 / 19.5; background: #000; }
   .cam #l1-vid { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -35,25 +46,29 @@
 <body>
 <div class="grid"></div>
 
-<!-- 0: つかみ → ロゴ -->
+<!-- 0: 何を紹介するか（アプリの名前と、できること4つ） -->
 <div class="layer" id="L0">
-  <div class="cap" id="l0-hook" style="top: 820px"><div class="serif hook" data-t="hook"></div></div>
-</div>
-<div class="layer" id="L0b">
-  <div class="tape yellow" style="left: 465px; top: 700px; transform: rotate(-6deg)"></div>
-  <div class="cap" id="l0-logo" style="top: 760px"><div class="logo">StudyReel</div></div>
-  <div class="cap" id="l0-sub" style="top: 930px"><div class="serif-r tagline" style="font-size: 46px" data-t="tagline"></div></div>
+  <div class="cap" id="l0-kind" style="top: 470px"><div class="kind" data-t="kind"></div></div>
+  <div class="tape yellow" id="l0-tape" style="left: 465px; top: 540px; transform: rotate(-6deg)"></div>
+  <div class="cap" id="l0-logo" style="top: 580px"><div class="logo">StudyReel</div></div>
+  <div class="cap" id="l0-can" style="top: 780px"><div class="can" data-t="can"></div></div>
+  <div class="agenda">
+    <div class="row" id="a1"><span class="n">1</span><span class="x" data-t="a1"></span></div>
+    <div class="row" id="a2"><span class="n">2</span><span class="x" data-t="a2"></span></div>
+    <div class="row" id="a3"><span class="n">3</span><span class="x" data-t="a3"></span></div>
+    <div class="row" id="a4"><span class="n">4</span><span class="x" data-t="a4"></span></div>
+  </div>
 </div>
 
 <!-- 1: 録画 -->
 <div class="layer" id="L1">
-  <div class="cap" id="l1-cap" style="top: 170px"><div class="no">0 1</div><div class="t serif" data-t="t1"></div><div class="s sans" data-t="s1"></div></div>
+  <div class="cap" id="l1-cap" style="top: 170px"><div class="no2" data-t="sec1"></div><div class="t serif" data-t="t1"></div><div class="s sans" data-t="s1"></div></div>
   <div class="shot cam" id="l1-shot"><img id="l1-vid" src="out/timelapse/0001.jpg"><div class="tl">time-lapse</div><div class="over" id="rec-timer"><i></i><span id="rec-text">00:00</span></div><div class="ctl"><i></i></div></div>
 </div>
 
 <!-- 2: モザイク -->
 <div class="layer" id="L2">
-  <div class="cap" id="l2-cap" style="top: 170px"><div class="no">0 2</div><div class="t serif" data-t="t2"></div><div class="s sans" data-t="s2"></div></div>
+  <div class="cap" id="l2-cap" style="top: 170px"><div class="no2" data-t="sec1"></div><div class="t serif" data-t="t2"></div><div class="s sans" data-t="s2"></div></div>
   <div class="polaroid photo-big" id="l2-photo">
     <div class="tape pink"></div>
     <div class="ph" style="background-image: url(assets/tl-morning.jpg)"></div>
@@ -64,14 +79,14 @@
 
 <!-- 3: 目標と D-day -->
 <div class="layer" id="L3">
-  <div class="cap" id="l3-cap" style="top: 170px"><div class="no">0 3</div><div class="t serif" data-t="t3"></div><div class="s sans" data-t="s3"></div></div>
+  <div class="cap" id="l3-cap" style="top: 170px"><div class="no2" data-t="sec2"></div><div class="t serif" data-t="t3"></div><div class="s sans" data-t="s3"></div></div>
   <div class="shot" id="l3-shot"><img data-img="home18-photo.png"></div>
   <div class="card" id="l3-card" style="left: 620px; top: 1150px"><img data-img="card-scoreup.png"></div>
 </div>
 
 <!-- 4: 勉強仲間（1.8） -->
 <div class="layer" id="L4">
-  <div class="cap" id="l4-cap" style="top: 150px"><div class="new">NEW</div><div class="t serif" data-t="t4"></div><div class="s sans" data-t="s4"></div></div>
+  <div class="cap" id="l4-cap" style="top: 150px"><div class="no2" data-t="sec3"></div><div class="t serif" data-t="t4"></div><div class="s sans" data-t="s4"></div></div>
   <div class="shot" id="l4-shot"><img data-img="buddies.png"></div>
   <div class="bubble" id="b1" style="left: 40px; top: 900px"><span data-t="st1"></span><b data-t="n1"></b></div>
   <div class="bubble" id="b2" style="left: 640px; top: 1180px"><span data-t="st2"></span><b data-t="n2"></b></div>
@@ -86,13 +101,13 @@
   <div class="cut" id="c4" style="background-image: url(assets/tl-night.jpg)"></div>
   <div class="shade" id="l5-shade"></div>
   <div class="cut-label" id="l5-label"><div class="d" id="l5-d">Mon 10/13</div><div class="m" id="l5-m">2h 25m</div></div>
-  <div class="cap" id="l5-cap" style="top: 170px; color: #fff"><div class="no" style="color: #fff; opacity: .8">0 5</div><div class="t serif" style="text-shadow: 0 2px 24px rgba(0,0,0,.45)" data-t="t5"></div><div class="s sans" style="color: #fff; opacity: .9" data-t="s5"></div></div>
+  <div class="cap" id="l5-cap" style="top: 170px; color: #fff"><div class="no2" data-t="sec4"></div><div class="t serif" style="text-shadow: 0 2px 24px rgba(0,0,0,.45)" data-t="t5"></div><div class="s sans" style="color: #fff; opacity: .9" data-t="s5"></div></div>
   <div class="shot" id="l5-shot"><img data-img="vlog-photo.png"></div>
 </div>
 
 <!-- 6: 共有 -->
 <div class="layer" id="L6">
-  <div class="cap" id="l6-cap" style="top: 170px"><div class="no">0 6</div><div class="t serif" data-t="t6"></div><div class="s sans" data-t="s6"></div></div>
+  <div class="cap" id="l6-cap" style="top: 170px"><div class="no2" data-t="sec4"></div><div class="t serif" data-t="t6"></div><div class="s sans" data-t="s6"></div></div>
   <div class="shot" id="l6-shot"><img data-img="share-photo.png"></div>
   <div class="hash" id="h1" style="left: 60px; top: 720px" data-t="h1"></div>
   <div class="hash" id="h2" style="left: 760px; top: 900px">#studywithme</div>
@@ -112,28 +127,35 @@
 <script src="pv.js"></script>
 <script>
 // アプリを知らない人向けの紹介（1.8 時点）。アップデートの知らせではなく「何ができるアプリか」を順に見せる
-const DUR = 33;
+// 最初の目次のぶん、ほかの場面を SHIFT 秒うしろにずらす
+const SHIFT = 1.5;
+const DUR = 33 + SHIFT;
 // assets/study-timelapse.mp4 のコマ数（python3 timelapse.py で out/timelapse/ に書き出す）
 const VIDEO_FRAMES = 170;
 const COPY = {
-  ja: { hook: '勉強、<br>続いてますか？', tagline: '努力を、見返したくなる記録に。', store: 'App Store で無料',
-    t1: '机に置いて、<br>始めるだけ。', s1: '勉強の様子が、タイムラプス動画になる',
-    t2: '顔はモザイクで、<br>しっかり隠せる。', s2: 'カット・フィルター・BGMもかんたん',
-    t3: '目標まで、<br>あと何日。', s3: 'D-dayと過去問の点数で、進み具合が見える',
-    t4: '勉強仲間と、<br>一緒にがんばる。', s4: 'いま勉強中の人と、今日の時間が見える',
+  // 宣伝文句らしくしない。友達に「このアプリこういうの」と話すくらいの言い方で
+  ja: { kind: '勉強記録アプリ', can: 'でできること', tagline: '勉強記録アプリ', store: 'App Store で無料',
+    a1: '勉強してるところを撮る', a2: '試験までの日数と点数を見る', a3: '友達と勉強時間を見せ合う<small>NEW</small>', a4: '1週間分をVlogにして投稿',
+    sec1: '1　勉強してるところを撮る', sec2: '2　試験までの日数と点数', sec3: '3　友達と見せ合う（新機能）', sec4: '4　Vlogにして投稿',
+    t1: 'スマホを立てて<br>スタート押すだけ', s1: '3時間やっても、数十秒のタイムラプスになる',
+    t2: '顔はモザイクで<br>隠せます', s2: '撮ったあとに位置も直せる',
+    t3: '試験まであと何日か<br>すぐわかる', s3: '過去問の点数も残しておける',
+    t4: '友達がいま勉強してるか<br>わかる', s4: '今日の勉強時間を見せ合って、スタンプも送れる',
     st1: '🔥 がんばれ', st2: '✨ すごい', st3: '👏 おつかれ', n1: 'from はると', n2: 'from みお',
-    t5: '1週間が、<br>1本のVlogに。', s5: '毎日の記録を、自動でまとめます',
-    t6: '今日の記録を、<br>勉強垢へ。', s6: '今日・今週・目標をカードにして共有', h1: '#勉強垢',
-    p1: 'タイムラプス', p2: '顔にモザイク', p3: '目標とD-day', p4: '勉強仲間' },
-  en: { hook: 'Is your study<br>sticking?', tagline: 'Make your effort worth rewatching.', store: 'Free on the App Store',
-    t1: 'Set it down.<br>Press start.', s1: 'Your study session becomes a time-lapse',
-    t2: 'Hide your face<br>with a mosaic.', s2: 'Trim, filters and music in a tap',
-    t3: 'Days to go,<br>at a glance.', s3: 'A countdown and past-paper scores show your progress',
-    t4: 'Study together<br>with friends.', s4: "See who's studying now and everyone's time",
-    st1: '🔥 Keep going', st2: '✨ Amazing', st3: '👏 Nice work', n1: 'from Haruto', n2: 'from Mio',
-    t5: 'A week,<br>in one vlog.', s5: 'Your sessions, stitched together',
-    t6: 'Share today with<br>your study circle.', s6: 'Today, this week, or your goal as a card', h1: '#studygram',
-    p1: 'Time-lapse', p2: 'Face mosaic', p3: 'Goals & D-day', p4: 'Study Buddies' },
+    t5: '1週間分が<br>1本のVlogに', s5: 'BGMも選べる',
+    t6: '勉強時間はカードにして<br>そのまま投稿', s6: '今日の分でも、今週の分でも', h1: '#勉強垢',
+    p1: 'タイムラプス', p2: '顔にモザイク', p3: '試験までの日数', p4: '勉強仲間' },
+  en: { kind: 'A study log app', can: 'Here’s what it does', tagline: 'A study log app', store: 'Free on the App Store',
+    a1: 'Film yourself studying', a2: 'Count down to your exam', a3: 'Share study time with friends<small>NEW</small>', a4: 'Turn your week into a vlog',
+    sec1: '1  Film yourself studying', sec2: '2  Count down to your exam', sec3: '3  Study with friends (new)', sec4: '4  Turn it into a vlog',
+    t1: 'Prop up your phone<br>and hit start', s1: 'Three hours turns into a few seconds of time-lapse',
+    t2: 'Your face gets<br>a mosaic', s2: 'You can move it after recording',
+    t3: 'See how many days<br>are left', s3: 'Keep your past-paper scores too',
+    t4: 'See when your friends<br>are studying', s4: 'Compare today’s time and send them a stamp',
+    st1: '🔥 Keep going', st2: '✨ Nice', st3: '👏 Good job', n1: 'from Haruto', n2: 'from Mio',
+    t5: 'A whole week<br>in one vlog', s5: 'Pick the music too',
+    t6: 'Post your study time<br>as a card', s6: 'Today’s or the whole week’s', h1: '#studygram',
+    p1: 'Time-lapse', p2: 'Face mosaic', p3: 'Exam countdown', p4: 'Study Buddies' },
 };
 window.setup = () => { applyLang(COPY); return ready().then(() => DUR); };
 // 字幕の下に画面がかからないように、画面を少し下げる（英語は見出しが大きいので多めに）
@@ -141,13 +163,15 @@ const DY = LANG === 'en' ? 60 : 30;
 
 const cap = (el, t, start, end) => set(el, { y: lerp(30, 0, seg(t, start, 0.7)) - lerp(0, 20, seg(t, end - 0.4, 0.4, ease.in)), o: window_(t, start, end, 0.6, 0.4) });
 
-window.seek = (t) => {
-  // 0 つかみ 0–1.8 → ロゴ 1.8–4
-  set($('L0'), { o: window_(t, 0, 1.8, 0.01, 0.35) });
-  set($('l0-hook'), { y: lerp(30, 0, seg(t, 0.1, 0.8)), o: seg(t, 0.1, 0.6) });
-  set($('L0b'), { o: window_(t, 1.8, 4.0, 0.3, 0.4) });
-  set($('l0-logo'), { y: lerp(40, 0, seg(t, 1.9, 0.9)), o: seg(t, 1.9, 0.6) });
-  set($('l0-sub'), { y: lerp(24, 0, seg(t, 2.4, 0.8)), o: seg(t, 2.4, 0.6) });
+window.seek = (T) => {
+  // 0 目次 0–5.5：アプリの名前 → できること4つを順に
+  set($('L0'), { o: window_(T, 0, 5.5, 0.01, 0.4) });
+  set($('l0-kind'), { y: lerp(20, 0, seg(T, 0.1, 0.6)), o: seg(T, 0.1, 0.5) });
+  set($('l0-tape'), { r: -6, o: seg(T, 0.3, 0.4) });
+  set($('l0-logo'), { y: lerp(40, 0, seg(T, 0.3, 0.8)), o: seg(T, 0.3, 0.6) });
+  set($('l0-can'), { y: lerp(20, 0, seg(T, 0.8, 0.6)), o: seg(T, 0.8, 0.5) });
+  ['a1', 'a2', 'a3', 'a4'].forEach((id, i) => set($(id), { x: lerp(-40, 0, seg(T, 1.3 + i * 0.5, 0.5)), o: seg(T, 1.3 + i * 0.5, 0.4) }));
+  const t = T - SHIFT;
 
   // 1 録画 4–8.5
   set($('L1'), { o: window_(t, 4.0, 8.5, 0.3, 0.4) });
@@ -206,7 +230,7 @@ window.seek = (t) => {
     set($(id), { r: rot, y: lerp(30, 0, seg(t, st, 0.6)) + Math.sin((t - st) * 2) * 6, s: lerp(0.7, 1, seg(t, st, 0.6, ease.outBack)), o: seg(t, st, 0.3) }));
 
   // 7 エンディング 29.5–33
-  set($('L7'), { o: window_(t, 29.5, DUR + 1, 0.4, 1) });
+  set($('L7'), { o: window_(t, 29.5, DUR + 2, 0.4, 1) });
   set($('l7-logo'), { y: lerp(30, 0, seg(t, 29.6, 0.9)), o: seg(t, 29.6, 0.6) });
   set($('l7-sub'), { y: lerp(20, 0, seg(t, 30.0, 0.8)), o: seg(t, 30.0, 0.6) });
   set($('l7-store'), { s: lerp(0.8, 1, seg(t, 30.4, 0.6, ease.outBack)), o: seg(t, 30.4, 0.3) });
