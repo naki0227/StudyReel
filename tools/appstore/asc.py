@@ -164,7 +164,12 @@ def update_localizations(version_id, cfg):
         loc = by_locale.get(locale)
         wanted = pick(section, VERSION_FIELDS)
         if not loc:
-            print(f"::warning::{locale} のストア情報がないので飛ばします（App Store Connect で言語を追加してください）")
+            # 新しい言語（韓国語・中国語など）は、ここで足す。アプリ情報（名前）は update_app_info が先に足しておく
+            print(f"{locale}: ストア情報を追加")
+            res = api("POST", "/v1/appStoreVersionLocalizations", {"data": {
+                "type": "appStoreVersionLocalizations", "attributes": {"locale": locale, **wanted},
+                "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}})
+            by_locale[locale] = res["data"]
             continue
         diff = changed(loc["attributes"], wanted)
         if diff:
@@ -187,7 +192,17 @@ def update_app_info(app_id, cfg):
     by_locale = {l["attributes"]["locale"]: l for l in locs}
     for locale, wanted in sections.items():
         loc = by_locale.get(locale)
-        if not wanted or not loc:
+        if not wanted:
+            continue
+        if not loc:
+            # 言語を足すときは、名前が要る
+            if not wanted.get("name"):
+                print(f"::warning::{locale} のアプリ情報がなく、name もないので足せません")
+                continue
+            print(f"{locale} アプリ情報: 追加")
+            api("POST", "/v1/appInfoLocalizations", {"data": {
+                "type": "appInfoLocalizations", "attributes": {"locale": locale, **wanted},
+                "relationships": {"appInfo": {"data": {"type": "appInfos", "id": info["id"]}}}}})
             continue
         diff = changed(loc["attributes"], wanted)
         if diff:
@@ -676,8 +691,9 @@ def main():
         return
 
     update_version_attributes(version, cfg)
-    by_locale = update_localizations(version["id"], cfg)
+    # 新しい言語は、アプリ情報（名前）を先に足してから、バージョンの文言を足す
     update_app_info(app_id, cfg)
+    by_locale = update_localizations(version["id"], cfg)
     build = find_build(app_id, cfg, wait_minutes=0 if DRY else 30)
     attach_build(version["id"], build)
     update_review_detail(version["id"], versions, cfg)

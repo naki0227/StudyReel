@@ -1,0 +1,7 @@
+/* Korean localization for Info.plist permission strings */
+
+/* Camera Usage Description */
+"NSCameraUsageDescription" = "StudyReel은 공부 시간을 타임랩스 동영상으로 만들고, 책의 바코드나 표지를 읽기 위해 카메라를 사용해요. 영상은 공부 친구에게 한 장면을 공유하기로 선택하지 않는 한 기기 밖으로 나가지 않아요.";
+
+/* Photo Library Add Usage Description */
+"NSPhotoLibraryAddUsageDescription" = "StudyReel은 공부가 끝나면 타임랩스 동영상을 사진 앱에 자동으로 저장해요.";

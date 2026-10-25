@@ -1,0 +1,7 @@
+/* Simplified Chinese localization for Info.plist permission strings */
+
+/* Camera Usage Description */
+"NSCameraUsageDescription" = "StudyReel 使用相机将你的学习过程拍成延时视频，并扫描教材的条形码或封面。除非你选择与学习伙伴分享某一帧画面，否则拍摄内容只保留在你的设备上。";
+
+/* Photo Library Add Usage Description */
+"NSPhotoLibraryAddUsageDescription" = "学习结束后，StudyReel 会自动将延时视频保存到“照片”。";
