@@ -13,3 +13,10 @@
 "録画しながら勉強中" = "Studying · recording";
 "勉強中" = "Studying";
 "タイマー" = "Timer";
+
+/* コントロール（勉強を始める） */
+"勉強を始める" = "Start studying";
+"StudyReel で25分のタイマーと撮影を始めます。" = "Starts a 25-minute timer and filming in StudyReel.";
+"StudyReel を開いて、タイマーと撮影を始めます。" = "Opens StudyReel and starts the timer and filming.";
+"時間" = "Duration";
+"撮影する" = "Film";

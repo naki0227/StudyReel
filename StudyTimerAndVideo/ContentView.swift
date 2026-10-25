@@ -45,6 +45,8 @@ struct ContentView: View {
     @State private var focusRound = 0
     @State private var focusStartElapsed = 0
     @State private var breakEndsAt: Date?
+    // ウィジェット・Siri から開いたとき、撮影が始まる前の3秒（知らないうちに撮られないように）
+    @State private var startCountdown: Int?
 
     var subjectManager: SubjectManager
     var totalSeconds: Int
@@ -110,6 +112,11 @@ struct ContentView: View {
 
             if let breakEndsAt {
                 breakCard(endsAt: breakEndsAt)
+                    .transition(.opacity)
+            }
+
+            if let startCountdown {
+                countdownCard(startCountdown)
                     .transition(.opacity)
             }
 
@@ -203,7 +210,11 @@ struct ContentView: View {
             }
             guard bootstrap?.autoStart == true, !didAutoStart else { return }
             didAutoStart = true
-            startRecording()
+            if isRecordingVideo && bootstrap?.source != .app {
+                startCountdown = 3
+            } else {
+                startRecording()
+            }
         }
         .onDisappear {
             music.stop()
@@ -212,6 +223,7 @@ struct ContentView: View {
             syncWithWidgetStopState()
             saveRecoveryIfNeeded()
             checkPomodoro()
+            tickStartCountdown()
         }
     }
 
@@ -408,6 +420,54 @@ struct ContentView: View {
             CoachStep(id: "rec.orientation", title: L10n.string("縦か横か"), message: L10n.string("縦向きはリール向け、横向きは机全体が入ります。")),
             CoachStep(id: "rec.timer", title: L10n.string("残り時間"), message: L10n.string("録画中は🌙ボタンで画面を暗くできます。録画は続いたままです。"))
         ]
+    }
+
+    private func tickStartCountdown() {
+        guard let startCountdown else { return }
+        if startCountdown <= 1 {
+            self.startCountdown = nil
+            startRecording()
+        } else {
+            self.startCountdown = startCountdown - 1
+        }
+    }
+
+    private func countdownCard(_ count: Int) -> some View {
+        ZStack {
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+            VStack(spacing: 14) {
+                Text("\(count)")
+                    .font(ReelTheme.serif(72))
+                    .foregroundColor(.white)
+                    .monospacedDigit()
+                Text(L10n.string("撮影が始まります"))
+                    .font(ReelTheme.sans(15, weight: .medium))
+                    .foregroundColor(.white)
+                Button {
+                    startCountdown = nil
+                    recordingMode = .off
+                    recorder.stopSession()
+                    startRecording()
+                } label: {
+                    Text(L10n.string("撮らずに時間だけ記録"))
+                        .font(ReelTheme.sans(14, weight: .medium))
+                        .foregroundColor(ReelTheme.ink)
+                        .padding(.horizontal, 20)
+                        .frame(minHeight: 42)
+                        .background(Capsule().fill(Color.white))
+                }
+                Button {
+                    startCountdown = nil
+                    startRecording()
+                } label: {
+                    Text(L10n.string("すぐ始める"))
+                        .font(ReelTheme.sans(13))
+                        .foregroundColor(.white.opacity(0.85))
+                        .frame(minHeight: 36)
+                }
+            }
+        }
     }
 
     private var pomodoro: PomodoroPlan {
@@ -676,6 +736,8 @@ struct ContentView: View {
         parts.append(recordingLabel)
         if bootstrap?.source == .widget {
             parts.append(L10n.string("Widgetから開始"))
+        } else if bootstrap?.source == .shortcut {
+            parts.append(L10n.string("ショートカットから開始"))
         }
         return parts.joined(separator: " · ")
     }

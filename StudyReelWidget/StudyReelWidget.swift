@@ -56,6 +56,21 @@ struct PomodoroData {
         saveDraft(draft)
     }
 
+    // Siri・コントロールから始めるとき。アプリが開いたら StartView が読む
+    static func saveShortcutDraft(minutes: Int?, record: Bool) {
+        let draft = WidgetSessionDraft(
+            id: UUID(),
+            createdAt: Date(),
+            startedAt: Date(),
+            plannedDurationSeconds: (minutes ?? 0) * 60,
+            mode: minutes == nil ? "stopwatch" : "timer",
+            source: "shortcut",
+            shouldRecordTimelapse: record,
+            requiresClassificationAfterFinish: true
+        )
+        saveDraft(draft)
+    }
+
     static func stopTimer() {
         let userDefaults = UserDefaults(suiteName: appGroupKey)
         userDefaults?.removeObject(forKey: timerEndKey)

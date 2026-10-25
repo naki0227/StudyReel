@@ -774,3 +774,17 @@
 "机に戻って、StudyReel を開くと撮影が続きます。" = "Head back to your desk and open StudyReel to keep filming.";
 "休憩の時間です" = "Time for a break";
 "集中おつかれさまでした。少しスマホから離れて休みましょう。" = "Nice focus. Take a short break away from your phone.";
+
+/* Siri・ショートカット・コントロールから始める */
+"25分" = "25 min";
+"50分" = "50 min";
+"90分" = "90 min";
+"撮影する" = "Film";
+"勉強を始める" = "Start studying";
+"StudyReel を開いて、タイマーと撮影を始めます。" = "Opens StudyReel and starts the timer and filming.";
+
+/* 外から始めたときのカウントダウン */
+"撮影が始まります" = "Filming is about to start";
+"撮らずに時間だけ記録" = "Just track time, don’t film";
+"すぐ始める" = "Start now";
+"ショートカットから開始" = "Started from Shortcuts";
