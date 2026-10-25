@@ -23,6 +23,21 @@ enum RecordingMode: String, CaseIterable, Identifiable {
     }
 }
 
+// 撮影を止めている・止まったわけ。タイマーは止めない
+enum RecorderNotice: Equatable {
+    case hot
+    case lowStorage
+    case writeFailed
+
+    var message: String {
+        switch self {
+        case .hot: return L10n.string("熱いので、冷めるまで撮影を休んでいます")
+        case .lowStorage: return L10n.string("空き容量が少ないので、撮影を止めています")
+        case .writeFailed: return L10n.string("書き込みに失敗しました。ここまでの分は残ります")
+        }
+    }
+}
+
 //MARK: - 録画クラス
 // カメラのフレームをそのまま動画ファイルに書き込み、同時に顔の位置を記録する。
 // 文字・透かし・モザイクは、確認画面のあとに VideoExporter で合成する。
@@ -31,6 +46,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     @Published private(set) var canCaptureVideo = false
     // 電話や別アプリの画面分割などでカメラが止められている間 true
     @Published private(set) var isInterrupted = false
+    @Published private(set) var notice: RecorderNotice?
 
     private let session = AVCaptureSession()
     private let output = AVCaptureVideoDataOutput()
@@ -40,6 +56,10 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
 
     private static let timelapseFrameRate: Int32 = 10
     private static let fullFrameDuration = 1.0 / 30.0
+    // 空き容量がこれより少なくなったら撮影を止め、倍まで戻ったら再開する
+    private static let minimumFreeBytes: Int64 = 300_000_000
+
+    private var captureDevice: AVCaptureDevice?
 
     // ここから下は videoQueue でのみ触る
     private var mode: RecordingMode = .off
@@ -65,12 +85,69 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     private var lastAppendedTime: CMTime?
     private var frameIndex: Int64 = 0
     private var lastRecoverySave = Date.distantPast
+    // 熱い・空きがない間は、フレームを書かずに時間だけ進める
+    private var isHot = false
+    private var isStorageLow = false
+    private var lastStorageCheck = Date.distantPast
+    private var writeFailed = false
 
     override init() {
         super.init()
         setupSession()
         NotificationCenter.default.addObserver(self, selector: #selector(sessionWasInterrupted), name: AVCaptureSession.wasInterruptedNotification, object: session)
         NotificationCenter.default.addObserver(self, selector: #selector(sessionInterruptionEnded), name: AVCaptureSession.interruptionEndedNotification, object: session)
+        NotificationCenter.default.addObserver(self, selector: #selector(thermalStateChanged), name: ProcessInfo.thermalStateDidChangeNotification, object: nil)
+    }
+
+    // 熱くなってきたらカメラのコマ数を落とし、もっと熱くなったら冷めるまで撮影を休む
+    @objc private func thermalStateChanged() {
+        videoQueue.async {
+            self.isHot = ProcessInfo.processInfo.thermalState == .critical
+            self.applyFrameRate()
+            self.publishNotice()
+        }
+    }
+
+    // videoQueue で呼ぶ
+    private func publishNotice() {
+        let notice: RecorderNotice? = writeFailed ? .writeFailed : isHot ? .hot : isStorageLow ? .lowStorage : nil
+        DispatchQueue.main.async {
+            if self.notice != notice { self.notice = notice }
+        }
+    }
+
+    // タイムラプスは数秒に1枚しか使わないので、カメラを毎秒30コマで回さない（電池と熱を抑える）。videoQueue で呼ぶ
+    private func applyFrameRate() {
+        guard let device = captureDevice else { return }
+        let serious = ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
+        let wanted: Double
+        if isCapturing && mode == .timelapse {
+            wanted = serious ? 5 : 15
+        } else {
+            wanted = serious ? 24 : 30
+        }
+        guard device.activeFormat.videoSupportedFrameRateRanges.contains(where: { $0.minFrameRate <= wanted && wanted <= $0.maxFrameRate }) else { return }
+        let duration = CMTime(value: 1, timescale: CMTimeScale(wanted))
+        guard device.activeVideoMinFrameDuration != duration || device.activeVideoMaxFrameDuration != duration else { return }
+        do {
+            try device.lockForConfiguration()
+            device.activeVideoMinFrameDuration = duration
+            device.activeVideoMaxFrameDuration = duration
+            device.unlockForConfiguration()
+        } catch {
+            print("❌ frame rate error: \(error)")
+        }
+    }
+
+    // 書き込み先の空き容量（取れなければ十分あるとみなす）
+    private static func freeBytes() -> Int64 {
+        let values = try? FileManager.default.temporaryDirectory.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
+        return values?.volumeAvailableCapacityForImportantUsage ?? .max
+    }
+
+    // 撮る前に空きが足りるか。足りなければ画面で知らせる
+    static var hasEnoughStorage: Bool {
+        freeBytes() >= minimumFreeBytes
     }
 
     @objc private func sessionWasInterrupted() {
@@ -113,6 +190,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
             return
         }
         session.addInput(input)
+        captureDevice = device
 
         if session.canAddOutput(output) {
             output.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
@@ -137,6 +215,14 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
             DispatchQueue.global(qos: .userInitiated).async {
                 self.session.startRunning()
             }
+        }
+    }
+
+    // 録画なしに切り替えたとき、カメラを止める
+    func stopSession() {
+        guard session.isRunning else { return }
+        DispatchQueue.global(qos: .userInitiated).async {
+            self.session.stopRunning()
         }
     }
 
@@ -180,6 +266,12 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
             self.track = FaceTrack(isRealTime: mode == .full)
             self.faceTracker.reset()
             self.isCapturing = mode != .off
+            self.writeFailed = false
+            self.isHot = ProcessInfo.processInfo.thermalState == .critical
+            self.isStorageLow = Self.freeBytes() < Self.minimumFreeBytes
+            self.lastStorageCheck = Date()
+            self.applyFrameRate()
+            self.publishNotice()
         }
     }
 
@@ -205,29 +297,57 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     func finish(completion: @escaping (RecordingResult?) -> Void) {
         videoQueue.async {
             self.isCapturing = false
-            guard let writer = self.writer, let input = self.writerInput, let url = self.outputURL, writer.status == .writing else {
+            self.applyFrameRate()
+            self.writeFailed = false
+            self.publishNotice()
+            guard let writer = self.writer, let input = self.writerInput, let url = self.outputURL else {
                 self.discardWriter()
                 DispatchQueue.main.async { completion(nil) }
                 return
             }
 
             let result = RecordingResult(url: url, canvasSize: self.canvasSize, sessionStart: self.sessionStart, track: self.track)
-            SessionRecovery.clearRecording()
 
             self.writer = nil
             self.writerInput = nil
             self.adaptor = nil
             self.outputURL = nil
 
+            // 途中で書き込みに失敗していても、10秒ごとの区切りまでは再生できるので、そこまでを残す
+            guard writer.status == .writing else {
+                Self.salvage(result, completion: completion)
+                return
+            }
+
             input.markAsFinished()
             writer.finishWriting {
-                let succeeded = writer.status == .completed
-                if !succeeded {
-                    try? FileManager.default.removeItem(at: url)
+                if writer.status == .completed {
+                    SessionRecovery.clearRecording()
+                    DispatchQueue.main.async { completion(result) }
+                } else {
+                    Self.salvage(result, completion: completion)
                 }
-                DispatchQueue.main.async {
-                    completion(succeeded ? result : nil)
-                }
+            }
+        }
+    }
+
+    // 書き終えられなかった動画のうち、再生できる分があれば確認画面に渡す。なければ消す
+    private static func salvage(_ result: RecordingResult, completion: @escaping (RecordingResult?) -> Void) {
+        Task {
+            let asset = AVURLAsset(url: result.url)
+            let duration = (try? await asset.load(.duration))?.seconds ?? 0
+            let playable = (try? await asset.load(.isPlayable)) ?? false
+            let kept = playable && duration > 0.3
+            if kept {
+                // 撮れた分より後の顔の位置は使わない
+                var salvaged = result
+                salvaged.track.samples = result.track.samples.filter { $0.time <= duration }
+                SessionRecovery.clearRecording()
+                await MainActor.run { completion(salvaged) }
+            } else {
+                try? FileManager.default.removeItem(at: result.url)
+                SessionRecovery.clearRecording()
+                await MainActor.run { completion(nil) }
             }
         }
     }
@@ -235,6 +355,9 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     func cancel() {
         videoQueue.async {
             self.isCapturing = false
+            self.applyFrameRate()
+            self.writeFailed = false
+            self.publishNotice()
             self.discardWriter()
             SessionRecovery.clearRecording()
         }
@@ -260,6 +383,27 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
         let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
 
         guard isCapturing else { return }
+
+        // 1分おきに空き容量を見る。少なければ撮影を止め、空いたら再開する
+        if Date().timeIntervalSince(lastStorageCheck) >= 60 {
+            lastStorageCheck = Date()
+            let free = Self.freeBytes()
+            let low = isStorageLow ? free < Self.minimumFreeBytes * 2 : free < Self.minimumFreeBytes
+            if low != isStorageLow {
+                isStorageLow = low
+                publishNotice()
+            }
+        }
+
+        // 熱い・空きがない・書けなくなった間は書かない。動画の文字の勉強時間は進めておく
+        if isHot || isStorageLow || writeFailed {
+            if let lastFramePTS {
+                let gap = max(0, CMTimeSubtract(pts, lastFramePTS).seconds)
+                if mode == .timelapse { activeSeconds += gap } else { elapsedOffset += gap }
+            }
+            lastFramePTS = pts
+            return
+        }
 
         // 録画中は画面に出さず、顔の位置だけ記録しておく（確認画面と書き出しで使う）
         faceTracker.process(pixelBuffer, time: pts.seconds)
@@ -300,6 +444,13 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
     private func append(_ pixelBuffer: CVPixelBuffer, at time: CMTime) -> Bool {
         if writer == nil {
             setupWriter()
+        }
+
+        if let writer, writer.status == .failed, !writeFailed {
+            print("❌ writer failed: \(String(describing: writer.error))")
+            writeFailed = true
+            publishNotice()
+            return false
         }
 
         guard let writer, writer.status == .writing,

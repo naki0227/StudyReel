@@ -39,6 +39,7 @@ struct ContentView: View {
     @State private var tickCount = 0
     @AppStorage(CoachTour.recordingKey) private var hasSeenRecordingTour = false
     @State private var showRecordingTour = false
+    @State private var lowStorageBeforeStart = false
 
     var subjectManager: SubjectManager
     var totalSeconds: Int
@@ -65,7 +66,10 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             GeometryReader { geometry in
-                if DemoMode.isActive {
+                if recordingMode == .off {
+                    // 録画なしはカメラを起こさない（緑のランプも電池も使わない）
+                    NoCameraBackground()
+                } else if DemoMode.isActive {
                     DemoCameraView()
                 } else {
                     CameraPreview(recorder: recorder, isLandscape: geometry.size.width > geometry.size.height)
@@ -125,6 +129,8 @@ struct ContentView: View {
                 showPaywall = true
             } else if newMode != .off {
                 UserDefaults.standard.set(newMode.rawValue, forKey: RecordingMode.storageKey)
+            } else {
+                recorder.stopSession()
             }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -173,6 +179,7 @@ struct ContentView: View {
             OrientationLock.lock(captureOrientation.mask)
         }
         .onAppear {
+            lowStorageBeforeStart = !DemoMode.isActive && !TimeLapseRecorder.hasEnoughStorage
             OrientationLock.lock(captureOrientation.mask)
             // Pro が切れていたら、覚えていた撮り方をタイムラプスに戻す
             if recordingMode.isPro && !storeKit.isProUnlocked {
@@ -317,6 +324,14 @@ struct ContentView: View {
                 .font(ReelTheme.sans(11))
                 .opacity(0.85)
                 .lineLimit(1)
+            if let notice = recordingNotice {
+                Label(notice, systemImage: "exclamationmark.triangle.fill")
+                    .font(ReelTheme.sans(11, weight: .medium))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(Color.black.opacity(0.35)))
+                    .padding(.top, 4)
+            }
         }
         .foregroundColor(.white)
         .shadow(color: .black.opacity(0.4), radius: 6, x: 0, y: 1)
@@ -527,6 +542,13 @@ struct ContentView: View {
                 }
             }
         }
+    }
+
+    // 撮影を止めているわけ。開始前は空き容量だけ見る
+    private var recordingNotice: String? {
+        guard recordingMode != .off else { return nil }
+        if isRecording { return recorder.notice?.message }
+        return lowStorageBeforeStart ? L10n.string("空き容量が少ないので、途中で撮影が止まるかもしれません") : nil
     }
 
     private var storageNote: some View {
@@ -830,5 +852,21 @@ struct ContentView: View {
         if timestamp <= 0 {
             stopAndSave()
         }
+    }
+}
+
+// 録画なしのときの背景。カメラの代わりに、落ち着いた色だけ出す
+private struct NoCameraBackground: View {
+    var body: some View {
+        LinearGradient(
+            colors: [Color(red: 0.16, green: 0.20, blue: 0.25), Color(red: 0.27, green: 0.34, blue: 0.42)],
+            startPoint: .top, endPoint: .bottom
+        )
+        .overlay(
+            Image(systemName: "video.slash")
+                .font(.system(size: 34, weight: .light))
+                .foregroundColor(.white.opacity(0.35))
+        )
+        .accessibilityHidden(true)
     }
 }
