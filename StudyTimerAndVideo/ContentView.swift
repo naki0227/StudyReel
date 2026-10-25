@@ -16,6 +16,7 @@ struct ContentView: View {
     @StateObject private var stopwatchModel = StopwatchViewModel()
     @StateObject private var music = StudyMusicPlayer()
     @AppStorage(StudySound.storageKey) private var studySoundRaw = StudySound.none.rawValue
+    @AppStorage(StudySoundVolume.storageKey) private var soundVolumeRaw = StudySoundVolume.medium.rawValue
 
     @State private var isRecording = false
     @State private var showSaveAlert = false
@@ -567,6 +568,20 @@ struct ContentView: View {
                     )
                     .tag(sound)
                 }
+            }
+            if savedSound != .none {
+                Picker(L10n.string("音の大きさ"), selection: Binding(
+                    get: { StudySoundVolume(rawValue: soundVolumeRaw) ?? .medium },
+                    set: {
+                        soundVolumeRaw = $0.rawValue
+                        music.setVolume($0)
+                    }
+                )) {
+                    ForEach(StudySoundVolume.allCases) { volume in
+                        Text(volume.title).tag(volume)
+                    }
+                }
+                .pickerStyle(.menu)
             }
         } label: {
             HStack(spacing: 6) {

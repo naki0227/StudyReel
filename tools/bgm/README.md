@@ -26,4 +26,4 @@ mv *.m4a ../../StudyTimerAndVideo/Resources/BGM/
 ```
 
 `ambient.py` makes the two study sounds played on the recording screen
-(Rain.m4a, BrownNoise.m4a). They are shaped noise only and loop every 60 s.
+(Rain.m4a, BrownNoise.m4a, WhiteNoise.m4a). They are shaped noise only and loop every 60 s.

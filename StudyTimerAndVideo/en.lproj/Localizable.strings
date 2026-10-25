@@ -788,3 +788,10 @@
 "撮らずに時間だけ記録" = "Just track time, don’t film";
 "すぐ始める" = "Start now";
 "ショートカットから開始" = "Started from Shortcuts";
+
+/* 勉強中の音（ホワイトノイズ・音の大きさ） */
+"ホワイトノイズ" = "White Noise";
+"音の大きさ" = "Volume";
+"小さめ" = "Quiet";
+"ふつう" = "Normal";
+"大きめ" = "Loud";

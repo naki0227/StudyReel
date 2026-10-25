@@ -8,6 +8,7 @@ enum StudySound: String, CaseIterable, Identifiable {
     case none
     case rain
     case brownNoise
+    case whiteNoise
     case morning
     case lofiStudy
     case coffeeTime
@@ -20,6 +21,7 @@ enum StudySound: String, CaseIterable, Identifiable {
         case .none: return L10n.string("なし")
         case .rain: return L10n.string("雨の音")
         case .brownNoise: return L10n.string("集中ノイズ")
+        case .whiteNoise: return L10n.string("ホワイトノイズ")
         case .morning, .lofiStudy, .coffeeTime, .piano: return track?.title ?? ""
         }
     }
@@ -29,6 +31,7 @@ enum StudySound: String, CaseIterable, Identifiable {
         case .none: return "speaker.slash"
         case .rain: return "cloud.rain"
         case .brownNoise: return "waveform"
+        case .whiteNoise: return "wind"
         default: return "music.note"
         }
     }
@@ -51,8 +54,40 @@ enum StudySound: String, CaseIterable, Identifiable {
         case .none: return nil
         case .rain: return Bundle.main.url(forResource: "Rain", withExtension: "m4a")
         case .brownNoise: return Bundle.main.url(forResource: "BrownNoise", withExtension: "m4a")
+        case .whiteNoise: return Bundle.main.url(forResource: "WhiteNoise", withExtension: "m4a")
         default: return track?.url
         }
+    }
+}
+
+// 音の大きさ。読む・覚える勉強では大きい音ほど邪魔になるので、既定は小さめ（docs/research/science.md）
+enum StudySoundVolume: String, CaseIterable, Identifiable {
+    case low
+    case medium
+    case high
+
+    static let storageKey = "study_sound_volume"
+
+    var id: String { rawValue }
+
+    var value: Float {
+        switch self {
+        case .low: return 0.25
+        case .medium: return 0.45
+        case .high: return 0.7
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .low: return L10n.string("小さめ")
+        case .medium: return L10n.string("ふつう")
+        case .high: return L10n.string("大きめ")
+        }
+    }
+
+    static var saved: StudySoundVolume {
+        StudySoundVolume(rawValue: UserDefaults.standard.string(forKey: storageKey) ?? "") ?? .medium
     }
 }
 
@@ -63,6 +98,30 @@ final class StudyMusicPlayer: ObservableObject {
 
     private var player: AVAudioPlayer?
     private var isHeld = false
+    private var interruptionObserver: NSObjectProtocol?
+
+    init() {
+        // 電話や Siri で止められたあと、止めていなければ鳴らし直す
+        interruptionObserver = NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] note in
+            guard let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+                  AVAudioSession.InterruptionType(rawValue: raw) == .ended else { return }
+            Task { @MainActor in
+                guard let self, !self.isHeld, let player = self.player else { return }
+                try? AVAudioSession.sharedInstance().setActive(true)
+                player.play()
+            }
+        }
+    }
+
+    deinit {
+        if let interruptionObserver {
+            NotificationCenter.default.removeObserver(interruptionObserver)
+        }
+    }
+
+    func setVolume(_ volume: StudySoundVolume) {
+        player?.volume = volume.value
+    }
 
     func play(_ newSound: StudySound) {
         sound = newSound
@@ -74,7 +133,7 @@ final class StudyMusicPlayer: ObservableObject {
         try? AVAudioSession.sharedInstance().setActive(true)
         player = try? AVAudioPlayer(contentsOf: url)
         player?.numberOfLoops = -1
-        player?.volume = 0.6
+        player?.volume = StudySoundVolume.saved.value
         player?.prepareToPlay()
         if !isHeld {
             player?.play()
