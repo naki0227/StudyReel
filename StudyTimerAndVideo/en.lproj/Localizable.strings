@@ -749,3 +749,13 @@
 "空き容量が少ないので、撮影を止めています" = "Low on storage — filming paused";
 "書き込みに失敗しました。ここまでの分は残ります" = "Couldn’t save more video. What you have so far is kept";
 "空き容量が少ないので、途中で撮影が止まるかもしれません" = "Low on storage — filming may stop partway";
+
+/* 1年の草・おかえり */
+"%d年は%d日勉強しました。合計%@" = "Studied %2$d days in %1$d. %3$@ in total";
+"%d日 勉強した" = "%d days studied";
+"1年の記録" = "My year";
+"少ない" = "Less";
+"多い" = "More";
+"いちばん長く続いたのは%d日" = "Longest run: %d days";
+"今年 勉強した日" = "Days studied this year";
+"おかえりなさい。今日の1回から、また始めましょう" = "Welcome back. One session today and you’re going again";

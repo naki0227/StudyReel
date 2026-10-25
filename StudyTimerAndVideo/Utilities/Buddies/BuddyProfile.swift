@@ -234,12 +234,7 @@ struct BuddyTotals: Equatable {
                 }
             }
         }
-        // 今日まだ勉強していなくても、昨日まで続いていれば連続とみなす
-        var day = days.contains(today) ? today : (calendar.date(byAdding: .day, value: -1, to: today) ?? today)
-        while days.contains(day) {
-            totals.streakDays += 1
-            day = calendar.date(byAdding: .day, value: -1, to: day) ?? day
-        }
+        totals.streakDays = StudyStreak.count(days: days, now: now, calendar: calendar)
         return totals
     }
 

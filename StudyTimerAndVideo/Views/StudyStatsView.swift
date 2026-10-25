@@ -46,6 +46,10 @@ struct StudyStatsView: View {
 
                     barChart
 
+                    if period == .year {
+                        StudyHeatmapSection(year: StudyYear(sessions: sessions, year: calendar.component(.year, from: anchor)))
+                    }
+
                     VStack(alignment: .leading, spacing: 10) {
                         Text(L10n.string("よく勉強する時間帯"))
                             .font(ReelTheme.sans(13))

@@ -349,6 +349,13 @@ struct StartView: View {
                 }
                 .frame(height: 3)
             }
+                // しばらく休んでいた人を責めずに迎える（戻ったことに意味がある。docs/research/science.md）
+                if todayStudyTime == 0, StudyStreak.daysAway(days: Set(sessions.map { Calendar.current.startOfDay(for: $0.date) })) != nil {
+                    Text(L10n.string("おかえりなさい。今日の1回から、また始めましょう"))
+                        .font(ReelTheme.sans(12))
+                        .foregroundColor(ReelTheme.accentDeep)
+                }
+            }
         }
         .buttonStyle(.plain)
     }
