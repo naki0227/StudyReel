@@ -40,6 +40,11 @@ struct ContentView: View {
     @AppStorage(CoachTour.recordingKey) private var hasSeenRecordingTour = false
     @State private var showRecordingTour = false
     @State private var lowStorageBeforeStart = false
+    // ポモドーロ。終わった集中の回数・いまの集中が始まったときの勉強時間・休憩が終わる時刻
+    @AppStorage(PomodoroPlan.storageKey) private var pomodoroRaw = PomodoroPlan.off.rawValue
+    @State private var focusRound = 0
+    @State private var focusStartElapsed = 0
+    @State private var breakEndsAt: Date?
 
     var subjectManager: SubjectManager
     var totalSeconds: Int
@@ -103,6 +108,11 @@ struct ContentView: View {
                     .transition(.opacity)
             }
 
+            if let breakEndsAt {
+                breakCard(endsAt: breakEndsAt)
+                    .transition(.opacity)
+            }
+
             if isDimmed {
                 dimmedView
                     .transition(.opacity)
@@ -110,6 +120,7 @@ struct ContentView: View {
         }
         .animation(.easeOut(duration: 0.25), value: isDimmed)
         .animation(.easeOut(duration: 0.25), value: showResumeCard)
+        .animation(.easeOut(duration: 0.25), value: breakEndsAt)
         .coachTour(recordingTourSteps, isPresented: $showRecordingTour) {
             hasSeenRecordingTour = true
         }
@@ -200,6 +211,7 @@ struct ContentView: View {
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
             syncWithWidgetStopState()
             saveRecoveryIfNeeded()
+            checkPomodoro()
         }
     }
 
@@ -224,7 +236,7 @@ struct ContentView: View {
                         dimButton
                     }
                     shutterButton
-                    if isRecording {
+                    if isRecording && !isOnBreak {
                         pauseButton
                     }
                 }
@@ -256,7 +268,11 @@ struct ContentView: View {
                     shutterButton
                     if isRecording {
                         HStack {
-                            pauseButton
+                            if isOnBreak {
+                                Color.clear.frame(width: 44, height: 44)
+                            } else {
+                                pauseButton
+                            }
                             Spacer()
                             dimButton
                         }
@@ -281,6 +297,10 @@ struct ContentView: View {
             .accessibilityLabel(L10n.string("中断"))
 
             musicButton
+
+            if !isRecording {
+                pomodoroButton
+            }
 
             if !isRecording {
                 Button {
@@ -388,6 +408,84 @@ struct ContentView: View {
             CoachStep(id: "rec.orientation", title: L10n.string("縦か横か"), message: L10n.string("縦向きはリール向け、横向きは机全体が入ります。")),
             CoachStep(id: "rec.timer", title: L10n.string("残り時間"), message: L10n.string("録画中は🌙ボタンで画面を暗くできます。録画は続いたままです。"))
         ]
+    }
+
+    private var pomodoro: PomodoroPlan {
+        PomodoroPlan(rawValue: pomodoroRaw) ?? .off
+    }
+
+    private var isOnBreak: Bool {
+        breakEndsAt != nil
+    }
+
+    // 集中と休憩のくり返しを選ぶ。休憩の間はタイマーも撮影も止まる
+    private var pomodoroButton: some View {
+        Menu {
+            Picker(L10n.string("休憩"), selection: $pomodoroRaw) {
+                ForEach(PomodoroPlan.allCases) { plan in
+                    Text(plan.title).tag(plan.rawValue)
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "cup.and.saucer")
+                if pomodoro != .off {
+                    Text(pomodoro.shortTitle)
+                        .monospacedDigit()
+                }
+            }
+            .font(ReelTheme.sans(13, weight: .medium))
+            .foregroundColor(.white)
+            .padding(.horizontal, pomodoro == .off ? 0 : 12)
+            .frame(minWidth: 38, minHeight: 38)
+            .background(Capsule().fill(Color.white.opacity(0.22)))
+        }
+        .accessibilityLabel(L10n.string("休憩"))
+    }
+
+    // 休憩中。スマホから離れるよう勧める（休憩中にスマホを触ると、そのあとの勉強がはかどらない。docs/research/science.md）
+    private func breakCard(endsAt: Date) -> some View {
+        ZStack {
+            Color.black.opacity(0.45)
+                .ignoresSafeArea()
+            VStack(spacing: 12) {
+                Text(L10n.format("%d回目の集中、おつかれさまでした", focusRound))
+                    .font(ReelTheme.sans(13))
+                    .foregroundColor(ReelTheme.secondary)
+                Text(L10n.string("休憩"))
+                    .font(ReelTheme.serif(22))
+                    .foregroundColor(ReelTheme.ink)
+                Text(timerInterval: Date()...max(endsAt, Date()), countsDown: true)
+                    .font(ReelTheme.serif(44))
+                    .foregroundColor(ReelTheme.ink)
+                    .monospacedDigit()
+                    .multilineTextAlignment(.center)
+                Text(L10n.string("スマホから少し離れて、遠くを見たり水を飲んだりしましょう。休憩の間は撮影もタイマーも止まっています。"))
+                    .font(ReelTheme.sans(13))
+                    .foregroundColor(ReelTheme.secondary)
+                    .multilineTextAlignment(.center)
+                Button {
+                    endBreak()
+                } label: {
+                    Text(L10n.string("休憩をおわる"))
+                        .font(ReelTheme.sans(15, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity, minHeight: 46)
+                        .background(Capsule().fill(ReelTheme.accentDeep))
+                }
+                Button {
+                    stopAndSave()
+                } label: {
+                    Text(L10n.string("終了して保存"))
+                        .font(ReelTheme.sans(14, weight: .medium))
+                        .foregroundColor(ReelTheme.accentDeep)
+                        .frame(maxWidth: .infinity, minHeight: 40)
+                }
+            }
+            .padding(22)
+            .frame(maxWidth: 320)
+            .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(ReelTheme.background))
+        }
     }
 
     private var savedSound: StudySound {
@@ -559,12 +657,14 @@ struct ContentView: View {
     }
 
     private var statusColor: Color {
+        if isOnBreak { return .cyan }
         if isPaused { return .orange }
         if isRecording { return isRecordingVideo ? .red : .green }
         return .white.opacity(0.7)
     }
 
     private var statusText: String {
+        if isOnBreak { return L10n.string("休憩中") }
         if isPaused { return L10n.string("一時停止中") }
         if isRecording { return L10n.string(isRecordingVideo ? "録画中" : "計測中") }
         return L10n.string("開始前")
@@ -572,6 +672,7 @@ struct ContentView: View {
 
     private var badgeCaption: String {
         var parts = [mode == .timer ? L10n.string("タイマー") : L10n.string("ストップウォッチ")]
+        if pomodoro != .off { parts.append(pomodoro.shortTitle) }
         parts.append(recordingLabel)
         if bootstrap?.source == .widget {
             parts.append(L10n.string("Widgetから開始"))
@@ -641,6 +742,10 @@ struct ContentView: View {
         isRecording = true
         isPaused = false
         stoppedWhileAway = false
+        focusRound = 0
+        focusStartElapsed = elapsedBeforeLaunch
+        breakEndsAt = nil
+        scheduleFocusEnd()
         if music.sound != savedSound {
             music.play(savedSound)
         }
@@ -658,33 +763,99 @@ struct ContentView: View {
 
     private func togglePause() {
         if isPaused {
-            if mode == .timer {
-                timerModel.resume {
-                    stopAndSave()
-                }
-            } else {
-                stopwatchModel.resume()
-            }
-
-            if isRecordingVideo && !stoppedWhileAway {
-                recorder.resume()
-            }
+            resumeClock()
             isPaused = false
             music.hold(false)
+            scheduleFocusEnd()
         } else {
-            if mode == .timer {
-                timerModel.pause()
-            } else {
-                stopwatchModel.pause()
-            }
-
-            if isRecordingVideo {
-                recorder.pause()
-            }
+            pauseClock()
             isPaused = true
             music.hold(true)
+            StudyNotificationManager.shared.clearPomodoro()
         }
         updateLiveActivity()
+    }
+
+    private func pauseClock() {
+        if mode == .timer {
+            timerModel.pause()
+        } else {
+            stopwatchModel.pause()
+        }
+        if isRecordingVideo {
+            recorder.pause()
+        }
+    }
+
+    private func resumeClock() {
+        if mode == .timer {
+            timerModel.resume {
+                stopAndSave()
+            }
+        } else {
+            stopwatchModel.resume()
+        }
+        if isRecordingVideo && !stoppedWhileAway {
+            recorder.resume()
+        }
+    }
+
+    // MARK: - ポモドーロ
+
+    // 1秒ごと。集中の時間が来たら休憩に、休憩の時間が来たら集中に戻す（アプリを離れていた分は戻ったときに追いつく）
+    private func checkPomodoro() {
+        guard isRecording, pomodoro != .off else { return }
+        if let breakEndsAt {
+            if Date() >= breakEndsAt { endBreak() }
+        } else if !isPaused, currentElapsed - focusStartElapsed >= pomodoro.focusSeconds {
+            startBreak()
+        }
+    }
+
+    private func startBreak() {
+        focusRound += 1
+        let seconds = pomodoro.breakSeconds(after: focusRound)
+        // 離れていた間に休憩になったときは、再開のカードは出さない（休憩のあとに撮影を戻す）
+        showResumeCard = false
+        stoppedWhileAway = false
+        pauseClock()
+        if !DemoMode.isActive && isRecordingVideo { recorder.stopSession() }
+        setDimmed(false)
+        breakEndsAt = Date().addingTimeInterval(TimeInterval(seconds))
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        Task {
+            await StudyNotificationManager.shared.schedulePomodoro(
+                title: L10n.string("休憩おわり"),
+                body: L10n.string("机に戻って、StudyReel を開くと撮影が続きます。"),
+                after: seconds
+            )
+        }
+        updateLiveActivity()
+    }
+
+    private func endBreak() {
+        guard isOnBreak else { return }
+        breakEndsAt = nil
+        focusStartElapsed = currentElapsed
+        if isRecordingVideo { recorder.wakeSession() }
+        resumeClock()
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        if mode == .timer { syncWidgetTimerStateIfNeeded(remainingSeconds: timerModel.remaining) }
+        scheduleFocusEnd()
+        updateLiveActivity()
+    }
+
+    // 集中が終わる時刻に知らせる（画面を見ていなくても休憩に気づけるように）
+    private func scheduleFocusEnd() {
+        guard isRecording, pomodoro != .off, !isOnBreak else { return }
+        let left = pomodoro.focusSeconds - (currentElapsed - focusStartElapsed)
+        Task {
+            await StudyNotificationManager.shared.schedulePomodoro(
+                title: L10n.string("休憩の時間です"),
+                body: L10n.string("集中おつかれさまでした。少しスマホから離れて休みましょう。"),
+                after: left
+            )
+        }
     }
 
     private func stopAndSave() {
@@ -716,6 +887,8 @@ struct ContentView: View {
         stopwatchModel.stop()
         isRecording = false
         isPaused = false
+        breakEndsAt = nil
+        StudyNotificationManager.shared.clearPomodoro()
         sessionStartedAt = nil
         showResumeCard = false
         stoppedWhileAway = false
@@ -735,6 +908,8 @@ struct ContentView: View {
         music.stop()
         isRecording = false
         isPaused = false
+        breakEndsAt = nil
+        StudyNotificationManager.shared.clearPomodoro()
         sessionStartedAt = nil
         setDimmed(false)
         clearWidgetTimerState()
@@ -774,7 +949,7 @@ struct ContentView: View {
     }
 
     private func stopRecordingWhileAway() {
-        guard isRecording, isRecordingVideo, !isPaused, !stoppedWhileAway else { return }
+        guard isRecording, isRecordingVideo, !isPaused, !isOnBreak, !stoppedWhileAway else { return }
         recorder.pause()
         stoppedWhileAway = true
     }
@@ -782,7 +957,7 @@ struct ContentView: View {
     private func resumeAfterAway() {
         showResumeCard = false
         stoppedWhileAway = false
-        guard isRecording, isRecordingVideo, !isPaused else { return }
+        guard isRecording, isRecordingVideo, !isPaused, !isOnBreak else { return }
         recorder.resume(elapsedNow: currentElapsed)
     }
 
@@ -804,7 +979,7 @@ struct ContentView: View {
         StudyLiveActivityController.shared.update(
             isTimer: mode == .timer,
             seconds: mode == .timer ? timerModel.remaining : stopwatchModel.elapsed,
-            isPaused: isPaused,
+            isPaused: isPaused || isOnBreak,
             isRecording: isRecordingVideo
         )
     }

@@ -759,3 +759,18 @@
 "いちばん長く続いたのは%d日" = "Longest run: %d days";
 "今年 勉強した日" = "Days studied this year";
 "おかえりなさい。今日の1回から、また始めましょう" = "Welcome back. One session today and you’re going again";
+
+/* ポモドーロ（集中と休憩） */
+"休憩" = "Breaks";
+"休憩中" = "On break";
+"休憩なし" = "No breaks";
+"25分＋5分休憩" = "25 min + 5 min break";
+"50分＋10分休憩" = "50 min + 10 min break";
+"90分＋15分休憩" = "90 min + 15 min break";
+"%d回目の集中、おつかれさまでした" = "Focus session %d done. Nice work";
+"スマホから少し離れて、遠くを見たり水を飲んだりしましょう。休憩の間は撮影もタイマーも止まっています。" = "Step away from your phone for a bit — look out the window or grab some water. Filming and the timer are paused during the break.";
+"休憩をおわる" = "End break";
+"休憩おわり" = "Break’s over";
+"机に戻って、StudyReel を開くと撮影が続きます。" = "Head back to your desk and open StudyReel to keep filming.";
+"休憩の時間です" = "Time for a break";
+"集中おつかれさまでした。少しスマホから離れて休みましょう。" = "Nice focus. Take a short break away from your phone.";

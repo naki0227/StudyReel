@@ -218,6 +218,14 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
         }
     }
 
+    // 休憩の後にカメラを戻す（休憩中は stopSession で止めて電池と熱を抑える）
+    func wakeSession() {
+        guard canCaptureVideo, previewLayer != nil, !session.isRunning else { return }
+        DispatchQueue.global(qos: .userInitiated).async {
+            self.session.startRunning()
+        }
+    }
+
     // 録画なしに切り替えたとき、カメラを止める
     func stopSession() {
         guard session.isRunning else { return }
