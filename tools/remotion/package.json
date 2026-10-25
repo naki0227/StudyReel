@@ -1,0 +1,19 @@
+{
+  "name": "studyreel-remotion",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio src/index.ts --public-dir ../pv",
+    "render": "remotion render src/index.ts --public-dir ../pv"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.534",
+    "@remotion/transitions": "4.0.534",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "remotion": "4.0.534"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.12",
+    "typescript": "5.6.3"
+  }
+}
