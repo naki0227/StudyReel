@@ -90,6 +90,8 @@ final class BuddyCloud: ObservableObject {
         var code: Int
         var createdAt: Date
         var expiresAt: Date
+        // 10秒の動画つき（image は動画の1コマ）
+        var isClip = false
         var id: String { recordName }
         var isExpired: Bool { expiresAt <= Date() }
     }
@@ -275,7 +277,8 @@ final class BuddyCloud: ObservableObject {
             nickname: record["nickname"] as? String ?? "",
             code: record["code"] as? Int ?? 0,
             createdAt: created,
-            expiresAt: record["expiresAt"] as? Date ?? created.addingTimeInterval(BuddyPhotos.lifetime)
+            expiresAt: record["expiresAt"] as? Date ?? created.addingTimeInterval(BuddyPhotos.lifetime),
+            isClip: (record["kind"] as? String) == "clip"
         )
     }
 
@@ -710,7 +713,8 @@ final class BuddyCloud: ObservableObject {
         return group.photos.contains { $0.from == me && !$0.isExpired && Calendar.current.isDateInToday($0.createdAt) }
     }
 
-    func sendPhoto(_ data: Data, to group: Group) async -> Bool {
+    // clip を渡すと、10秒の動画も一緒に出す（モザイクをかけ直した MosaickedClip しか渡せない）
+    func sendPhoto(_ data: Data, clip: MosaickedClip? = nil, to group: Group) async -> Bool {
         guard group.photosEnabled, BuddyProfile.photosOn, !hasSentPhotoToday(in: group), let me = myRecordName else { return false }
         await checkPhotoBans()
         guard !isBannedFromPhotos else {
@@ -730,8 +734,17 @@ final class BuddyCloud: ObservableObject {
             record["createdAt"] = now as NSDate
             record["expiresAt"] = now.addingTimeInterval(BuddyPhotos.lifetime) as NSDate
             record["image"] = CKAsset(fileURL: file)
+            if let clip {
+                record["kind"] = "clip" as NSString
+                record["clip"] = CKAsset(fileURL: clip.url)
+            }
             try await save([record], in: database(for: group), policy: .allKeys)
             BuddyPhotos.store(data, for: name)
+            if let clip {
+                let cached = BuddyClips.cacheURL(name)
+                try? FileManager.default.removeItem(at: cached)
+                try? FileManager.default.copyItem(at: clip.url, to: cached)
+            }
             await refresh()
             return true
         } catch {
@@ -746,6 +759,7 @@ final class BuddyCloud: ObservableObject {
         do {
             try await save([], deleting: [CKRecord.ID(recordName: photo.recordName, zoneID: group.zoneID)], in: database(for: group))
             BuddyPhotos.remove(photo.recordName)
+            try? FileManager.default.removeItem(at: BuddyClips.cacheURL(photo.recordName))
             await refresh()
         } catch {
             message = Self.describe(error)
@@ -786,6 +800,11 @@ final class BuddyCloud: ObservableObject {
             file = url
             record["photo"] = CKAsset(fileURL: url)
             record["photoCreatedAt"] = photo.createdAt as NSDate
+            // 動画の通報では、受け取って端末に置いてある動画も送る
+            let clipURL = BuddyClips.cacheURL(photo.recordName)
+            if photo.isClip, FileManager.default.fileExists(atPath: clipURL.path) {
+                record["clip"] = CKAsset(fileURL: clipURL)
+            }
         }
         defer { if let file { try? FileManager.default.removeItem(at: file) } }
         do {

@@ -100,6 +100,8 @@ DEFINE SCHEMA
         createdAt       TIMESTAMP,
         expiresAt       TIMESTAMP,
         image           ASSET,
+        kind            STRING,
+        clip            ASSET,
         GRANT WRITE TO "_creator",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"
@@ -181,6 +183,7 @@ DEFINE SCHEMA
         appVersion      STRING,
         photo           ASSET,
         photoCreatedAt  TIMESTAMP,
+        clip            ASSET,
         GRANT CREATE TO "_icloud"
     );
 

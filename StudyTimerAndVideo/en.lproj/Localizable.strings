@@ -800,3 +800,14 @@
 "先月" = "Last month";
 "今月の勉強" = "This month’s study";
 "先月の勉強" = "Last month’s study";
+
+/* 仲間に10秒の動画 */
+"写真・動画がよくない" = "Inappropriate photo or video";
+"10秒の動画" = "10-sec video";
+"出し方" = "Share as";
+"写真" = "Photo";
+"送る前に、顔が隠れているか最後まで見て確かめてください。" = "Before sending, watch it to the end and make sure your face is hidden.";
+"モザイクをかけています…" = "Adding the mosaic…";
+"この瞬間から10秒の動画を作る" = "Make a 10-sec video from here";
+
+"動画の通報では、その10秒の動画も届きます。" = "When you report a video, the 10-second video is sent too.";
