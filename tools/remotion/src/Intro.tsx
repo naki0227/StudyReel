@@ -49,9 +49,10 @@ const Rise: React.FC<{ delay?: number; top?: number; children: React.ReactNode; 
 const Agenda: React.FC<P> = ({ lang }) => {
   const c = COPY[lang];
   const frame = useCurrentFrame();
-  const head = useSpring(2);
-  const logo = useSpring(8);
-  const can = useSpring(18);
+  // 名前と「でできること」は最初のコマから出しておく（投稿のサムネイルが白くならないように）。4つの項目は順に出す
+  const head = useSpring(-30);
+  const logo = useSpring(-30);
+  const can = useSpring(-30);
   return (
     <AbsoluteFill>
       <div style={{ position: 'absolute', top: 400, left: 0, right: 0, textAlign: 'center', fontFamily: F.zen, fontSize: 38, color: C.sub, letterSpacing: '.14em', opacity: head, transform: `translateY(${(1 - head) * 20}px)` }}>{c.kind}</div>
@@ -60,7 +61,7 @@ const Agenda: React.FC<P> = ({ lang }) => {
       <div style={{ position: 'absolute', top: 710, left: 0, right: 0, textAlign: 'center', fontFamily: lang === 'en' ? F.corm : F.mincho, fontSize: lang === 'en' ? 72 : 62, color: C.ink, letterSpacing: '.06em', opacity: can }}>{c.can}</div>
       <div style={{ position: 'absolute', top: 880, left: 120, right: 120 }}>
         {c.agenda.map((text, i) => (
-          <AgendaRow key={i} no={i + 1} text={text} isNew={i === 2} delay={34 + i * 12} lang={lang} lit={frame > 132 && i === 0} />
+          <AgendaRow key={i} no={i + 1} text={text} isNew={i === 2} delay={14 + i * 12} lang={lang} lit={frame > 132 && i === 0} />
         ))}
       </div>
     </AbsoluteFill>
