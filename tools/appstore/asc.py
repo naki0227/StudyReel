@@ -70,7 +70,7 @@ def api(method, path, body=None, params=None, allow=()):
             time.sleep(10)
     if res.status_code in allow:
         # 許した失敗でも、何が起きたかは残す（409 は「もうある」のことも「まだ出せない」のこともある）
-        print(f"  {method} {path} -> {res.status_code}: {res.text[:600]}")
+        print(f"  {method} {path} -> {res.status_code}: {res.text[:3000]}")
         return None
     if res.status_code >= 400:
         print(f"::error::{method} {path} -> {res.status_code}\n{res.text}")
@@ -160,9 +160,13 @@ def update_version_attributes(version, cfg):
 def update_localizations(version_id, cfg):
     locs = api("GET", f"/v1/appStoreVersions/{version_id}/appStoreVersionLocalizations")["data"]
     by_locale = {l["attributes"]["locale"]: l for l in locs}
+    # サポート URL は審査に出すのに要る。書いていなければ、今ある言語のものを使う（新しい言語にはまだない）
+    fallback_support = next((l["attributes"].get("supportUrl") for l in locs if l["attributes"].get("supportUrl")), None)
     for locale, section in (cfg.get("localizations") or {}).items():
         loc = by_locale.get(locale)
         wanted = pick(section, VERSION_FIELDS)
+        if "supportUrl" not in wanted and fallback_support and not (loc and loc["attributes"].get("supportUrl")):
+            wanted["supportUrl"] = fallback_support
         if not loc:
             # 新しい言語（韓国語・中国語など）は、ここで足す。アプリ情報（名前）は update_app_info が先に足しておく
             print(f"{locale}: ストア情報を追加")
