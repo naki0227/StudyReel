@@ -6,8 +6,8 @@
 # アプリのプライバシー（データの収集）と年齢区分は API で変えられないので、App Store Connect の画面で設定する。
 
 app: com.ni.StudyTimerAndVideo
-version: "1.8"
-build: 229            # "latest" にすると、このバージョンで最後に上げたビルド
+version: "1.9"
+build: 231            # "latest" にすると、このバージョンで最後に上げたビルド
 release: manual       # manual: 承認されたら自分で公開 / after_approval: 承認されたらすぐ公開
 submit_for_review: true    # true にしてマージすると、反映したあと審査に出す
 withdraw_to_update: true   # 審査待ちのときにスクリーンショットかビルドが変わっていたら、取り下げて差し替えてから出し直す
@@ -18,6 +18,9 @@ withdraw_to_update: true   # 審査待ちのときにスクリーンショット
 purchases:
   - com.ni.StudyReel.pro.monthly
   - com.ni.StudyReel.pro.yearly
+# サブスクのファミリー共有。保護者が買えば、家族（最大6人）も Pro を使える（保護者・塾に共有と組み合わせる）
+# 一度オンにすると開発者は戻せない。家族と分けるかは、買った人が iPhone の設定（サブスクリプション）で選べる
+family_sharing: true
 
 # ASO（docs/aso.md）。名前・サブタイトル・キーワードは検索の対象。同じ言葉を2か所に入れない
 # 名前・サブタイトルは 30 文字まで、キーワードは 100 バイトまで（日本語は1文字3バイト）
@@ -25,12 +28,12 @@ localizations:
   ja:
     name: StudyReel - 勉強タイムラプス記録
     subtitle: 受験生のためのVlog・集中タイマーと過去問管理
-    keywords: 勉強垢,自習,習慣,継続,教材,成績,グラフ,モザイク,モチベ,努力,資格,仲間
-    promotional_text: 勉強を撮ると、努力が動画になる。タイムラプスで記録して、勉強仲間と応援し合おう。
+    keywords: 勉強垢,自習,習慣,継続,教材,成績,モザイク,顔出しなし,モチベ,資格,仲間
+    promotional_text: 勉強してるところをタイムラプスで撮れます。顔は自動でモザイクになるので、そのまま勉強垢に載せられます。
     description: |
       勉強を「撮る」記録アプリ。
       机に置いて始めるだけで、勉強の様子がタイムラプス動画になります。
-      続けた努力が、見返せる形で積み上がる。
+      顔は自動でモザイクになるので、顔を出さずにそのまま勉強垢に載せられます。
 
       【こんな人に】
       ・受験生、資格の勉強をしている人
@@ -60,9 +63,134 @@ localizations:
       プライバシーポリシー: https://enludus.com/products/studyreel-privacy
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
-      ・勉強仲間：友達と QR コードでグループを作って、いま勉強中の人や今日・今週の勉強時間を見せ合えます。スタンプで応援もできます（参加はオーナーの許可制）
-      ・資格ごとに、いま勉強している人数が分かるようになりました（名前は出ません）
-      ・統計に、教科ごとの先週比と、集中しやすい時間帯を出すようにしました（Pro）
+      ・保護者・塾に共有：見せたい相手の QR コードを読むと、今日・今週の勉強時間と連続日数を見せられます。いつでも止められます
+      ・ポモドーロ：25分＋5分などを選べます。休憩の間はタイマーも撮影も止まるので、動画には集中した時間だけが入ります
+      ・1年の草：今年何日勉強したかを色で見られて、カードにして投稿できます。連続日数は、週に1日の休みなら途切れません
+      ・「StudyReelで勉強を始める」と Siri に言うか、コントロールセンターのボタンからも始められます
+      ・勉強仲間に、顔にモザイクをかけた10秒の動画も出せます（オーナーがオンにしたグループだけ）
+      ・1か月分の Vlog、ホワイトノイズ、音の大きさを選べるようにしました
+      ・長く録画しても止まりにくくしました。端末が熱いときや空きが少ないときは撮影だけ休みます
+      ・韓国語・中国語（簡体・繁体）に対応しました
+  ko:
+    whats_new: |
+      • 보호자·학원에 공유: 보여 주고 싶은 사람의 QR 코드를 읽으면 오늘·이번 주 공부 시간과 연속 일수를 보여 줄 수 있어요. 언제든 멈출 수 있어요
+      • 뽀모도로: 25분+5분 등을 고를 수 있어요. 휴식 중에는 타이머와 촬영이 멈춰서 영상에는 집중한 시간만 들어가요
+      • 1년의 잔디: 올해 며칠 공부했는지 색으로 보고 카드로 올릴 수 있어요. 일주일에 하루 쉬어도 연속 일수가 끊기지 않아요
+      • Siri에게 "StudyReel로 공부 시작"이라고 말하거나 제어 센터 버튼으로도 시작할 수 있어요
+      • 공부 친구에게 얼굴을 모자이크한 10초 영상도 올릴 수 있어요(그룹장이 켠 그룹만)
+      • 한 달 Vlog, 화이트 노이즈, 소리 크기 선택
+      • 오래 촬영해도 잘 멈추지 않아요. 기기가 뜨겁거나 저장 공간이 부족하면 촬영만 쉬어요
+      • 한국어와 중국어(간체·번체)를 지원해요
+    name: StudyReel - 공부 타임랩스 기록
+    subtitle: 얼굴 모자이크 스터디 브이로그
+    keywords: 공부,타이머,타임랩스,스터디윗미,공스타그램,수험생,자격증,캠스터디
+    promotional_text: 공부하는 모습을 타임랩스로 찍어요. 얼굴은 자동 모자이크라 그대로 공스타그램에 올릴 수 있어요.
+    description: |
+      공부하는 모습을 "찍는" 공부 기록 앱.
+      책상에 폰을 세워 두고 시작만 누르면, 공부하는 모습이 타임랩스 영상이 돼요.
+      얼굴은 자동으로 모자이크되니까 그대로 공스타그램에 올릴 수 있어요.
+
+      【이런 분께】
+      ・시험이나 자격증을 준비하는 분
+      ・공스타그램에 매일 공부 기록을 올리는 분
+      ・폰을 안 만지고 집중하고 싶은 분
+
+      【주요 기능】
+      ■ 타임랩스 촬영: 시간이 찍힌 타임랩스 영상을 기기 안에서 만들어요. 얼굴은 자동 모자이크
+      ■ 집중 타이머: 타이머와 스톱워치, 집중 사운드
+      ■ 목표와 디데이: 시험까지 남은 날과 기출문제 점수를 그래프로
+      ■ 교재: 책 바코드만 찍으면 등록. 교재별 공부 시간 기록
+      ■ 통계와 캘린더: 매일의 공부 시간, 과목별 비율, 추이 그래프
+      ■ 공부 친구: QR 코드로 그룹을 만들고, 지금 공부 중인 사람과 오늘·이번 주 공부 시간을 함께 봐요. 응원은 스탬프로 (참가는 방장 승인제, 채팅 없음)
+      ■ 1주일 브이로그: 1주일 기록이 영상 한 편으로
+      ■ 공유 카드: 오늘 기록을 이미지로 만들어 SNS에
+
+      【StudyReel Pro】
+      과목별 지난주 대비와 집중이 잘 되는 시간대, 로고 없는 영상, 공부 친구 그룹 최대 5개, 전체 녹화, 영상 폰트, 얼굴 스탬프, BGM 4곡, 테마 컬러. 월간·연간 (1주일 무료 체험)
+
+      이용약관: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+      개인정보 처리방침: https://enludus.com/products/studyreel-privacy
+    privacy_policy_url: https://enludus.com/products/studyreel-privacy
+  zh-Hans:
+    whats_new: |
+      • 分享给家长·补习班：扫描对方的二维码，就能让对方看到今天·本周的学习时间和连续天数，随时可以停止
+      • 番茄钟：可选25分钟＋5分钟等。休息时计时和拍摄都会暂停，视频里只有专注的时间
+      • 一年的打卡格：用颜色查看今年学习了多少天，还能做成卡片发布。每周休息一天不会中断连续天数
+      • 对 Siri 说"用StudyReel开始学习"，或用控制中心的按钮也能开始
+      • 可以给学习伙伴发布脸部打码的10秒视频（仅限组长开启的小组）
+      • 一个月的 Vlog、白噪音、音量选择
+      • 长时间录制更稳定。手机过热或空间不足时只暂停拍摄
+      • 支持韩语和中文（简体·繁体）
+    name: StudyReel - 学习延时摄影记录
+    subtitle: 自动打码的学习打卡Vlog
+    keywords: 学习,自习,计时器,延时,打卡,专注,考试,倒计时,番茄钟,备考,考研,陪伴
+    promotional_text: 把学习过程拍成延时视频，脸部自动打码，可以直接发到学习打卡账号。
+    description: |
+      把学习"拍下来"的学习记录App。
+      把手机立在桌上，按下开始，学习的样子就会变成延时视频。
+      脸部会自动打码，可以直接发到学习打卡账号。
+
+      【适合这样的你】
+      ・正在备考或考证的人
+      ・每天在社交平台打卡学习的人
+      ・想放下手机专心学习的人
+
+      【主要功能】
+      ■ 延时摄影：在手机上生成带时间的延时视频，脸部可自动打码
+      ■ 专注计时：倒计时和秒表，附专注白噪音
+      ■ 目标与倒计时：离考试还有几天，真题分数用图表看进步
+      ■ 教材：扫书的条形码即可添加，按教材累计学习时间
+      ■ 统计与日历：每天的学习时间、各科占比、趋势图
+      ■ 学习伙伴：用二维码建群，看到谁正在学习、今天和本周学了多久，用贴纸互相加油（加入需群主同意，没有聊天）
+      ■ 一周Vlog：一周的记录合成一个视频
+      ■ 分享卡片：把今天的记录做成图片分享
+
+      【StudyReel Pro】
+      各科与上周对比和最专注的时段、无水印视频、最多创建5个学习伙伴群、完整录制、视频字体、脸部贴纸、全部4首BGM、主题色。按月或按年订阅（含1周免费试用）
+
+      使用条款：https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+      隐私政策：https://enludus.com/products/studyreel-privacy
+    privacy_policy_url: https://enludus.com/products/studyreel-privacy
+  zh-Hant:
+    whats_new: |
+      • 分享給家長·補習班：掃描對方的 QR Code，就能讓對方看到今天·本週的讀書時間和連續天數，隨時可以停止
+      • 番茄鐘：可選25分鐘＋5分鐘等。休息時計時和拍攝都會暫停，影片裡只有專注的時間
+      • 一年的讀書格：用顏色查看今年讀了幾天書，還能做成卡片分享。每週休息一天不會中斷連續天數
+      • 對 Siri 說「用StudyReel開始讀書」，或用控制中心的按鈕也能開始
+      • 可以給讀書夥伴分享臉部打馬賽克的10秒影片（僅限組長開啟的群組）
+      • 一個月的 Vlog、白噪音、音量選擇
+      • 長時間錄影更穩定。手機過熱或空間不足時只暫停拍攝
+      • 支援韓文和中文（簡體·繁體）
+    name: StudyReel - 讀書縮時記錄
+    subtitle: 臉部自動馬賽克的讀書Vlog
+    keywords: 讀書,自習,計時器,縮時,讀書帳,專注,考試,倒數,番茄鐘,學測,國考,陪讀
+    promotional_text: 把讀書的樣子拍成縮時影片，臉部自動打馬賽克，可以直接分享到讀書帳。
+    description: |
+      把讀書「拍下來」的讀書記錄App。
+      把手機立在桌上，按下開始，讀書的樣子就會變成縮時影片。
+      臉部會自動打馬賽克，可以直接分享到讀書帳。
+
+      【適合這樣的你】
+      ・正在準備考試或證照的人
+      ・每天在讀書帳分享紀錄的人
+      ・想放下手機專心讀書的人
+
+      【主要功能】
+      ■ 縮時攝影：在手機上製作帶時間的縮時影片，臉部可自動打馬賽克
+      ■ 專注計時：倒數計時和碼錶，附專注白噪音
+      ■ 目標與倒數：離考試還有幾天，考古題分數用圖表看進步
+      ■ 教材：掃描書的條碼即可新增，依教材累積讀書時間
+      ■ 統計與行事曆：每天的讀書時間、各科比例、趨勢圖
+      ■ 讀書夥伴：用 QR Code 建立群組，看到誰正在讀書、今天和本週讀了多久，用貼圖互相打氣（加入需群主同意，沒有聊天）
+      ■ 一週Vlog：一週的紀錄合成一支影片
+      ■ 分享卡片：把今天的紀錄做成圖片分享
+
+      【StudyReel Pro】
+      各科與上週比較和最專注的時段、無浮水印影片、最多建立5個讀書夥伴群組、完整錄影、影片字體、臉部貼圖、全部4首BGM、主題色。月訂閱或年訂閱（含1週免費試用）
+
+      使用條款：https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+      隱私權政策：https://enludus.com/products/studyreel-privacy
+    privacy_policy_url: https://enludus.com/products/studyreel-privacy
   en-US:
     name: StudyReel - Study Timelapse
     subtitle: Focus timer & study vlog
@@ -101,9 +229,14 @@ localizations:
       Privacy Policy: https://enludus.com/products/studyreel-privacy
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
-      • Study Buddies: make a group with friends by QR code and see who's studying now and everyone's time today and this week. Cheer each other on with stamps (owners approve who joins)
-      • See how many people are studying for each exam right now (no names shown)
-      • Stats now show each subject's change from last week and your best time to focus (Pro)
+      • Share with parents & tutors: scan their QR code to show today's and this week's study time and your streak. Stop anytime
+      • Pomodoro: pick 25 + 5 and more. During breaks the timer and filming pause, so your video only has focus time
+      • Your year: see how many days you studied this year and post it as a card. One rest day a week won't break your streak
+      • Say "Start studying with StudyReel" to Siri, or start from a Control Center button
+      • Share a 10-second clip with your face pixelated in Study Buddies (only in groups where the owner allows it)
+      • Monthly vlogs, white noise, and a volume setting
+      • Long recordings are more reliable. If your phone gets hot or runs low on storage, filming pauses while the timer keeps going
+      • Now in Korean and Chinese (Simplified and Traditional)
 
 review:
   demo_account_required: false
@@ -118,6 +251,9 @@ review:
       - Safety (Guideline 1.2): nicknames and group names pass a word filter; any member can be blocked (long-press a member) or reported. Reports, with the photo if any, reach the developer, who reviews them within 24 hours and can bar the sender from sharing photos. Contact: contact@enludus.com.
       - Photos are off by default per group. When the owner turns them on, a member can share one frame they pick from their own time-lapse, with faces pixelated; photos disappear after 24 hours. Frames flagged by Apple's Sensitive Content Analysis are not sent or shown. Photos start off for users under 18 (Declared Age Range).
       - To try it with one device: Home > "勉強仲間と一緒にがんばる" > set a nickname > "グループを作る", then tap the QR icon. Joining needs a second iCloud account.
+    - Share with Parents & Tutors (new in 1.9): the student scans a QR code shown by a parent or teacher and taps Share; only study totals, streak and stamps are shown, and the student can stop anytime. Teachers need a school code we issue. Data stays in the student's iCloud (CloudKit).
+    - 10-second clips (new in 1.9): in buddy groups where the owner allows photos, a member can share a 10-second clip from their own time-lapse instead of a photo. Faces are detected again on the device every 0.2 s and pixelated before sending (if no face is found, the top 60% is hidden); the member must watch the result before sending. Same limits as photos: one a day, gone after 24 hours, reportable (the clip reaches the developer), blockable, off for users under 18.
+    - Siri / Control Center (new in 1.9): "Start studying with StudyReel" opens the app; when a session starts from outside the app, a 3-second countdown with a "don't film" option appears before the camera records.
     To try it: tap + on the home screen, choose a timer, then press the round shutter button. Press it again to finish and see the review screen.
 
 # 動画のプレビュー。IPHONE_67 は App Store Connect の「6.9インチ」の枠（886x1920、30秒以内）

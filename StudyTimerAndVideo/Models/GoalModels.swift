@@ -215,15 +215,7 @@ struct GoalProgress {
 
         let days = Set(since.map { calendar.startOfDay(for: $0.date) })
         studyDays = days.count
-        var streak = 0
-        var day = calendar.startOfDay(for: now)
-        // 今日まだ勉強していなくても、昨日まで続いていれば連続とみなす
-        if !days.contains(day) { day = calendar.date(byAdding: .day, value: -1, to: day) ?? day }
-        while days.contains(day) {
-            streak += 1
-            day = calendar.date(byAdding: .day, value: -1, to: day) ?? day
-        }
-        streakDays = streak
+        streakDays = StudyStreak.count(days: days, now: now, calendar: calendar)
         let today = calendar.startOfDay(for: now)
         let allDays = Set(sessions.map { calendar.startOfDay(for: $0.date) })
         lastSevenDays = (0..<7).reversed().map { offset in

@@ -66,6 +66,10 @@ https://icloud.developer.apple.com/dashboard → コンテナ → Development �
 | `BuddyPresence` | `recordName` | QUERYABLE | クエリに必要 |
 | `BuddyReport` | `recordName` | QUERYABLE | コンソールで一覧する |
 | `BuddyReport` | `createdTimestamp` | SORTABLE | 新しい順に見る |
+| `BuddyWatchCode` | `viewer` | QUERYABLE | 見る人が自分のコードを一覧する |
+| `BuddyWatchCode` | `recordName` | QUERYABLE | クエリに必要 |
+| `BuddyWatchOffer` | `token` | QUERYABLE | 見る人が申し出を一覧する |
+| `BuddyWatchOffer` | `recordName` | QUERYABLE | クエリに必要 |
 
 ## 4. セキュリティロール（公開データベース）— 必ず変える
 
@@ -78,6 +82,8 @@ Schema → Security Roles。公開データベースは、初めは「だれで�
 | `BuddyPresence` | Read | Create | Write | 人数を数えるのに読む。名前は入っていない |
 | `BuddyJoinRequest` / `Approval` / `Denial` | Read | Create | Write | 今のまま |
 | `BuddyInterest` | **なし** | Create | Write | 「保護者に共有」などへの反応。開発者だけがコンソールで数える |
+| `BuddyWatchCode` / `BuddyWatchOffer` | Read | Create | Write | 見守りの QR と申し出（docs/family-and-school.md） |
+| `BuddySchoolCode` | Read | **なし** | なし | 塾コード。作るのは開発者だけ |
 
 ## 5. 本番環境に反映する
 
@@ -94,6 +100,8 @@ TestFlight と App Store のアプリは Production を使うので、これを�
 - 通知：プライベート DB と共有 DB に `CKDatabaseSubscription`（静かなプッシュ）を置き、受け取ったら読み直して端末の中で通知を出す
 - 資格ごとの人数：勉強中で資格を選んでいる人だけ `presence-<利用者番号>`（資格と終わる目安だけ）を置き、止めたら消す
 - 写真：`photo-<日付>-<利用者番号>`（1人1日1枚）。24時間で期限が切れ、オーナーか本人の端末が消す。画像は見るときだけ取ってきて、端末の Caches に24時間だけ置く
+- 10秒の動画：同じ `BuddyPhoto` に `kind = "clip"` と `clip`（HEVC・720px・約1.5MB）を足したもの。`image` は動画の1コマなので、古い版でも写真として見える。動画は送る前に必ず `BuddyClips` でモザイクをかけ直す（アプリに残した動画はモザイクなしのことがあるため）。送れる型は `MosaickedClip` だけで、`BuddyClips` の中でしか作れない
 - 開発者には共有の中身は見えない。見えるのは公開 DB（申請、人数、通報）だけ
 - CI のシミュレーターは iCloud にサインインしていないので、共有の動きは TestFlight で2台・2アカウント使って確かめる
 - 通報の受け方と締め出し方は docs/buddies-moderation.md
+- 保護者・塾に共有（見守り）は `watch-` で始まるゾーン。しくみと塾コードの発行は docs/family-and-school.md

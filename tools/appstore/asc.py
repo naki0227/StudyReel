@@ -57,8 +57,17 @@ def api(method, path, body=None, params=None, allow=()):
         print(f"  [dry-run] {method} {path}")
         return {"data": {"id": "DRY", "attributes": {}}}
     url = path if path.startswith("http") else BASE + path
-    res = requests.request(method, url, json=body, params=params,
-                           headers={"Authorization": f"Bearer {token()}"}, timeout=60)
+    # 読むだけの GET は、Apple の応答が遅いときに2回までやり直す（書き込みは二重にならないようにやり直さない）
+    for attempt in range(3 if method == "GET" else 1):
+        try:
+            res = requests.request(method, url, json=body, params=params,
+                                   headers={"Authorization": f"Bearer {token()}"}, timeout=60)
+            break
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+            if method != "GET" or attempt == 2:
+                raise
+            print(f"  {method} {path}: 応答がないのでやり直します（{attempt + 1}回目）")
+            time.sleep(10)
     if res.status_code in allow:
         # 許した失敗でも、何が起きたかは残す（409 は「もうある」のことも「まだ出せない」のこともある）
         print(f"  {method} {path} -> {res.status_code}: {res.text[:600]}")
@@ -155,7 +164,12 @@ def update_localizations(version_id, cfg):
         loc = by_locale.get(locale)
         wanted = pick(section, VERSION_FIELDS)
         if not loc:
-            print(f"::warning::{locale} のストア情報がないので飛ばします（App Store Connect で言語を追加してください）")
+            # 新しい言語（韓国語・中国語など）は、ここで足す。アプリ情報（名前）は update_app_info が先に足しておく
+            print(f"{locale}: ストア情報を追加")
+            res = api("POST", "/v1/appStoreVersionLocalizations", {"data": {
+                "type": "appStoreVersionLocalizations", "attributes": {"locale": locale, **wanted},
+                "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}})
+            by_locale[locale] = res["data"]
             continue
         diff = changed(loc["attributes"], wanted)
         if diff:
@@ -178,7 +192,17 @@ def update_app_info(app_id, cfg):
     by_locale = {l["attributes"]["locale"]: l for l in locs}
     for locale, wanted in sections.items():
         loc = by_locale.get(locale)
-        if not wanted or not loc:
+        if not wanted:
+            continue
+        if not loc:
+            # 言語を足すときは、名前が要る
+            if not wanted.get("name"):
+                print(f"::warning::{locale} のアプリ情報がなく、name もないので足せません")
+                continue
+            print(f"{locale} アプリ情報: 追加")
+            api("POST", "/v1/appInfoLocalizations", {"data": {
+                "type": "appInfoLocalizations", "attributes": {"locale": locale, **wanted},
+                "relationships": {"appInfo": {"data": {"type": "appInfos", "id": info["id"]}}}}})
             continue
         diff = changed(loc["attributes"], wanted)
         if diff:
@@ -433,6 +457,24 @@ def check_purchases(app_id, wanted_ids):
     return to_submit
 
 
+def ensure_family_sharing(app_id, wanted_ids):
+    """サブスクのファミリー共有をオンにする。Apple の決まりで、一度オンにすると開発者は戻せない
+    （家族と分けるかどうかは、買った人が iPhone の設定で選べる）"""
+    for group in api("GET", f"/v1/apps/{app_id}/subscriptionGroups", params={"limit": 50})["data"]:
+        for item in api("GET", f"/v1/subscriptionGroups/{group['id']}/subscriptions", params={"limit": 50})["data"]:
+            pid = item["attributes"]["productId"]
+            if pid not in wanted_ids:
+                continue
+            if item["attributes"].get("familySharable"):
+                print(f"ファミリー共有 {pid}: オン")
+            elif DRY:
+                print(f"::notice::ファミリー共有 {pid}: オフ。マージするとオンにします（一度オンにすると戻せません）")
+            else:
+                api("PATCH", f"/v1/subscriptions/{item['id']}", {"data": {
+                    "type": "subscriptions", "id": item["id"], "attributes": {"familySharable": True}}})
+                print(f"ファミリー共有 {pid}: オンにしました")
+
+
 def submit_purchases(items):
     for kind, rel, rel_type, item_id in items:
         res = api("POST", f"/v1/{kind}", {"data": {
@@ -615,6 +657,8 @@ def main():
     for spec in cfg.get("create_purchases") or []:
         ensure_purchase(app_id, spec, root)
     purchases = check_purchases(app_id, cfg.get("purchases") or [])
+    if cfg.get("family_sharing"):
+        ensure_family_sharing(app_id, cfg.get("purchases") or [])
     version, versions = find_or_create_version(app_id, str(cfg["version"]))
     state = state_of(version)
     print(f"バージョン {version['attributes']['versionString']}: {state}")
@@ -647,8 +691,9 @@ def main():
         return
 
     update_version_attributes(version, cfg)
-    by_locale = update_localizations(version["id"], cfg)
+    # 新しい言語は、アプリ情報（名前）を先に足してから、バージョンの文言を足す
     update_app_info(app_id, cfg)
+    by_locale = update_localizations(version["id"], cfg)
     build = find_build(app_id, cfg, wait_minutes=0 if DRY else 30)
     attach_build(version["id"], build)
     update_review_detail(version["id"], versions, cfg)

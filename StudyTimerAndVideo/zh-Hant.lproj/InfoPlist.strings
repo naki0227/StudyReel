@@ -1,0 +1,7 @@
+/* Traditional Chinese (Taiwan) localization for Info.plist permission strings */
+
+/* Camera Usage Description */
+"NSCameraUsageDescription" = "StudyReel 會使用相機，把你的讀書過程拍成縮時影片，並掃描書本的條碼或封面。除非你選擇與讀書夥伴分享其中一格畫面，否則影像只會留在你的裝置上。";
+
+/* Photo Library Add Usage Description */
+"NSPhotoLibraryAddUsageDescription" = "讀書結束時，StudyReel 會自動將縮時影片儲存到「照片」。";

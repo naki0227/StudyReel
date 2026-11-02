@@ -4,6 +4,8 @@ enum SessionLaunchSource: String, Codable {
     case app
     case widget
     case notification
+    // Siri・ショートカット・コントロールセンター
+    case shortcut
 }
 
 struct CurrentSessionDraft: Codable, Identifiable, Equatable {

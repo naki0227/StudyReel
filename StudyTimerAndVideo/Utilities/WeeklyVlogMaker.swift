@@ -2,10 +2,14 @@ import AVFoundation
 import CoreImage
 import UIKit
 
-// 1週間のVlogで使う週
+// Vlogで使う期間（週か月）
 enum WeeklyVlogWeek: String, CaseIterable, Identifiable {
     case thisWeek
     case lastWeek
+    case thisMonth
+    case lastMonth
+
+    var isMonth: Bool { self == .thisMonth || self == .lastMonth }
 
     var id: String { rawValue }
 
@@ -13,6 +17,8 @@ enum WeeklyVlogWeek: String, CaseIterable, Identifiable {
         switch self {
         case .thisWeek: return L10n.string("今週")
         case .lastWeek: return L10n.string("先週")
+        case .thisMonth: return L10n.string("今月")
+        case .lastMonth: return L10n.string("先月")
         }
     }
 
@@ -20,10 +26,18 @@ enum WeeklyVlogWeek: String, CaseIterable, Identifiable {
         switch self {
         case .thisWeek: return L10n.string("今週の勉強")
         case .lastWeek: return L10n.string("先週の勉強")
+        case .thisMonth: return L10n.string("今月の勉強")
+        case .lastMonth: return L10n.string("先月の勉強")
         }
     }
 
     func interval(calendar: Calendar = .current, now: Date = Date()) -> DateInterval? {
+        if isMonth {
+            guard let month = calendar.dateInterval(of: .month, for: now) else { return nil }
+            if self == .thisMonth { return month }
+            guard let start = calendar.date(byAdding: .month, value: -1, to: month.start) else { return nil }
+            return DateInterval(start: start, end: month.start)
+        }
         guard let current = calendar.dateInterval(of: .weekOfYear, for: now) else { return nil }
         switch self {
         case .thisWeek:
@@ -31,6 +45,8 @@ enum WeeklyVlogWeek: String, CaseIterable, Identifiable {
         case .lastWeek:
             guard let start = calendar.date(byAdding: .day, value: -7, to: current.start) else { return nil }
             return DateInterval(start: start, end: current.start)
+        case .thisMonth, .lastMonth:
+            return nil
         }
     }
 }
@@ -90,10 +106,20 @@ enum WeeklyVlogMaker {
 
     static func clips(from sessions: [StudySession], in week: WeeklyVlogWeek) -> [WeeklyVlogClip] {
         guard let interval = week.interval() else { return [] }
-        return sessions
+        let clips = sessions
             .filter { interval.contains($0.date) }
             .sorted { $0.date < $1.date }
             .compactMap(WeeklyVlogClip.init(session:))
+        guard week.isMonth else { return clips }
+        // 1か月は日ごとに1本（その日いちばん長く勉強した記録）にして、60秒に収まるようにする
+        let calendar = Calendar.current
+        var byDay: [Date: WeeklyVlogClip] = [:]
+        for clip in clips {
+            let day = calendar.startOfDay(for: clip.date)
+            if let current = byDay[day], current.studySeconds >= clip.studySeconds { continue }
+            byDay[day] = clip
+        }
+        return byDay.values.sorted { $0.date < $1.date }
     }
 
     static func durationText(_ seconds: Int) -> String {

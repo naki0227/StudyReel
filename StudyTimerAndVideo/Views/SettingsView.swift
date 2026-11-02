@@ -24,6 +24,7 @@ struct SettingsView: View {
 
     @State private var quietReminderEnabled = StudyNotificationManager.shared.isQuietReminderEnabled
     @State private var showPaywall = false
+    @State private var showWatch = false
     // Pro の色を使っている Pro でない人が、ほかの色に変えようとしたとき
     @State private var pendingTheme: ThemeColor?
     @State private var showSubjects = false
@@ -48,13 +49,13 @@ struct SettingsView: View {
 
                     sectionTitle(L10n.string("撮影設定"))
                     card {
-                        ReelRow(systemImage: "timer", title: L10n.string("撮影間隔")) {
+                        ReelRow(systemImage: "timer", title: L10n.string("タイムラプスの速さ")) {
                             Menu {
                                 ForEach(RecordingSettings.intervalOptions, id: \.self) { value in
-                                    Button(L10n.format("%d秒", Int(value))) { interval = value }
+                                    Button(L10n.format("%@（%d秒ごとに1枚）", RecordingSettings.speedTitle(interval: value), Int(value))) { interval = value }
                                 }
                             } label: {
-                                valueLabel(L10n.format("%d秒", Int(RecordingSettings.intervalOptions.contains(interval) ? interval : 5)))
+                                valueLabel(RecordingSettings.speedTitle(interval: currentInterval))
                             }
                         }
                         divider
@@ -101,6 +102,7 @@ struct SettingsView: View {
                             }
                         }
                     }
+                    note(L10n.format("いまの速さだと、1時間の勉強が%@の動画になります。", RecordingSettings.lengthPerHour(interval: currentInterval)))
 
                     sectionTitle(L10n.string("モザイク設定"))
                     card {
@@ -158,7 +160,14 @@ struct SettingsView: View {
                     }
 
                     if !DemoMode.isActive {
-                        ParentShareTeaser(source: "settings")
+                        sectionTitle(L10n.string("保護者・塾に共有"))
+                        card {
+                            Button { showWatch = true } label: {
+                                ReelRow(systemImage: "figure.2.and.child.holdinghands", title: L10n.string("保護者・塾に共有")) { chevron }
+                            }
+                            .accessibilityIdentifier("settings.watch")
+                        }
+                        note(L10n.string("勉強時間といま勉強中かどうかだけを、おうちの人や塾の先生に見せられます。保護者・先生の方は、ここから見守りを始めます。"))
                     }
 
                     sectionTitle(L10n.string("その他"))
@@ -214,6 +223,9 @@ struct SettingsView: View {
                         quietReminderEnabled = resolved
                     }
                 }
+            }
+            .sheet(isPresented: $showWatch) {
+                WatchView()
             }
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
@@ -394,6 +406,8 @@ struct SettingsView: View {
             .font(.system(size: 12))
             .foregroundColor(ReelTheme.secondary)
     }
+
+    private var currentInterval: Double { RecordingSettings.intervalOptions.contains(interval) ? interval : 5 }
 
     private func valueLabel(_ text: String) -> some View {
         HStack(spacing: 6) {

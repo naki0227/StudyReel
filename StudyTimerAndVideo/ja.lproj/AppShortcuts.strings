@@ -1,0 +1,3 @@
+/* Siri・ショートカットで話す言葉 */
+"${applicationName}で勉強を始める" = "${applicationName}で勉強を始める";
+"${applicationName}で${preset}勉強する" = "${applicationName}で${preset}勉強する";

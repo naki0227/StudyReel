@@ -59,6 +59,26 @@ final class StudyNotificationManager {
         center.removePendingNotificationRequests(withIdentifiers: [reminderIdentifier])
     }
 
+    // MARK: - ポモドーロの区切り（アプリを離れていても知らせる）
+
+    private let pomodoroIdentifier = "studyreel.pomodoro"
+
+    func schedulePomodoro(title: String, body: String, after seconds: Int) async {
+        guard seconds > 0, await requestAuthorizationIfNeeded() else { return }
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(seconds), repeats: false)
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [pomodoroIdentifier])
+        try? await center.add(UNNotificationRequest(identifier: pomodoroIdentifier, content: content, trigger: trigger))
+    }
+
+    func clearPomodoro() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [pomodoroIdentifier])
+    }
+
     private func requestAuthorizationIfNeeded() async -> Bool {
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()

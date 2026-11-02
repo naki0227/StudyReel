@@ -62,6 +62,10 @@ DEFINE SCHEMA
         weekKey         STRING,
         streakDays      INT64,
         hidesRanking    INT64,
+        weekDays        LIST<INT64>,
+        lastStudiedAt   TIMESTAMP,
+        pastWeeks       LIST<INT64>,
+        subjectsWeek    STRING,
         GRANT WRITE TO "_creator",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"
@@ -96,6 +100,8 @@ DEFINE SCHEMA
         createdAt       TIMESTAMP,
         expiresAt       TIMESTAMP,
         image           ASSET,
+        kind            STRING,
+        clip            ASSET,
         GRANT WRITE TO "_creator",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"
@@ -139,6 +145,7 @@ DEFINE SCHEMA
         "___modifiedBy" REFERENCE,
         "___recordID"   REFERENCE,
         token           STRING,
+        zone            STRING,
         GRANT WRITE TO "_creator",
         GRANT CREATE TO "_icloud",
         GRANT READ TO "_world"
@@ -176,6 +183,7 @@ DEFINE SCHEMA
         appVersion      STRING,
         photo           ASSET,
         photoCreatedAt  TIMESTAMP,
+        clip            ASSET,
         GRANT CREATE TO "_icloud"
     );
 
@@ -202,4 +210,70 @@ DEFINE SCHEMA
         source          STRING,
         GRANT WRITE TO "_creator",
         GRANT CREATE TO "_icloud"
+    );
+
+    RECORD TYPE BuddyWatch (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        kind            STRING,
+        token           STRING,
+        viewer          STRING,
+        viewerName      STRING,
+        schoolName      STRING,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE BuddyWatchCode (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE QUERYABLE,
+        kind            STRING,
+        name            STRING,
+        schoolName      STRING,
+        viewer          STRING QUERYABLE,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE BuddyWatchOffer (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE QUERYABLE,
+        token           STRING QUERYABLE,
+        sharer          STRING,
+        nickname        STRING,
+        icon            STRING,
+        code            INT64,
+        shareURL        STRING,
+        zone            STRING,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE BuddySchoolCode (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE QUERYABLE,
+        schoolName      STRING,
+        maxStudents     INT64,
+        expiresAt       TIMESTAMP,
+        note            STRING,
+        GRANT READ TO "_world"
     );

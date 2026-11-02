@@ -1,5 +1,5 @@
 // PV（宣伝動画）を書き出す。scene の HTML を Chromium で開き、window.seek(秒) で1コマずつ進めて ffmpeg に流す。
-// node render.js <scene.html> <出力.mp4> [--lang ja|en] [--bgm 曲.m4a] [--fps 30] [--size 1080x1920] [--start 秒] [--end 秒]
+// node render.js <scene.html> <出力.mp4> [--lang ja|en] [--bgm 曲.m4a] [--lufs -24] [--fps 30] [--size 1080x1920] [--start 秒] [--end 秒]
 // scene は window.setup() で長さ（秒）を返し、window.seek(t) でその時刻の見た目にする
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
@@ -32,8 +32,11 @@ const lang = opt('lang', 'ja');
   if (bgm) ff.push('-i', bgm);
   ff.push('-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '18', '-preset', 'medium', '-movflags', '+faststart');
   if (bgm) {
-    // 曲は動画の長さで切って、最後の1.5秒で消す
-    ff.push('-af', `afade=t=in:d=0.5,afade=t=out:st=${end - start - 1.5}:d=1.5`, '-c:a', 'aac', '-b:a', '160k', '-shortest');
+    // 曲は動画の長さで切って、最後の1.5秒で消す。アプリの BGM は -15 LUFS ほどで、スマホで聞くとうるさく耳に刺さるので、
+    // 音量を下げて（既定 -24 LUFS）、高い音を少し削る
+    const lufs = Number(opt('lufs', -24));
+    ff.push('-af', `loudnorm=I=${lufs}:TP=-3:LRA=11,treble=g=-5:f=4500,lowpass=f=9000,afade=t=in:d=0.5,afade=t=out:st=${end - start - 1.5}:d=1.5`,
+      '-ar', '44100', '-c:a', 'aac', '-b:a', '160k', '-shortest');
   }
   ff.push(out);
   const enc = spawn('ffmpeg', ff, { stdio: ['pipe', 'inherit', 'inherit'] });

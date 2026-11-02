@@ -45,131 +45,73 @@ enum DemoMode {
     }
 }
 
-// 机で勉強している人のイラスト。t（0〜1）でペンや窓の光が少しずつ動く
+// 机で勉強している人の写真（朝・昼・夜・伸び）。顔のあたりはモザイクの位置にも使う
 enum DemoArt {
-    struct Palette {
-        let wallTop: UIColor
-        let wallBottom: UIColor
-        let shirt: UIColor
-        let light: UIColor
+    struct Scene {
+        let photo: String
+        // 顔のあたり（0〜1、左上原点、写真に対して）
+        let face: CGRect
     }
 
-    static let palettes: [Palette] = [
-        Palette(wallTop: UIColor(red: 0.86, green: 0.89, blue: 0.92, alpha: 1), wallBottom: UIColor(red: 0.64, green: 0.69, blue: 0.74, alpha: 1), shirt: UIColor(red: 0.20, green: 0.24, blue: 0.29, alpha: 1), light: UIColor(red: 1.0, green: 0.97, blue: 0.90, alpha: 1)),
-        Palette(wallTop: UIColor(red: 0.93, green: 0.88, blue: 0.82, alpha: 1), wallBottom: UIColor(red: 0.72, green: 0.64, blue: 0.56, alpha: 1), shirt: UIColor(red: 0.36, green: 0.42, blue: 0.55, alpha: 1), light: UIColor(red: 1.0, green: 0.92, blue: 0.78, alpha: 1)),
-        Palette(wallTop: UIColor(red: 0.84, green: 0.90, blue: 0.95, alpha: 1), wallBottom: UIColor(red: 0.58, green: 0.68, blue: 0.80, alpha: 1), shirt: UIColor(red: 0.85, green: 0.86, blue: 0.88, alpha: 1), light: UIColor(red: 0.95, green: 0.98, blue: 1.0, alpha: 1)),
-        Palette(wallTop: UIColor(red: 0.88, green: 0.90, blue: 0.86, alpha: 1), wallBottom: UIColor(red: 0.62, green: 0.66, blue: 0.60, alpha: 1), shirt: UIColor(red: 0.55, green: 0.33, blue: 0.30, alpha: 1), light: UIColor(red: 1.0, green: 0.96, blue: 0.86, alpha: 1))
+    static let scenes: [Scene] = [
+        Scene(photo: "demo-morning", face: CGRect(x: 0.282, y: 0.372, width: 0.434, height: 0.264)),
+        Scene(photo: "demo-noon", face: CGRect(x: 0.272, y: 0.369, width: 0.41, height: 0.271)),
+        Scene(photo: "demo-night", face: CGRect(x: 0.278, y: 0.389, width: 0.413, height: 0.262)),
+        Scene(photo: "demo-stretch", face: CGRect(x: 0.058, y: 0.13, width: 0.364, height: 0.27))
     ]
 
-    // 顔のあたり（0〜1、左上原点）。モザイクの位置にも使う
-    static func faceRect(for size: CGSize) -> CGRect {
-        let w = size.width, h = size.height
-        let base = min(w, h)
-        let cx = w * 0.5, cy = h * 0.40
-        let fw = base * 0.22, fh = base * 0.28
-        return CGRect(x: (cx - fw / 2) / w, y: (cy - fh / 2) / h, width: fw / w, height: fh / h)
+    // 朝から夜まで。タイムラプスの動画に使う（顔の位置がほぼ同じ3枚）
+    static let day: [Scene] = Array(scenes.prefix(3))
+
+    private static var cache: [String: UIImage] = [:]
+    private static let lock = NSLock()
+
+    private static func photo(_ name: String) -> UIImage? {
+        lock.lock(); defer { lock.unlock() }
+        if let image = cache[name] { return image }
+        let url = Bundle.main.url(forResource: name, withExtension: "jpg")
+            ?? Bundle.main.url(forResource: name, withExtension: "jpg", subdirectory: "Resources/Demo")
+        guard let url, let image = UIImage(contentsOfFile: url.path) else { return nil }
+        cache[name] = image
+        return image
     }
 
-    static func image(size: CGSize, palette: Palette, t: Double, mosaic: Bool = false) -> UIImage {
+    // 写真を size いっぱいに（はみ出す分は切る）置いたときの枠
+    private static func fillRect(photo: CGSize, in size: CGSize) -> CGRect {
+        let scale = max(size.width / photo.width, size.height / photo.height)
+        let w = photo.width * scale, h = photo.height * scale
+        return CGRect(x: (size.width - w) / 2, y: (size.height - h) / 2, width: w, height: h)
+    }
+
+    // 顔のあたり（0〜1、左上原点、size に対して）
+    static func faceRect(for size: CGSize, scene: Scene = scenes[0]) -> CGRect {
+        let photoSize = photo(scene.photo)?.size ?? CGSize(width: 720, height: 1280)
+        let r = fillRect(photo: photoSize, in: size)
+        let f = scene.face
+        return CGRect(x: (r.minX + f.minX * r.width) / size.width, y: (r.minY + f.minY * r.height) / size.height,
+                      width: f.width * r.width / size.width, height: f.height * r.height / size.height)
+    }
+
+    static func image(size: CGSize, scene: Scene, mosaic: Bool = false) -> UIImage {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
         return UIGraphicsImageRenderer(size: size, format: format).image { context in
-            draw(in: context.cgContext, size: size, palette: palette, t: t)
+            if let image = photo(scene.photo) {
+                image.draw(in: fillRect(photo: image.size, in: size))
+            } else {
+                UIColor(red: 0.64, green: 0.69, blue: 0.74, alpha: 1).setFill()
+                context.fill(CGRect(origin: .zero, size: size))
+            }
             if mosaic {
-                pixelate(context: context.cgContext, size: size)
+                pixelate(context: context.cgContext, size: size, face: faceRect(for: size, scene: scene))
             }
         }
     }
 
-    private static func draw(in ctx: CGContext, size: CGSize, palette p: Palette, t: Double) {
-        let w = size.width, h = size.height
-        let base = min(w, h)
-
-        // 壁
-        let colors = [p.wallTop.cgColor, p.wallBottom.cgColor] as CFArray
-        if let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 1]) {
-            ctx.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: 0, y: h), options: [])
-        }
-
-        // 窓と差し込む光（少しずつ動く）
-        let window = CGRect(x: w * 0.68, y: h * 0.08, width: w * 0.22, height: h * 0.36)
-        ctx.setFillColor(UIColor.white.withAlphaComponent(0.55).cgColor)
-        ctx.fill(window)
-        ctx.setFillColor(p.light.withAlphaComponent(0.85).cgColor)
-        ctx.fill(window.insetBy(dx: window.width * 0.06, dy: window.height * 0.05))
-        ctx.setFillColor(UIColor.white.withAlphaComponent(0.10 + 0.06 * sin(t * .pi * 2)).cgColor)
-        ctx.move(to: CGPoint(x: window.minX, y: window.maxY))
-        ctx.addLine(to: CGPoint(x: window.maxX, y: window.maxY))
-        ctx.addLine(to: CGPoint(x: w * (0.55 - 0.05 * t), y: h))
-        ctx.addLine(to: CGPoint(x: w * (0.25 - 0.05 * t), y: h))
-        ctx.closePath()
-        ctx.fillPath()
-
-        // 本棚
-        let shelf = CGRect(x: w * 0.06, y: h * 0.30, width: w * 0.16, height: h * 0.34)
-        ctx.setFillColor(UIColor(red: 0.55, green: 0.45, blue: 0.36, alpha: 1).cgColor)
-        ctx.fill(shelf)
-        let bookColors: [UIColor] = [.systemTeal, .systemOrange, .systemIndigo, .systemGreen, .systemPink]
-        for row in 0..<2 {
-            var x = shelf.minX + shelf.width * 0.06
-            for index in 0..<5 {
-                let bw = shelf.width * (0.13 + 0.02 * Double(index % 2))
-                let bh = shelf.height * (0.34 - 0.04 * Double(index % 3))
-                let y = shelf.minY + shelf.height * (0.46 * Double(row) + 0.44) - bh
-                ctx.setFillColor(bookColors[(index + row) % bookColors.count].withAlphaComponent(0.75).cgColor)
-                ctx.fill(CGRect(x: x, y: y, width: bw, height: bh))
-                x += bw + shelf.width * 0.03
-            }
-        }
-
-        // 体と頭
-        let face = faceRect(for: size)
-        let faceFrame = CGRect(x: face.minX * w, y: face.minY * h, width: face.width * w, height: face.height * h)
-        // 首は短く、肩は広めに（机の下に隠れるので下はそのまま）
-        ctx.setFillColor(UIColor(red: 0.80, green: 0.64, blue: 0.53, alpha: 1).cgColor)
-        ctx.fill(CGRect(x: w * 0.5 - base * 0.045, y: faceFrame.maxY - faceFrame.height * 0.12, width: base * 0.09, height: base * 0.08))
-        ctx.setFillColor(p.shirt.cgColor)
-        let shoulders = CGRect(x: w * 0.5 - base * 0.36, y: faceFrame.maxY + base * 0.03, width: base * 0.72, height: base * 0.9)
-        ctx.addPath(UIBezierPath(roundedRect: shoulders, cornerRadius: base * 0.22).cgPath)
-        ctx.fillPath()
-        ctx.setFillColor(UIColor(red: 0.80, green: 0.64, blue: 0.53, alpha: 1).cgColor)
-        ctx.fillEllipse(in: faceFrame.insetBy(dx: faceFrame.width * 0.05, dy: faceFrame.height * 0.04))
-        ctx.setFillColor(UIColor(red: 0.20, green: 0.15, blue: 0.12, alpha: 1).cgColor)
-        ctx.fillEllipse(in: CGRect(x: faceFrame.minX, y: faceFrame.minY - faceFrame.height * 0.06, width: faceFrame.width, height: faceFrame.height * 0.48))
-
-        // 机とノート
-        ctx.setFillColor(UIColor(red: 0.93, green: 0.89, blue: 0.82, alpha: 1).cgColor)
-        ctx.fill(CGRect(x: 0, y: h * 0.80, width: w, height: h * 0.20))
-        let note = CGRect(x: w * 0.5 - base * 0.30, y: h * 0.81, width: base * 0.60, height: h * 0.15)
-        ctx.setFillColor(UIColor.white.cgColor)
-        ctx.fill(note)
-        ctx.setFillColor(UIColor(red: 0.62, green: 0.68, blue: 0.74, alpha: 1).cgColor)
-        let lines = Int(2 + t * 5)
-        for line in 0..<lines {
-            let length = note.width * (line == lines - 1 ? 0.3 + 0.4 * (t * 5).truncatingRemainder(dividingBy: 1) : 0.75)
-            ctx.fill(CGRect(x: note.minX + note.width * 0.08, y: note.minY + note.height * (0.16 + 0.12 * Double(line)), width: length, height: max(1, h * 0.004)))
-        }
-
-        // ペン（書いている手の動き）
-        let penX = note.minX + note.width * (0.2 + 0.5 * abs(sin(t * .pi * 6)))
-        ctx.saveGState()
-        ctx.translateBy(x: penX, y: note.minY + note.height * 0.5)
-        ctx.rotate(by: -0.6)
-        ctx.setFillColor(UIColor(red: 0.24, green: 0.29, blue: 0.34, alpha: 1).cgColor)
-        ctx.fill(CGRect(x: 0, y: 0, width: base * 0.16, height: base * 0.015))
-        ctx.restoreGState()
-
-        // マグカップ
-        ctx.setFillColor(UIColor.white.withAlphaComponent(0.92).cgColor)
-        ctx.fill(CGRect(x: w * 0.80, y: h * 0.74, width: base * 0.09, height: base * 0.11))
-    }
-
-    private static func pixelate(context ctx: CGContext, size: CGSize) {
+    private static func pixelate(context ctx: CGContext, size: CGSize, face: CGRect) {
         guard let snapshot = ctx.makeImage() else { return }
-        let face = faceRect(for: size)
         let rect = CGRect(x: face.minX * size.width, y: face.minY * size.height, width: face.width * size.width, height: face.height * size.height)
-            .insetBy(dx: -size.width * 0.02, dy: -size.height * 0.02)
-        let block = max(6, min(size.width, size.height) * 0.03)
+        let block = max(6, min(size.width, size.height) * 0.04)
         ctx.saveGState()
         ctx.addEllipse(in: rect)
         ctx.clip()
@@ -208,8 +150,13 @@ enum DemoArt {
         }
     }
 
-    // 短い動画（タイムラプス風）を書き出す。顔にはモザイクをかけた状態で作る
-    static func writeVideo(to url: URL, palette: Palette, size: CGSize = CGSize(width: 540, height: 960), frames: Int = 40, mosaic: Bool) -> Bool {
+    // 何コマ目にどの写真を出すか（写真を順に切り替える）
+    static func scene(at index: Int, frames: Int, of scenes: [Scene]) -> Scene {
+        scenes[min(scenes.count - 1, index * scenes.count / max(1, frames))]
+    }
+
+    // 短い動画（タイムラプス風）を書き出す。写真を順に切り替える
+    static func writeVideo(to url: URL, scenes: [Scene], size: CGSize = CGSize(width: 540, height: 960), frames: Int = 40, mosaic: Bool) -> Bool {
         try? FileManager.default.removeItem(at: url)
         guard let writer = try? AVAssetWriter(outputURL: url, fileType: .mov) else { return false }
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
@@ -229,7 +176,7 @@ enum DemoArt {
 
         for index in 0..<frames {
             while !input.isReadyForMoreMediaData { usleep(2000) }
-            let image = Self.image(size: size, palette: palette, t: Double(index) / Double(frames), mosaic: mosaic)
+            let image = Self.image(size: size, scene: scene(at: index, frames: frames, of: scenes), mosaic: mosaic)
             guard let pool = adaptor.pixelBufferPool, let cgImage = image.cgImage else { continue }
             var buffer: CVPixelBuffer?
             CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &buffer)
@@ -258,16 +205,13 @@ enum DemoArt {
     }
 }
 
-// 録画画面でカメラ映像の代わりに出すイラスト
+// 録画画面でカメラ映像の代わりに出す写真
 struct DemoCameraView: View {
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 0.12)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 20) / 20
-            GeometryReader { geometry in
-                Image(uiImage: DemoArt.image(size: CGSize(width: geometry.size.width / 2, height: geometry.size.height / 2), palette: DemoArt.palettes[0], t: t))
-                    .resizable()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-            }
+        GeometryReader { geometry in
+            Image(uiImage: DemoArt.image(size: CGSize(width: geometry.size.width, height: geometry.size.height), scene: DemoArt.scenes[0]))
+                .resizable()
+                .frame(width: geometry.size.width, height: geometry.size.height)
         }
     }
 }
@@ -332,12 +276,12 @@ enum DemoSeeder {
         for (index, item) in plan.enumerated() {
             guard let day = calendar.date(byAdding: .day, value: -item.day, to: today),
                   let date = calendar.date(bySettingHour: item.hour, minute: 0, second: 0, of: day) else { continue }
-            let palette = DemoArt.palettes[index % DemoArt.palettes.count]
-            let thumbnail = MediaStore.storeImage(DemoArt.image(size: CGSize(width: 720, height: 1280), palette: palette, t: 0.6, mosaic: true))
+            let scene = DemoArt.scenes[index % DemoArt.scenes.count]
+            let thumbnail = MediaStore.storeImage(DemoArt.image(size: CGSize(width: 720, height: 1280), scene: scene, mosaic: true))
             var videoName: String?
             if index < 6 {
                 let url = MediaStore.directory.appendingPathComponent("demo-\(index).mov")
-                if DemoArt.writeVideo(to: url, palette: palette, mosaic: true) {
+                if DemoArt.writeVideo(to: url, scenes: DemoArt.day, mosaic: true) {
                     videoName = url.lastPathComponent
                 }
             }
@@ -397,11 +341,11 @@ enum DemoSeeder {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("demo-recording.mov")
         // 撮影の向きに合わせる（横向きなら横長の動画）
         let size = DemoMode.orientation.isLandscape ? CGSize(width: 1280, height: 720) : CGSize(width: 720, height: 1280)
-        guard DemoArt.writeVideo(to: url, palette: DemoArt.palettes[0], size: size, frames: 80, mosaic: false) else { return nil }
-        let face = DemoArt.faceRect(for: size).insetBy(dx: -0.04, dy: -0.03)
+        guard DemoArt.writeVideo(to: url, scenes: DemoArt.day, size: size, frames: 80, mosaic: false) else { return nil }
         var track = FaceTrack()
         track.samples = (0..<80).map { index in
-            FaceSample(time: Double(index) / 10, elapsed: Double(index * 30), rect: face, segment: 0)
+            let face = DemoArt.faceRect(for: size, scene: DemoArt.scene(at: index, frames: 80, of: DemoArt.day))
+            return FaceSample(time: Double(index) / 10, elapsed: Double(index * 30), rect: face, segment: 0)
         }
         return RecordingResult(url: url, canvasSize: size, sessionStart: sessionStart, track: track)
     }

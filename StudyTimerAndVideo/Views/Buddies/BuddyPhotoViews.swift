@@ -1,3 +1,4 @@
+import AVKit
 import SwiftData
 import SwiftUI
 
@@ -54,6 +55,11 @@ struct BuddyReportSheet: View {
                     Text(L10n.string("開発者に、相手の名前と番号、アプリの利用者番号、グループ名、日時が届きます。写真の通報では写真も届きます。開発者が確かめて、よくないものは写真の機能から締め出すなどの対応をします。相手には、だれが通報したかは分かりません。"))
                         .font(ReelTheme.sans(11))
                         .foregroundColor(ReelTheme.secondary)
+                    if target.photo?.isClip == true {
+                        Text(L10n.string("動画の通報では、その10秒の動画も届きます。"))
+                            .font(ReelTheme.sans(11))
+                            .foregroundColor(ReelTheme.secondary)
+                    }
                     Text(L10n.string("急ぎの危険があるときは、警察に相談してください。"))
                         .font(ReelTheme.sans(11))
                         .foregroundColor(ReelTheme.secondary)
@@ -120,6 +126,12 @@ struct BuddyPhotoImage: View {
             } else {
                 ProgressView()
             }
+            if photo.isClip {
+                Image(systemName: "play.circle.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(.white, .black.opacity(0.35))
+                    .accessibilityLabel(L10n.string("10秒の動画"))
+            }
         }
         .clipped()
         .task(id: photo.id) {
@@ -139,6 +151,7 @@ struct BuddyPhotoViewer: View {
     private let group: BuddyCloud.Group
     private let onReport: (Data?) -> Void
     @State private var data: Data?
+    @State private var clipURL: URL?
 
     init(photo: BuddyCloud.Photo, group: BuddyCloud.Group, onReport: @escaping (Data?) -> Void) {
         self.photo = photo
@@ -151,9 +164,17 @@ struct BuddyPhotoViewer: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 14) {
-                BuddyPhotoImage(photo: photo, group: group) { data = $0 }
-                    .aspectRatio(4 / 3, contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                ZStack {
+                    BuddyPhotoImage(photo: photo, group: group) { data = $0 }
+                    if let clipURL {
+                        BuddyClipPlayer(url: clipURL)
+                    }
+                }
+                .aspectRatio(4 / 3, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .task(id: photo.id) {
+                    clipURL = await BuddyPhotos.clipURL(for: photo, in: group)
+                }
                 HStack {
                     Text("\(photo.nickname) \(BuddyProfile.displayCode(photo.code))")
                         .font(ReelTheme.sans(14, weight: .medium))
@@ -222,6 +243,10 @@ struct BuddyPhotoComposer: View {
     @State private var sensitive = false
     @State private var working = false
     @State private var sending = false
+    // 写真1枚か、そこから10秒の動画か
+    @State private var asClip = false
+    @State private var clip: MosaickedClip?
+    @State private var makingClip = false
 
     init(group: BuddyCloud.Group) {
         self.group = group
@@ -266,6 +291,11 @@ struct BuddyPhotoComposer: View {
             }
         }
         .tint(ReelTheme.accentDeep)
+        .onChange(of: "\(selected?.id.uuidString ?? "")-\(position)-\(asClip)") {
+            // 選び直したら、作った動画は使わない
+            if let clip { try? FileManager.default.removeItem(at: clip.url) }
+            clip = nil
+        }
         .task(id: "\(selected?.id.uuidString ?? "")-\(position)") {
             // スライダーを動かしている間は待ち、止まってから1コマ作る
             try? await Task.sleep(nanoseconds: 250_000_000)
@@ -325,6 +355,14 @@ struct BuddyPhotoComposer: View {
             Text(L10n.string("スライダーで、出してもいい瞬間を選んでください。顔にはモザイクがかかります。"))
                 .font(ReelTheme.sans(11))
                 .foregroundColor(ReelTheme.secondary)
+            Picker(L10n.string("出し方"), selection: $asClip) {
+                Text(L10n.string("写真")).tag(false)
+                Text(L10n.string("10秒の動画")).tag(true)
+            }
+            .pickerStyle(.segmented)
+            if asClip {
+                clipSection
+            }
             if sensitive {
                 Text(L10n.string("この1コマは送れません。ほかの瞬間を選んでください。"))
                     .font(ReelTheme.sans(12, weight: .medium))
@@ -347,7 +385,52 @@ struct BuddyPhotoComposer: View {
         }
     }
 
-    private var canSend: Bool { data != nil && !sensitive && !working && !sending }
+    private var canSend: Bool { data != nil && !sensitive && !working && !sending && (!asClip || clip != nil) }
+
+    // 動画は、作ったものを本人が見てからでないと送れない
+    @ViewBuilder
+    private var clipSection: some View {
+        if let clip {
+            BuddyClipPlayer(url: clip.url)
+                .aspectRatio(4 / 3, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            Text(L10n.string("送る前に、顔が隠れているか最後まで見て確かめてください。"))
+                .font(ReelTheme.sans(11))
+                .foregroundColor(ReelTheme.secondary)
+        } else {
+            Button {
+                makeClip()
+            } label: {
+                HStack(spacing: 8) {
+                    if makingClip { ProgressView() }
+                    Text(L10n.string(makingClip ? "モザイクをかけています…" : "この瞬間から10秒の動画を作る"))
+                }
+                .font(ReelTheme.sans(14, weight: .medium))
+                .foregroundColor(ReelTheme.accentDeep)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(Capsule().fill(ReelTheme.accentSoft))
+            }
+            .disabled(makingClip || working)
+        }
+    }
+
+    private func makeClip() {
+        guard let session = selected, let url = MediaStore.videoURL(named: session.videoFileName) else { return }
+        makingClip = true
+        Task {
+            let made = await BuddyClips.make(from: url, at: position)
+            var flagged = false
+            if let made { flagged = await BuddyClips.isSensitive(made) }
+            makingClip = false
+            if flagged {
+                sensitive = true
+                if let made { try? FileManager.default.removeItem(at: made.url) }
+                return
+            }
+            clip = made
+            if let made { data = BuddyPhotos.jpeg(made.thumbnail) }
+        }
+    }
 
     private func makeFrame() async {
         guard let session = selected, let url = MediaStore.videoURL(named: session.videoFileName) else { return }
@@ -372,9 +455,36 @@ struct BuddyPhotoComposer: View {
         guard let data else { return }
         sending = true
         Task {
-            let ok = await cloud.sendPhoto(data, to: group)
+            let ok = await cloud.sendPhoto(data, clip: asClip ? clip : nil, to: group)
             sending = false
-            if ok { dismiss() }
+            if ok {
+                if let clip { try? FileManager.default.removeItem(at: clip.url) }
+                dismiss()
+            }
         }
+    }
+}
+
+// 仲間の10秒の動画。音はなく、くり返し流す
+struct BuddyClipPlayer: View {
+    let url: URL
+    @State private var player: AVQueuePlayer?
+    @State private var looper: AVPlayerLooper?
+
+    var body: some View {
+        VideoPlayer(player: player)
+            .disabled(true)
+            .onAppear {
+                let queue = AVQueuePlayer()
+                queue.isMuted = true
+                looper = AVPlayerLooper(player: queue, templateItem: AVPlayerItem(url: url))
+                player = queue
+                queue.play()
+            }
+            .onDisappear {
+                player?.pause()
+                player = nil
+                looper = nil
+            }
     }
 }

@@ -28,6 +28,8 @@ struct StartView: View {
     @State private var showPapers = false
     @State private var showBuddies = false
     @State private var buddyJoinLink: BuddyJoinLink?
+    @State private var showWatch = false
+    @State private var watchJoinLink: WatchJoinLink?
 
     // タイマー設定値(時・分・秒)
     @State private var hours = 0
@@ -92,7 +94,10 @@ struct StartView: View {
                     // 勉強仲間（スクショ用のデモでは出さない）
                     if !DemoMode.isActive {
                         HomeBuddiesRow { showBuddies = true }
-                            .padding(.bottom, 16)
+                            .padding(.bottom, 8)
+                        // 保護者・塾に共有しているあいだは必ず出す
+                        HomeWatchRow { showWatch = true }
+                            .padding(.bottom, 8)
                     }
 
                     todayStrip
@@ -156,8 +161,8 @@ struct StartView: View {
                     onFinish: {
                         sessionBootstrap = nil
                         // 記録を保存してホームに戻った、いちばん気分のよいところでレビューを頼む（保存せずに閉じたときは頼まない）
-                        if let saved = sessions.first?.recordedAt, Date().timeIntervalSince(saved) < 10 * 60 {
-                            ReviewRequest.askIfDeserved(sessionCount: sessions.count)
+                        if let latest = sessions.first, let saved = latest.recordedAt, Date().timeIntervalSince(saved) < 10 * 60 {
+                            ReviewRequest.askIfDeserved(sessionCount: sessions.count, latestHasVideo: latest.videoFileName != nil, latestSeconds: latest.duration)
                         }
                     },
                     mode: bootstrap.mode,
@@ -212,12 +217,17 @@ struct StartView: View {
             .sheet(isPresented: $showBuddies, onDismiss: { buddyJoinLink = nil }) {
                 BuddiesView(joinLink: buddyJoinLink)
             }
+            .sheet(isPresented: $showWatch, onDismiss: { watchJoinLink = nil }) {
+                WatchView(joinLink: watchJoinLink)
+            }
             // 記録が増えたり消えたりしたら、勉強仲間に見せる今日・今週の合計を更新する
             .onChange(of: sessions.count) {
                 BuddyCloud.shared.updateTotals(sessions)
             }
             .task {
                 BuddyCloud.shared.updateTotals(sessions)
+                // 保護者・塾に共有中の表示と、見守っている人の様子
+                await WatchCloud.shared.refresh()
             }
             .sheet(isPresented: $showCalendar) {
                 CalendarView(subjectManager: subjectManager)
@@ -338,6 +348,12 @@ struct StartView: View {
                     }
                 }
                 .frame(height: 3)
+                // しばらく休んでいた人を責めずに迎える（戻ったことに意味がある。docs/research/science.md）
+                if todayStudyTime == 0, StudyStreak.daysAway(days: Set(sessions.map { Calendar.current.startOfDay(for: $0.date) })) != nil {
+                    Text(L10n.string("おかえりなさい。今日の1回から、また始めましょう"))
+                        .font(ReelTheme.sans(12))
+                        .foregroundColor(ReelTheme.accentDeep)
+                }
             }
         }
         .buttonStyle(.plain)
@@ -624,6 +640,9 @@ struct StartView: View {
         } else if url.host == "buddies", let link = BuddyJoinLink(url: url) {
             buddyJoinLink = link
             showBuddies = true
+        } else if url.host == "watch", let link = WatchJoinLink(url: url) {
+            watchJoinLink = link
+            showWatch = true
         }
     }
 

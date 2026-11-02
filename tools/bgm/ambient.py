@@ -1,4 +1,4 @@
-"""Ambient study sounds (rain, brown noise). Synthesized from noise only, like the songs."""
+"""Ambient study sounds (rain, brown noise, white noise). Synthesized from noise only, like the songs."""
 import numpy as np
 from synth import SR, write
 
@@ -65,6 +65,20 @@ def brown_noise():
     return normalize(make_loop(np.array(channels)), 0.55)
 
 
+def white_noise():
+    # flat hiss, with the very top rolled off so it is not sharp at low volume
+    rng = np.random.default_rng(9)
+    n = int((LOOP + OVERLAP) * SR)
+    channels = []
+    for _ in range(2):
+        x = spectral_filter(rng.normal(0, 1, n), lambda f: (f > 40) * (1 / (1 + (f / 9000) ** 2)))
+        channels.append(x / np.std(x))
+    return normalize(make_loop(np.array(channels)), 0.4)
+
+
 if __name__ == '__main__':
-    write('Rain', rain())
-    write('BrownNoise', brown_noise())
+    import sys
+    only = sys.argv[1:]
+    for name, make in [('Rain', rain), ('BrownNoise', brown_noise), ('WhiteNoise', white_noise)]:
+        if not only or name in only:
+            write(name, make())

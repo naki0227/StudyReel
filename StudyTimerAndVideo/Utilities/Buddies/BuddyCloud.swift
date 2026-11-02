@@ -54,6 +54,12 @@ final class BuddyCloud: ObservableObject {
         var weekKey: String
         var streakDays: Int
         var hidesRanking: Bool
+        // 見守り（保護者・塾）のゾーンにだけ書く：今週の曜日ごとの秒数と、最後に勉強した日時
+        var weekDays: [Int] = []
+        var lastStudiedAt: Date?
+        // 4週間の週ごとの秒数（古い順）と、今週の教科ごとの秒数（本人が見せると決めたときだけ）
+        var pastWeeks: [Int] = []
+        var subjects: [String: Int] = [:]
         var id: String { userRecordName }
 
         var isStudyingNow: Bool {
@@ -84,6 +90,8 @@ final class BuddyCloud: ObservableObject {
         var code: Int
         var createdAt: Date
         var expiresAt: Date
+        // 10秒の動画つき（image は動画の1コマ）
+        var isClip = false
         var id: String { recordName }
         var isExpired: Bool { expiresAt <= Date() }
     }
@@ -185,11 +193,12 @@ final class BuddyCloud: ObservableObject {
     }
 
     // 写真の画像（image）だけは取らない。見るときに1枚ずつ取る
-    private static let listKeys: [CKRecord.FieldKey] = [
+    static let listKeys: [CKRecord.FieldKey] = [
         "name", "inviteToken", "ownerRecordName", "photosEnabled",
         "userRecordName", "nickname", "icon", "code", "studyingSince", "studyingUntil",
         "todaySeconds", "todayKey", "weekSeconds", "weekKey", "streakDays", "hidesRanking",
         "from", "to", "kind", "dayKey", "createdAt", "expiresAt",
+        "weekDays", "lastStudiedAt", "pastWeeks", "subjectsWeek", "token", "viewer", "viewerName", "schoolName",
         CKShare.SystemFieldKey.title,
     ]
 
@@ -228,7 +237,7 @@ final class BuddyCloud: ObservableObject {
         )
     }
 
-    private static func member(_ record: CKRecord) -> Member {
+    static func member(_ record: CKRecord) -> Member {
         Member(
             userRecordName: record["userRecordName"] as? String ?? record.recordID.recordName,
             nickname: record["nickname"] as? String ?? "",
@@ -241,11 +250,15 @@ final class BuddyCloud: ObservableObject {
             weekSeconds: record["weekSeconds"] as? Int ?? 0,
             weekKey: record["weekKey"] as? String ?? "",
             streakDays: record["streakDays"] as? Int ?? 0,
-            hidesRanking: (record["hidesRanking"] as? Int ?? 0) == 1
+            hidesRanking: (record["hidesRanking"] as? Int ?? 0) == 1,
+            weekDays: record["weekDays"] as? [Int] ?? [],
+            lastStudiedAt: record["lastStudiedAt"] as? Date,
+            pastWeeks: record["pastWeeks"] as? [Int] ?? [],
+            subjects: (record["subjectsWeek"] as? String).flatMap { try? JSONDecoder().decode([String: Int].self, from: Data($0.utf8)) } ?? [:]
         )
     }
 
-    private static func stamp(_ record: CKRecord) -> Stamp? {
+    static func stamp(_ record: CKRecord) -> Stamp? {
         guard let kind = BuddyStampKind(rawValue: record["kind"] as? String ?? "") else { return nil }
         return Stamp(
             recordName: record.recordID.recordName,
@@ -264,7 +277,8 @@ final class BuddyCloud: ObservableObject {
             nickname: record["nickname"] as? String ?? "",
             code: record["code"] as? Int ?? 0,
             createdAt: created,
-            expiresAt: record["expiresAt"] as? Date ?? created.addingTimeInterval(BuddyPhotos.lifetime)
+            expiresAt: record["expiresAt"] as? Date ?? created.addingTimeInterval(BuddyPhotos.lifetime),
+            isClip: (record["kind"] as? String) == "clip"
         )
     }
 
@@ -500,11 +514,19 @@ final class BuddyCloud: ObservableObject {
             for group in groups {
                 try? await saveMyMember(in: group.zoneID, db: database(for: group))
             }
+            await WatchCloud.shared.pushStatus()
         }
     }
 
     private func saveMyMember(in zoneID: CKRecordZone.ID, db: CKDatabase) async throws {
-        guard let me = myRecordName, BuddyProfile.isReady else { return }
+        guard let record = myMemberRecord(in: zoneID, detailed: false) else { return }
+        // 自分の行は自分だけが書くので、そのまま上書きする
+        try await save([record], in: db, policy: .allKeys)
+    }
+
+    // 自分の行。detailed のとき（見守りのゾーン）は、曜日ごとの時間と最後に勉強した日時も書く
+    func myMemberRecord(in zoneID: CKRecordZone.ID, detailed: Bool) -> CKRecord? {
+        guard let me = myRecordName, BuddyProfile.isReady else { return nil }
         let record = CKRecord(recordType: "BuddyMember", recordID: Self.memberID(me, zone: zoneID))
         record["userRecordName"] = me as NSString
         record["nickname"] = BuddyProfile.nickname as NSString
@@ -523,8 +545,21 @@ final class BuddyCloud: ObservableObject {
         record["weekKey"] = BuddyTotals.weekKey() as NSString
         record["streakDays"] = NSNumber(value: totals.streakDays)
         record["hidesRanking"] = NSNumber(value: BuddyProfile.hidesRanking ? 1 : 0)
-        // 自分の行は自分だけが書くので、そのまま上書きする
-        try await save([record], in: db, policy: .allKeys)
+        if detailed {
+            record["weekDays"] = totals.weekDays as NSArray
+            if let last = totals.lastStudiedAt {
+                record["lastStudiedAt"] = last as NSDate
+            }
+            record["pastWeeks"] = totals.pastWeeks as NSArray
+            // 教科の名前は本人が付けたものなので、見せると決めたときだけ書く
+            if BuddyProfile.watchShowsSubjects,
+               let json = try? JSONEncoder().encode(totals.subjects), let text = String(data: json, encoding: .utf8) {
+                record["subjectsWeek"] = text as NSString
+            } else {
+                record["subjectsWeek"] = nil
+            }
+        }
+        return record
     }
 
     // MARK: - スタンプ
@@ -622,9 +657,10 @@ final class BuddyCloud: ObservableObject {
     func handlePush() async {
         notifiesOnNextRefresh = true
         await refresh()
+        await WatchCloud.shared.refresh(post: true)
     }
 
-    private func subscribeIfNeeded() async {
+    func subscribeIfNeeded() async {
         BuddyNotifier.registerForPush()
         guard !UserDefaults.standard.bool(forKey: Self.subscribedKey) else { return }
         do {
@@ -677,7 +713,8 @@ final class BuddyCloud: ObservableObject {
         return group.photos.contains { $0.from == me && !$0.isExpired && Calendar.current.isDateInToday($0.createdAt) }
     }
 
-    func sendPhoto(_ data: Data, to group: Group) async -> Bool {
+    // clip を渡すと、10秒の動画も一緒に出す（モザイクをかけ直した MosaickedClip しか渡せない）
+    func sendPhoto(_ data: Data, clip: MosaickedClip? = nil, to group: Group) async -> Bool {
         guard group.photosEnabled, BuddyProfile.photosOn, !hasSentPhotoToday(in: group), let me = myRecordName else { return false }
         await checkPhotoBans()
         guard !isBannedFromPhotos else {
@@ -697,8 +734,17 @@ final class BuddyCloud: ObservableObject {
             record["createdAt"] = now as NSDate
             record["expiresAt"] = now.addingTimeInterval(BuddyPhotos.lifetime) as NSDate
             record["image"] = CKAsset(fileURL: file)
+            if let clip {
+                record["kind"] = "clip" as NSString
+                record["clip"] = CKAsset(fileURL: clip.url)
+            }
             try await save([record], in: database(for: group), policy: .allKeys)
             BuddyPhotos.store(data, for: name)
+            if let clip {
+                let cached = BuddyClips.cacheURL(name)
+                try? FileManager.default.removeItem(at: cached)
+                try? FileManager.default.copyItem(at: clip.url, to: cached)
+            }
             await refresh()
             return true
         } catch {
@@ -713,6 +759,7 @@ final class BuddyCloud: ObservableObject {
         do {
             try await save([], deleting: [CKRecord.ID(recordName: photo.recordName, zoneID: group.zoneID)], in: database(for: group))
             BuddyPhotos.remove(photo.recordName)
+            try? FileManager.default.removeItem(at: BuddyClips.cacheURL(photo.recordName))
             await refresh()
         } catch {
             message = Self.describe(error)
@@ -753,6 +800,11 @@ final class BuddyCloud: ObservableObject {
             file = url
             record["photo"] = CKAsset(fileURL: url)
             record["photoCreatedAt"] = photo.createdAt as NSDate
+            // 動画の通報では、受け取って端末に置いてある動画も送る
+            let clipURL = BuddyClips.cacheURL(photo.recordName)
+            if photo.isClip, FileManager.default.fileExists(atPath: clipURL.path) {
+                record["clip"] = CKAsset(fileURL: clipURL)
+            }
         }
         defer { if let file { try? FileManager.default.removeItem(at: file) } }
         do {
@@ -848,11 +900,11 @@ final class BuddyCloud: ObservableObject {
 
     // MARK: - 小さな道具
 
-    private static func memberID(_ userRecordName: String, zone: CKRecordZone.ID) -> CKRecord.ID {
+    static func memberID(_ userRecordName: String, zone: CKRecordZone.ID) -> CKRecord.ID {
         CKRecord.ID(recordName: "member-" + userRecordName, zoneID: zone)
     }
 
-    private static func newToken() -> String {
+    static func newToken() -> String {
         UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
     }
 
@@ -871,7 +923,7 @@ final class BuddyCloud: ObservableObject {
         savePending()
     }
 
-    private func fetchParticipant(userRecordName: String) async throws -> CKShare.Participant {
+    func fetchParticipant(userRecordName: String) async throws -> CKShare.Participant {
         try await withCheckedThrowingContinuation { continuation in
             let info = CKUserIdentity.LookupInfo(userRecordID: CKRecord.ID(recordName: userRecordName))
             let operation = CKFetchShareParticipantsOperation(userIdentityLookupInfos: [info])
@@ -891,7 +943,7 @@ final class BuddyCloud: ObservableObject {
         }
     }
 
-    private func fetchShareMetadata(_ url: URL) async throws -> CKShare.Metadata {
+    func fetchShareMetadata(_ url: URL) async throws -> CKShare.Metadata {
         try await withCheckedThrowingContinuation { continuation in
             let operation = CKFetchShareMetadataOperation(shareURLs: [url])
             var found: CKShare.Metadata?
@@ -914,7 +966,7 @@ final class BuddyCloud: ObservableObject {
         }
     }
 
-    private func accept(_ metadata: CKShare.Metadata) async throws {
+    func accept(_ metadata: CKShare.Metadata) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let operation = CKAcceptSharesOperation(shareMetadatas: [metadata])
             var failure: Error?
@@ -934,7 +986,7 @@ final class BuddyCloud: ObservableObject {
     }
 
     // modifyRecords は1件ずつの失敗では投げないので、失敗があれば最初のものを投げる（消すときに見つからないのは成功とみなす）
-    private func save(_ records: [CKRecord], deleting: [CKRecord.ID] = [], in db: CKDatabase, policy: CKModifyRecordsOperation.RecordSavePolicy = .ifServerRecordUnchanged) async throws {
+    func save(_ records: [CKRecord], deleting: [CKRecord.ID] = [], in db: CKDatabase, policy: CKModifyRecordsOperation.RecordSavePolicy = .ifServerRecordUnchanged) async throws {
         let result = try await db.modifyRecords(saving: records, deleting: deleting, savePolicy: policy)
         for (_, item) in result.saveResults {
             if case .failure(let error) = item { throw error }

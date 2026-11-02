@@ -57,7 +57,7 @@ enum BuddyPhotos {
     }
 
     // Vision の座標（左下が原点、0〜1）で、隠す範囲を返す。顔は少し広めに、顔が見つからなければ上半身の上の方を隠す
-    private static func hideRects(in image: CGImage) -> [CGRect] {
+    static func hideRects(in image: CGImage) -> [CGRect] {
         let faces = VNDetectFaceRectanglesRequest()
         let bodies = VNDetectHumanRectanglesRequest()
         bodies.upperBodyOnly = true
@@ -137,6 +137,26 @@ enum BuddyPhotos {
         return data
     }
 
+    // 10秒の動画を取ってくる。端末に24時間置き、センシティブと判定されたものは nil
+    @MainActor
+    static func clipURL(for photo: BuddyCloud.Photo, in group: BuddyCloud.Group) async -> URL? {
+        guard photo.isClip else { return nil }
+        let url = BuddyClips.cacheURL(photo.recordName)
+        if !FileManager.default.fileExists(atPath: url.path) {
+            let id = CKRecord.ID(recordName: photo.recordName, zoneID: group.zoneID)
+            guard let results = try? await BuddyCloud.shared.database(for: group).records(for: [id], desiredKeys: ["clip"]),
+                  case .success(let record)? = results[id],
+                  let asset = record["clip"] as? CKAsset, let file = asset.fileURL else { return nil }
+            try? FileManager.default.removeItem(at: url)
+            guard (try? FileManager.default.copyItem(at: file, to: url)) != nil else { return nil }
+        }
+        if await BuddyClips.isSensitive(fileAt: url) {
+            try? FileManager.default.removeItem(at: url)
+            return nil
+        }
+        return url
+    }
+
     // MARK: - 年齢の範囲（iOS 26）
 
     // 本人や保護者が許したときだけ、18歳未満かどうかが分かる。分かったら写真を初期オフにする
@@ -177,7 +197,7 @@ enum BuddyReportReason: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .name: return L10n.string("名前やグループ名がよくない")
-        case .photo: return L10n.string("写真がよくない")
+        case .photo: return L10n.string("写真・動画がよくない")
         case .harassment: return L10n.string("いやがらせ")
         case .other: return L10n.string("その他")
         }
