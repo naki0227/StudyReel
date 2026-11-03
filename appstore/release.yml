@@ -226,6 +226,7 @@ review:
     - Share with Parents & Tutors (new in 1.9): the student scans a QR code shown by a parent or teacher and taps Share; only study totals, streak and stamps are shown, and the student can stop anytime. Teachers need a school code we issue. Data stays in the student's iCloud (CloudKit).
     - 10-second clips (new in 1.9): in buddy groups where the owner allows photos, a member can share a 10-second clip from their own time-lapse instead of a photo. Faces are detected again on the device every 0.2 s and pixelated before sending (if no face is found, the top 60% is hidden); the member must watch the result before sending. Same limits as photos: one a day, gone after 24 hours, reportable (the clip reaches the developer), blockable, off for users under 18.
     - Siri / Control Center (new in 1.9): "Start studying with StudyReel" opens the app; when a session starts from outside the app, a 3-second countdown with a "don't film" option appears before the camera records.
+    - School codes: teachers' class view is unlocked by a school code that we issue to cram schools (organizations) under a contract billed outside the app (Guideline 3.1.3(c)). Individuals cannot buy it, and students use the free app. Parents' extra insights are sold only as StudyReel Pro (in-app purchase).
     To try it: tap + on the home screen, choose a timer, then press the round shutter button. Press it again to finish and see the review screen.
 
 # 動画のプレビュー。IPHONE_67 は App Store Connect の「6.9インチ」の枠（886x1920、30秒以内）
