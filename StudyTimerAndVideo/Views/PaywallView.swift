@@ -12,6 +12,12 @@ struct PaywallView: View {
     #endif
 
     @State private var selectedProductID: String?
+    // 開いたきっかけ（最初のタイムラプスを見返した直後など）。上に一言だけ出す
+    private let lead: String?
+
+    init(lead: String? = nil) {
+        self.lead = lead
+    }
 
     var body: some View {
         NavigationStack {
@@ -21,6 +27,12 @@ struct PaywallView: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
+                        if let lead {
+                            Text(lead)
+                                .font(ReelTheme.sans(14, weight: .medium))
+                                .foregroundColor(ReelTheme.accentDeep)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                         heroCard
                         comparisonCard
                         productCard
@@ -414,5 +426,20 @@ enum ProFeature {
             Row(title: L10n.format("勉強仲間（グループを1つ作れる・参加は%dまで）", BuddyCloud.joinLimit), free: true),
             Row(title: L10n.string("保護者・塾に共有（今日・今週・連続日数）"), free: true),
         ]
+    }
+}
+
+// 最初のタイムラプスを保存して見返した直後に、1回だけ Pro を見せる。
+// アプリを開いたときより、よさを感じた直後のほうが試してもらいやすい（docs/research/market.md）
+enum FirstVideoOffer {
+    private static let shownKey = "paywall_first_video_shown"
+
+    static func shouldShow(videoSessionCount: Int, isPro: Bool) -> Bool {
+        guard !isPro, !DemoMode.isActive, videoSessionCount == 1 else { return false }
+        return !UserDefaults.standard.bool(forKey: shownKey)
+    }
+
+    static func markShown() {
+        UserDefaults.standard.set(true, forKey: shownKey)
     }
 }

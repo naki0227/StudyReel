@@ -6,6 +6,8 @@ import WidgetKit
 // MARK: - ホーム（勉強記録のギャラリー）
 struct StartView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var storeKit: StoreKitManager
+    @State private var showFirstVideoPaywall = false
     @Query private var goals: [DailyGoal]
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
     @Query(filter: #Predicate<StudyMaterial> { $0.finishedAt == nil }, sort: \StudyMaterial.createdAt, order: .reverse)
@@ -161,8 +163,15 @@ struct StartView: View {
                     onFinish: {
                         sessionBootstrap = nil
                         // 記録を保存してホームに戻った、いちばん気分のよいところでレビューを頼む（保存せずに閉じたときは頼まない）
+                        // 初めてタイムラプスを保存したときだけは、レビューの代わりに Pro を1回見せる
                         if let latest = sessions.first, let saved = latest.recordedAt, Date().timeIntervalSince(saved) < 10 * 60 {
-                            ReviewRequest.askIfDeserved(sessionCount: sessions.count, latestHasVideo: latest.videoFileName != nil, latestSeconds: latest.duration)
+                            let videoCount = sessions.filter { $0.videoFileName != nil }.count
+                            if latest.videoFileName != nil, FirstVideoOffer.shouldShow(videoSessionCount: videoCount, isPro: storeKit.isProUnlocked) {
+                                FirstVideoOffer.markShown()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { showFirstVideoPaywall = true }
+                            } else {
+                                ReviewRequest.askIfDeserved(sessionCount: sessions.count, latestHasVideo: latest.videoFileName != nil, latestSeconds: latest.duration)
+                            }
                         }
                     },
                     mode: bootstrap.mode,
@@ -234,6 +243,9 @@ struct StartView: View {
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView(subjectManager: subjectManager)
+            }
+            .sheet(isPresented: $showFirstVideoPaywall) {
+                PaywallView(lead: L10n.string("1本目のタイムラプス、おつかれさまでした。Pro なら、ロゴなしの動画や全部録画、教科ごとの先週比も使えます。"))
             }
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
