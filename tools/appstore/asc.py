@@ -695,6 +695,8 @@ def sync_events(app_id, cfg, root):
         attrs = {
             "referenceName": ev["ref"], "badge": ev["badge"], "purpose": ev.get("purpose", "APPROPRIATE_FOR_ALL_USERS"),
             "priority": ev.get("priority", "NORMAL"), "primaryLocale": ev.get("primary_locale", "ja"),
+            # 参加にお金が要るか。StudyReel のイベントは無料で参加できる
+            "purchaseRequirement": ev.get("purchase", "NO_COST_ASSOCIATED"),
             "territorySchedules": [{"territories": all_territories(), "publishStart": iso(ev["publish"]),
                                     "eventStart": iso(ev["start"]), "eventEnd": iso(ev["end"])}],
         }
@@ -810,8 +812,10 @@ def main():
     for ev in cfg.get("events") or []:
         check_event(ev)
     if EVENTS_ONLY:
-        # 作る・直すだけ。審査には、次のバージョンと一緒に出す（審査は1つずつしか出せないため）
-        sync_events(app_id, cfg, root)
+        # 作る・直す。submit: true のものは、イベントだけで審査に出す（バージョンが審査中のときは出せないので、そのときは次に回る）
+        ids = sync_events(app_id, cfg, root)
+        if "--submit-events" in sys.argv:
+            submit_events(app_id, ids)
         return
     for spec in cfg.get("create_purchases") or []:
         ensure_purchase(app_id, spec, root)

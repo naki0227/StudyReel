@@ -29,6 +29,10 @@ on:
         description: "App 内イベントだけを作る・直す（release.yml の events。審査には次のバージョンと一緒に出す）"
         type: boolean
         default: false
+      submit_events:
+        description: "events_only と一緒に使う：submit: true のイベントを、イベントだけで審査に出す（バージョンが審査中でないとき）"
+        type: boolean
+        default: false
 
 concurrency:
   group: appstore
@@ -63,5 +67,8 @@ jobs:
           fi
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.events_only }}" = "true" ]; then
             flag="$flag --events-only"
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.submit_events }}" = "true" ]; then
+            flag="$flag --submit-events"
           fi
           python3 tools/appstore/asc.py appstore/release.yml $flag
