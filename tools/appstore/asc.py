@@ -29,6 +29,8 @@ REVIEW_FIELDS = {"first_name": "contactFirstName", "last_name": "contactLastName
                  "email": "contactEmail", "phone": "contactPhone", "notes": "notes"}
 
 DRY = "--dry-run" in sys.argv
+# 承認済み（PENDING_DEVELOPER_RELEASE）のバージョンを公開する。Actions の画面から release_now を付けて動かしたときだけ
+RELEASE_NOW = "--release-now" in sys.argv
 
 
 def load_key():
@@ -666,6 +668,17 @@ def main():
     version, versions = find_or_create_version(app_id, str(cfg["version"]))
     state = state_of(version)
     print(f"バージョン {version['attributes']['versionString']}: {state}")
+    if RELEASE_NOW:
+        if state != "PENDING_DEVELOPER_RELEASE":
+            sys.exit(f"::error::バージョン {cfg['version']} は {state} なので公開できません（承認済みのときだけ公開できます）")
+        if DRY:
+            print("[dry-run] 公開はしません")
+            return
+        api("POST", "/v1/appStoreVersionReleaseRequests", {"data": {
+            "type": "appStoreVersionReleaseRequests",
+            "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version["id"]}}}}})
+        print(f"バージョン {cfg['version']} を公開しました（ストアに出るまで数時間かかることがあります）")
+        return
     # 審査待ちでも、スクリーンショットやビルドを入れ替えたいときは取り下げてから直す（withdraw_to_update: true のとき）
     if state == "WAITING_FOR_REVIEW" and cfg.get("withdraw_to_update"):
         locs = api("GET", f"/v1/appStoreVersions/{version['id']}/appStoreVersionLocalizations")["data"]

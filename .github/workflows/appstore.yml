@@ -21,6 +21,10 @@ on:
         description: "読むだけにする"
         type: boolean
         default: true
+      release_now:
+        description: "承認済みのバージョンを公開する（dry_run を外して使う）"
+        type: boolean
+        default: false
 
 concurrency:
   group: appstore
@@ -49,5 +53,8 @@ jobs:
           flag=""
           if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ inputs.dry_run }}" = "true" ]; then
             flag="--dry-run"
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.release_now }}" = "true" ]; then
+            flag="$flag --release-now"
           fi
           python3 tools/appstore/asc.py appstore/release.yml $flag
