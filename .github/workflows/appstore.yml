@@ -26,7 +26,7 @@ on:
         type: boolean
         default: false
       events_only:
-        description: "App 内イベントだけを作る・直す（release.yml の events。submit: true のものは審査に出す）"
+        description: "App 内イベントだけを作る・直す（release.yml の events。審査には次のバージョンと一緒に出す）"
         type: boolean
         default: false
 

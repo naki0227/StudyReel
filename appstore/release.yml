@@ -283,7 +283,7 @@ screenshots:
       - appstore/screenshots/en/ipad-08.png
 
 # App 内イベント（App Store の「イベント」）。期間は31日まで、ストアに出すのは始まる14日前から
-# 作る・直すだけなら Actions の「App Store」を events_only で動かす。submit: true のものは、そのとき（またはバージョンと一緒に）審査に出す
+# 作る・直すのは Actions の「App Store」を events_only で動かす（先にしておく）。submit: true のものは、次のバージョンと一緒に審査に出す
 # 画像は tools/remotion の EventCard（1920×1080）と EventDetail（1080×1920）で作る。一度上げた画像は、App Store Connect で消すまで差し替えない
 events:
   - ref: kimatsu-2026

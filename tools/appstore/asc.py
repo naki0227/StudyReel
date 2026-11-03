@@ -740,6 +740,20 @@ def sync_events(app_id, cfg, root):
     return to_submit
 
 
+def events_to_submit(app_id, cfg):
+    """submit: true で、もう作ってあり、まだ審査に出していないイベント（作るのは events_only で先にしておく）"""
+    wanted = {ev["ref"] for ev in cfg.get("events") or [] if ev.get("submit")}
+    if not wanted:
+        return []
+    ids = []
+    for e in api_all(f"/v1/apps/{app_id}/appEvents", params={"limit": 200}):
+        a = e["attributes"]
+        if a.get("referenceName") in wanted and a.get("eventState") in {"DRAFT", "READY_FOR_REVIEW", "REJECTED", "DEVELOPER_REJECTED"}:
+            ids.append(e["id"])
+            print(f"イベント {a['referenceName']} もバージョンと一緒に審査に出します")
+    return ids
+
+
 def submit_events(app_id, event_ids):
     """イベントだけで審査に出す（バージョンがもう審査中・公開中のとき）"""
     if not event_ids or DRY:
@@ -796,7 +810,8 @@ def main():
     for ev in cfg.get("events") or []:
         check_event(ev)
     if EVENTS_ONLY:
-        submit_events(app_id, sync_events(app_id, cfg, root))
+        # 作る・直すだけ。審査には、次のバージョンと一緒に出す（審査は1つずつしか出せないため）
+        sync_events(app_id, cfg, root)
         return
     for spec in cfg.get("create_purchases") or []:
         ensure_purchase(app_id, spec, root)
@@ -862,7 +877,7 @@ def main():
         wait_previews(previews)
         wait_screenshots(shots)
         submit_purchases(purchases)
-        submit(app_id, version["id"], sync_events(app_id, cfg, root))
+        submit(app_id, version["id"], events_to_submit(app_id, cfg))
     else:
         print("submit_for_review: false なので、審査には出していません")
 
