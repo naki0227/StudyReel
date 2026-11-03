@@ -986,9 +986,15 @@ struct WatchInsights: View {
                 HStack(spacing: 8) {
                     Image(systemName: "lock")
                         .font(.system(size: 12))
-                    Text(L10n.string("教科ごとの時間と4週間の推移は Pro で見られます"))
-                        .font(ReelTheme.sans(12))
-                        .multilineTextAlignment(.leading)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L10n.string("教科ごとの時間と4週間の推移は Pro で見られます"))
+                            .font(ReelTheme.sans(12))
+                        // 保護者が買えば、ファミリー共有でお子さんの端末でも Pro が使える
+                        Text(L10n.string("ファミリー共有で、お子さんも同じ Pro を使えます"))
+                            .font(ReelTheme.sans(11))
+                            .foregroundColor(ReelTheme.secondary)
+                    }
+                    .multilineTextAlignment(.leading)
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.system(size: 11, weight: .semibold))
@@ -999,7 +1005,7 @@ struct WatchInsights: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("watch.insights.locked")
-            .sheet(isPresented: $showPaywall) { PaywallView() }
+            .sheet(isPresented: $showPaywall) { PaywallView(lead: L10n.string("保護者の方が Pro にすると、ファミリー共有でお子さんの iPhone でも Pro が使えます（最大6人）。")) }
         }
     }
 

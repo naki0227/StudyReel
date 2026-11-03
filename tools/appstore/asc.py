@@ -31,6 +31,8 @@ REVIEW_FIELDS = {"first_name": "contactFirstName", "last_name": "contactLastName
 DRY = "--dry-run" in sys.argv
 # 承認済み（PENDING_DEVELOPER_RELEASE）のバージョンを公開する。Actions の画面から release_now を付けて動かしたときだけ
 RELEASE_NOW = "--release-now" in sys.argv
+# App 内イベントだけを作る・直す（バージョンには触らない）
+EVENTS_ONLY = "--events-only" in sys.argv
 
 
 def load_key():
@@ -603,7 +605,7 @@ def withdraw(app_id, version):
     sys.exit("::error::取り下げが終わりません")
 
 
-def submit(app_id, version_id):
+def submit(app_id, version_id, event_ids=()):
     subs = api("GET", "/v1/reviewSubmissions", params={
         "filter[app]": app_id, "filter[platform]": "IOS",
         "filter[state]": "READY_FOR_REVIEW,UNRESOLVED_ISSUES"})["data"]
@@ -618,6 +620,11 @@ def submit(app_id, version_id):
         "relationships": {"reviewSubmission": {"data": {"type": "reviewSubmissions", "id": sub["id"]}},
                           "appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}},
         allow=(409,))
+    # 一緒に出すイベント（審査に入れられないものは 409 を残して続ける）
+    for eid in event_ids:
+        api("POST", "/v1/reviewSubmissionItems", {"data": {"type": "reviewSubmissionItems", "relationships": {
+            "reviewSubmission": {"data": {"type": "reviewSubmissions", "id": sub["id"]}},
+            "appEvent": {"data": {"type": "appEvents", "id": eid}}}}}, allow=(409,))
     # バージョンが入っていない審査を出そうとすると「does not have any items」で止まる。入っているか確かめてから出す
     items = api("GET", f"/v1/reviewSubmissions/{sub['id']}/items", params={"include": "appStoreVersion"})["data"]
     if not DRY and not any((i.get("relationships") or {}).get("appStoreVersion", {}).get("data", {}).get("id") == version_id for i in items):
@@ -625,6 +632,146 @@ def submit(app_id, version_id):
     api("PATCH", f"/v1/reviewSubmissions/{sub['id']}", {"data": {
         "type": "reviewSubmissions", "id": sub["id"], "attributes": {"submitted": True}}})
     print("審査に提出しました")
+
+
+# MARK: - App 内イベント（release.yml の events）
+
+EVENT_FIELDS = {"name": "name", "short": "shortDescription", "long": "longDescription"}
+EVENT_EDITABLE = {"DRAFT", "READY_FOR_REVIEW", "REJECTED", "DEVELOPER_REJECTED"}
+_territories = None
+
+
+def all_territories():
+    global _territories
+    if _territories is None:
+        _territories = [t["id"] for t in api_all("/v1/territories", params={"limit": 200})]
+    return _territories
+
+
+def parse_time(value):
+    from datetime import datetime
+    return datetime.fromisoformat(str(value))
+
+
+def check_event(ev):
+    """Apple の決まり：期間は31日まで、ストアに出すのは始まる14日前から。名前30・短い説明50・長い説明120文字まで"""
+    start, end, publish = parse_time(ev["start"]), parse_time(ev["end"]), parse_time(ev["publish"])
+    if (end - start).days > 31:
+        sys.exit(f"::error::イベント {ev['ref']}: 期間が31日を超えています")
+    if (start - publish).days > 14 or publish > start:
+        sys.exit(f"::error::イベント {ev['ref']}: ストアに出す日は、始まる14日前から始まる日までにしてください")
+    for locale, text in ev["localizations"].items():
+        for key, limit in (("name", 30), ("short", 50), ("long", 120)):
+            if len(text.get(key, "")) > limit:
+                sys.exit(f"::error::イベント {ev['ref']} {locale}: {key} が {limit} 文字を超えています")
+
+
+def iso(value):
+    return parse_time(value).isoformat()
+
+
+def upload_event_asset(loc_id, kind, path):
+    blob = open(path, "rb").read()
+    shot = api("POST", "/v1/appEventScreenshots", {"data": {
+        "type": "appEventScreenshots",
+        "attributes": {"fileName": os.path.basename(path), "fileSize": len(blob), "appEventAssetType": kind},
+        "relationships": {"appEventLocalization": {"data": {"type": "appEventLocalizations", "id": loc_id}}}}})["data"]
+    if DRY:
+        return
+    upload_parts(shot["attributes"]["uploadOperations"], blob)
+    api("PATCH", f"/v1/appEventScreenshots/{shot['id']}", {"data": {
+        "type": "appEventScreenshots", "id": shot["id"], "attributes": {"uploaded": True}}})
+
+
+def sync_events(app_id, cfg, root):
+    """events に書いたイベントを作る・直す。ストアの決まりに合わないものは止める。返すのは審査に出すイベントの id"""
+    events = cfg.get("events") or []
+    if not events:
+        return []
+    existing = {e["attributes"]["referenceName"]: e for e in api_all(f"/v1/apps/{app_id}/appEvents", params={"limit": 200})}
+    to_submit = []
+    for ev in events:
+        check_event(ev)
+        attrs = {
+            "referenceName": ev["ref"], "badge": ev["badge"], "purpose": ev.get("purpose", "APPROPRIATE_FOR_ALL_USERS"),
+            "priority": ev.get("priority", "NORMAL"), "primaryLocale": ev.get("primary_locale", "ja"),
+            "territorySchedules": [{"territories": all_territories(), "publishStart": iso(ev["publish"]),
+                                    "eventStart": iso(ev["start"]), "eventEnd": iso(ev["end"])}],
+        }
+        current = existing.get(ev["ref"])
+        if not current:
+            print(f"イベント {ev['ref']}: 作成")
+            current = api("POST", "/v1/appEvents", {"data": {"type": "appEvents", "attributes": attrs,
+                          "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}})["data"]
+        state = (current.get("attributes") or {}).get("eventState") or "DRAFT"
+        if state not in EVENT_EDITABLE:
+            print(f"イベント {ev['ref']}: {state} なので変えません")
+            continue
+        if current["id"] != "DRY" and ev["ref"] in existing:
+            api("PATCH", f"/v1/appEvents/{current['id']}", {"data": {"type": "appEvents", "id": current["id"],
+                "attributes": {k: v for k, v in attrs.items() if k != "referenceName"}}})
+        locs = {} if current["id"] == "DRY" else {
+            l["attributes"]["locale"]: l for l in api_all(f"/v1/appEvents/{current['id']}/localizations")}
+        for locale, text in ev["localizations"].items():
+            wanted = pick(text, EVENT_FIELDS)
+            loc = locs.get(locale)
+            if not loc:
+                print(f"イベント {ev['ref']} {locale}: 文言を追加")
+                loc = api("POST", "/v1/appEventLocalizations", {"data": {"type": "appEventLocalizations",
+                          "attributes": {"locale": locale, **wanted},
+                          "relationships": {"appEvent": {"data": {"type": "appEvents", "id": current["id"]}}}}})["data"]
+            else:
+                diff = changed(loc["attributes"], wanted)
+                if diff:
+                    print(f"イベント {ev['ref']} {locale}: {', '.join(diff)} を更新")
+                    api("PATCH", f"/v1/appEventLocalizations/{loc['id']}", {"data": {
+                        "type": "appEventLocalizations", "id": loc["id"], "attributes": diff}})
+            # 画像は、まだないときだけ上げる（差し替えたいときは App Store Connect で消してから）
+            have = set()
+            if loc["id"] != "DRY":
+                have = {a["attributes"].get("appEventAssetType")
+                        for a in api_all(f"/v1/appEventLocalizations/{loc['id']}/appEventScreenshots")}
+            for kind, key in (("EVENT_CARD", "card"), ("EVENT_DETAILS_PAGE", "detail")):
+                if kind not in have and ev.get(key):
+                    print(f"イベント {ev['ref']} {locale}: {kind} の画像を上げる")
+                    upload_event_asset(loc["id"], kind, os.path.join(root, ev[key]))
+        if ev.get("submit"):
+            to_submit.append(current["id"])
+    return to_submit
+
+
+def events_to_submit(app_id, cfg):
+    """submit: true で、もう作ってあり、まだ審査に出していないイベント（作るのは events_only で先にしておく）"""
+    wanted = {ev["ref"] for ev in cfg.get("events") or [] if ev.get("submit")}
+    if not wanted:
+        return []
+    ids = []
+    for e in api_all(f"/v1/apps/{app_id}/appEvents", params={"limit": 200}):
+        a = e["attributes"]
+        if a.get("referenceName") in wanted and a.get("eventState") in {"DRAFT", "READY_FOR_REVIEW", "REJECTED", "DEVELOPER_REJECTED"}:
+            ids.append(e["id"])
+            print(f"イベント {a['referenceName']} もバージョンと一緒に審査に出します")
+    return ids
+
+
+def submit_events(app_id, event_ids):
+    """イベントだけで審査に出す（バージョンがもう審査中・公開中のとき）"""
+    if not event_ids or DRY:
+        if event_ids:
+            print(f"[dry-run] イベント {len(event_ids)} 件を審査に出します")
+        return
+    subs = api("GET", "/v1/reviewSubmissions", params={
+        "filter[app]": app_id, "filter[platform]": "IOS", "filter[state]": "READY_FOR_REVIEW,UNRESOLVED_ISSUES"})["data"]
+    sub = subs[0] if subs else api("POST", "/v1/reviewSubmissions", {"data": {
+        "type": "reviewSubmissions", "attributes": {"platform": "IOS"},
+        "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}})["data"]
+    for eid in event_ids:
+        api("POST", "/v1/reviewSubmissionItems", {"data": {"type": "reviewSubmissionItems", "relationships": {
+            "reviewSubmission": {"data": {"type": "reviewSubmissions", "id": sub["id"]}},
+            "appEvent": {"data": {"type": "appEvents", "id": eid}}}}}, allow=(409,))
+    api("PATCH", f"/v1/reviewSubmissions/{sub['id']}", {"data": {
+        "type": "reviewSubmissions", "id": sub["id"], "attributes": {"submitted": True}}}, allow=(409,))
+    print(f"イベント {len(event_ids)} 件を審査に出しました")
 
 
 def show_current(app_id):
@@ -660,6 +807,12 @@ def main():
     app_id = find_app(cfg["app"])
     if DRY:
         show_current(app_id)
+    for ev in cfg.get("events") or []:
+        check_event(ev)
+    if EVENTS_ONLY:
+        # 作る・直すだけ。審査には、次のバージョンと一緒に出す（審査は1つずつしか出せないため）
+        sync_events(app_id, cfg, root)
+        return
     for spec in cfg.get("create_purchases") or []:
         ensure_purchase(app_id, spec, root)
     purchases = check_purchases(app_id, cfg.get("purchases") or [])
@@ -724,7 +877,7 @@ def main():
         wait_previews(previews)
         wait_screenshots(shots)
         submit_purchases(purchases)
-        submit(app_id, version["id"])
+        submit(app_id, version["id"], events_to_submit(app_id, cfg))
     else:
         print("submit_for_review: false なので、審査には出していません")
 

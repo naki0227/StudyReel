@@ -6,8 +6,8 @@
 # アプリのプライバシー（データの収集）と年齢区分は API で変えられないので、App Store Connect の画面で設定する。
 
 app: com.ni.StudyTimerAndVideo
-version: "1.9"
-build: 231            # "latest" にすると、このバージョンで最後に上げたビルド
+version: "1.10"
+build: 232            # "latest" にすると、このバージョンで最後に上げたビルド
 release: manual       # manual: 承認されたら自分で公開 / after_approval: 承認されたらすぐ公開
 submit_for_review: true    # true にしてマージすると、反映したあと審査に出す
 withdraw_to_update: true   # 審査待ちのときにスクリーンショットかビルドが変わっていたら、取り下げて差し替えてから出し直す
@@ -63,24 +63,13 @@ localizations:
       プライバシーポリシー: https://enludus.com/products/studyreel-privacy
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
-      ・保護者・塾に共有：見せたい相手の QR コードを読むと、今日・今週の勉強時間と連続日数を見せられます。いつでも止められます
-      ・ポモドーロ：25分＋5分などを選べます。休憩の間はタイマーも撮影も止まるので、動画には集中した時間だけが入ります
-      ・1年の草：今年何日勉強したかを色で見られて、カードにして投稿できます。連続日数は、週に1日の休みなら途切れません
-      ・「StudyReelで勉強を始める」と Siri に言うか、コントロールセンターのボタンからも始められます
-      ・勉強仲間に、顔にモザイクをかけた10秒の動画も出せます（オーナーがオンにしたグループだけ）
-      ・1か月分の Vlog、ホワイトノイズ、音の大きさを選べるようにしました
-      ・長く録画しても止まりにくくしました。端末が熱いときや空きが少ないときは撮影だけ休みます
-      ・韓国語・中国語（簡体・繁体）に対応しました
+      ・はじめてタイムラプスを保存したあとに、Pro でできることを1回だけ案内するようにしました
+      ・保護者の方へ：Pro はファミリー共有で、お子さんの iPhone でも使えます（最大6人）
+      ・塾・教室向けのご案内を始めました（enludus.com/products/studyreel-school）
   ko:
     whats_new: |
-      • 보호자·학원에 공유: 보여 주고 싶은 사람의 QR 코드를 읽으면 오늘·이번 주 공부 시간과 연속 일수를 보여 줄 수 있어요. 언제든 멈출 수 있어요
-      • 뽀모도로: 25분+5분 등을 고를 수 있어요. 휴식 중에는 타이머와 촬영이 멈춰서 영상에는 집중한 시간만 들어가요
-      • 1년의 잔디: 올해 며칠 공부했는지 색으로 보고 카드로 올릴 수 있어요. 일주일에 하루 쉬어도 연속 일수가 끊기지 않아요
-      • Siri에게 "StudyReel로 공부 시작"이라고 말하거나 제어 센터 버튼으로도 시작할 수 있어요
-      • 공부 친구에게 얼굴을 모자이크한 10초 영상도 올릴 수 있어요(그룹장이 켠 그룹만)
-      • 한 달 Vlog, 화이트 노이즈, 소리 크기 선택
-      • 오래 촬영해도 잘 멈추지 않아요. 기기가 뜨겁거나 저장 공간이 부족하면 촬영만 쉬어요
-      • 한국어와 중국어(간체·번체)를 지원해요
+      • 처음 타임랩스를 저장한 뒤, Pro로 할 수 있는 것을 한 번만 안내해요
+      • 보호자분께: Pro는 가족 공유로 자녀의 iPhone에서도 쓸 수 있어요(최대 6명)
     name: StudyReel - 공부 타임랩스 기록
     subtitle: 얼굴 모자이크 스터디 브이로그
     keywords: 공부,타이머,타임랩스,스터디윗미,공스타그램,수험생,자격증,캠스터디
@@ -113,14 +102,8 @@ localizations:
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
   zh-Hans:
     whats_new: |
-      • 分享给家长·补习班：扫描对方的二维码，就能让对方看到今天·本周的学习时间和连续天数，随时可以停止
-      • 番茄钟：可选25分钟＋5分钟等。休息时计时和拍摄都会暂停，视频里只有专注的时间
-      • 一年的打卡格：用颜色查看今年学习了多少天，还能做成卡片发布。每周休息一天不会中断连续天数
-      • 对 Siri 说"用StudyReel开始学习"，或用控制中心的按钮也能开始
-      • 可以给学习伙伴发布脸部打码的10秒视频（仅限组长开启的小组）
-      • 一个月的 Vlog、白噪音、音量选择
-      • 长时间录制更稳定。手机过热或空间不足时只暂停拍摄
-      • 支持韩语和中文（简体·繁体）
+      • 第一次保存延时视频后，只介绍一次 Pro 的功能
+      • 致家长：Pro 可通过家人共享，在孩子的 iPhone 上使用（最多6人）
     name: StudyReel - 学习延时摄影记录
     subtitle: 自动打码的学习打卡Vlog
     keywords: 学习,自习,计时器,延时,打卡,专注,考试,倒计时,番茄钟,备考,考研,陪伴
@@ -153,14 +136,8 @@ localizations:
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
   zh-Hant:
     whats_new: |
-      • 分享給家長·補習班：掃描對方的 QR Code，就能讓對方看到今天·本週的讀書時間和連續天數，隨時可以停止
-      • 番茄鐘：可選25分鐘＋5分鐘等。休息時計時和拍攝都會暫停，影片裡只有專注的時間
-      • 一年的讀書格：用顏色查看今年讀了幾天書，還能做成卡片分享。每週休息一天不會中斷連續天數
-      • 對 Siri 說「用StudyReel開始讀書」，或用控制中心的按鈕也能開始
-      • 可以給讀書夥伴分享臉部打馬賽克的10秒影片（僅限組長開啟的群組）
-      • 一個月的 Vlog、白噪音、音量選擇
-      • 長時間錄影更穩定。手機過熱或空間不足時只暫停拍攝
-      • 支援韓文和中文（簡體·繁體）
+      • 第一次儲存縮時影片後，只介紹一次 Pro 的功能
+      • 致家長：Pro 可透過家人共享，在孩子的 iPhone 上使用（最多6人）
     name: StudyReel - 讀書縮時記錄
     subtitle: 臉部自動馬賽克的讀書Vlog
     keywords: 讀書,自習,計時器,縮時,讀書帳,專注,考試,倒數,番茄鐘,學測,國考,陪讀
@@ -229,14 +206,9 @@ localizations:
       Privacy Policy: https://enludus.com/products/studyreel-privacy
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
-      • Share with parents & tutors: scan their QR code to show today's and this week's study time and your streak. Stop anytime
-      • Pomodoro: pick 25 + 5 and more. During breaks the timer and filming pause, so your video only has focus time
-      • Your year: see how many days you studied this year and post it as a card. One rest day a week won't break your streak
-      • Say "Start studying with StudyReel" to Siri, or start from a Control Center button
-      • Share a 10-second clip with your face pixelated in Study Buddies (only in groups where the owner allows it)
-      • Monthly vlogs, white noise, and a volume setting
-      • Long recordings are more reliable. If your phone gets hot or runs low on storage, filming pauses while the timer keeps going
-      • Now in Korean and Chinese (Simplified and Traditional)
+      • After you save your first time-lapse, we show what Pro adds — just once
+      • For parents: Pro works on your child’s iPhone too with Family Sharing (up to 6 people)
+      • For cram schools and tutors: see enludus.com/products/studyreel-school
 
 review:
   demo_account_required: false
@@ -254,6 +226,7 @@ review:
     - Share with Parents & Tutors (new in 1.9): the student scans a QR code shown by a parent or teacher and taps Share; only study totals, streak and stamps are shown, and the student can stop anytime. Teachers need a school code we issue. Data stays in the student's iCloud (CloudKit).
     - 10-second clips (new in 1.9): in buddy groups where the owner allows photos, a member can share a 10-second clip from their own time-lapse instead of a photo. Faces are detected again on the device every 0.2 s and pixelated before sending (if no face is found, the top 60% is hidden); the member must watch the result before sending. Same limits as photos: one a day, gone after 24 hours, reportable (the clip reaches the developer), blockable, off for users under 18.
     - Siri / Control Center (new in 1.9): "Start studying with StudyReel" opens the app; when a session starts from outside the app, a 3-second countdown with a "don't film" option appears before the camera records.
+    - School codes: teachers' class view is unlocked by a school code that we issue to cram schools (organizations) under a contract billed outside the app (Guideline 3.1.3(c)). Individuals cannot buy it, and students use the free app. Parents' extra insights are sold only as StudyReel Pro (in-app purchase).
     To try it: tap + on the home screen, choose a timer, then press the round shutter button. Press it again to finish and see the review screen.
 
 # 動画のプレビュー。IPHONE_67 は App Store Connect の「6.9インチ」の枠（886x1920、30秒以内）
@@ -308,3 +281,98 @@ screenshots:
       - appstore/screenshots/en/ipad-06.png
       - appstore/screenshots/en/ipad-07.png
       - appstore/screenshots/en/ipad-08.png
+
+# App 内イベント（App Store の「イベント」）。期間は31日まで、ストアに出すのは始まる14日前から
+# 作る・直すのは Actions の「App Store」を events_only で動かす（先にしておく）。submit: true のものは、次のバージョンと一緒に審査に出す
+# 画像は tools/remotion の EventCard（1920×1080）と EventDetail（1080×1920）で作る。一度上げた画像は、App Store Connect で消すまで差し替えない
+events:
+  - ref: kimatsu-2026
+    badge: CHALLENGE
+    purpose: APPROPRIATE_FOR_ALL_USERS
+    publish: "2026-11-16T00:00:00+09:00"
+    start: "2026-11-20T00:00:00+09:00"
+    end: "2026-12-17T23:59:00+09:00"
+    submit: true
+    card: appstore/events/kimatsu-card.jpg
+    detail: appstore/events/kimatsu-detail.jpg
+    localizations:
+      ja:
+        name: 期末テストまで、毎日タイムラプス
+        short: 28日間、毎日撮って1年の草を埋めよう。顔はモザイクで
+        long: 期末テストまでの28日間、毎日の勉強をタイムラプスで撮ろう。顔は自動でモザイクになるので、そのまま勉強垢に載せられます。
+      en-US:
+        name: 28-Day Study Time-lapse
+        short: Film your study daily for 28 days, face hidden
+        long: Film your study every day for 28 days before finals. Your face is pixelated automatically, so you can post it as is.
+  - ref: kyotsu-2027
+    badge: CHALLENGE
+    purpose: APPROPRIATE_FOR_ALL_USERS
+    publish: "2026-12-11T00:00:00+09:00"
+    start: "2026-12-18T00:00:00+09:00"
+    end: "2027-01-16T23:59:00+09:00"
+    submit: false
+    card: appstore/events/kyotsu-card.jpg
+    detail: appstore/events/kyotsu-detail.jpg
+    localizations:
+      ja:
+        name: 共通テストまで、毎日タイムラプス
+        short: 本番までの日数を見ながら、毎日の勉強を撮って残そう
+        long: 共通テストまでの日数をホームに出して、毎日の勉強をタイムラプスで残そう。過去問の点数の伸びも、カードにして共有できます。
+      en-US:
+        name: Countdown to Exam Day
+        short: See the days left and film your study every day
+        long: Keep the exam countdown on your home screen and film your study every day. Share your past-paper progress as a card.
+  - ref: pomodoro-2027
+    badge: CHALLENGE
+    purpose: APPROPRIATE_FOR_ALL_USERS
+    publish: "2027-01-12T00:00:00+09:00"
+    start: "2027-01-19T00:00:00+09:00"
+    end: "2027-02-17T23:59:00+09:00"
+    submit: false
+    card: appstore/events/pomodoro-card.jpg
+    detail: appstore/events/pomodoro-detail.jpg
+    localizations:
+      ja:
+        name: 25分集中チャレンジ
+        short: 25分＋5分休憩を1日4回。休憩中は撮影も止まります
+        long: 25分集中して5分休む、を1日4回。休憩の間はタイマーも撮影も止まるので、タイムラプスには集中した時間だけが残ります。
+      en-US:
+        name: 25-Minute Focus Challenge
+        short: 25 on, 5 off, 4 times a day. Filming pauses too
+        long: Focus for 25 minutes, rest for 5, four times a day. Timer and filming pause on breaks, so your time-lapse is all focus.
+  - ref: shingakki-2027
+    badge: NEW_SEASON
+    purpose: ATTRACT_NEW_USERS
+    publish: "2027-03-25T00:00:00+09:00"
+    start: "2027-04-01T00:00:00+09:00"
+    end: "2027-04-30T23:59:00+09:00"
+    submit: false
+    card: appstore/events/shingakki-card.jpg
+    detail: appstore/events/shingakki-detail.jpg
+    localizations:
+      ja:
+        name: 新学期、記録をはじめよう
+        short: 今日から1年の草をつけよう。勉強した日が色で埋まります
+        long: 新学期から、勉強した日を1年の草に残そう。週に1日休んでも連続は途切れません。1年分はカードにして勉強垢に載せられます。
+      en-US:
+        name: New Term, New Streak
+        short: Start your year. Each day you study fills in
+        long: Start a new term by filling in your year of study, one day at a time. One rest day a week won’t break your streak.
+  - ref: natsu-2027
+    badge: SPECIAL_EVENT
+    purpose: APPROPRIATE_FOR_ALL_USERS
+    publish: "2027-07-13T00:00:00+09:00"
+    start: "2027-07-20T00:00:00+09:00"
+    end: "2027-08-19T23:59:00+09:00"
+    submit: false
+    card: appstore/events/natsu-card.jpg
+    detail: appstore/events/natsu-detail.jpg
+    localizations:
+      ja:
+        name: 夏休みの勉強を1本のVlogに
+        short: 毎日撮って、1か月分を60秒のVlogにまとめよう
+        long: 夏休みの毎日の勉強をタイムラプスで撮って、1か月分を60秒のVlogに。顔はモザイクのまま、BGMを付けて投稿できます。
+      en-US:
+        name: Your Summer in One Vlog
+        short: Film daily and turn the month into a 60-sec vlog
+        long: Film your summer study every day and turn the whole month into a 60-second vlog, faces pixelated, with music.
