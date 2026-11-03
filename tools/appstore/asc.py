@@ -697,6 +697,8 @@ def sync_events(app_id, cfg, root):
             "priority": ev.get("priority", "NORMAL"), "primaryLocale": ev.get("primary_locale", "ja"),
             # 参加にお金が要るか。StudyReel のイベントは無料で参加できる
             "purchaseRequirement": ev.get("purchase", "NO_COST_ASSOCIATED"),
+            # 審査に出すのに要る。アプリが知らない host なので、開くとホームが出る（studyreel://start は勉強が始まってしまうので使わない）
+            "deepLink": ev.get("deep_link", f"studyreel://event/{ev['ref']}"),
             "territorySchedules": [{"territories": all_territories(), "publishStart": iso(ev["publish"]),
                                     "eventStart": iso(ev["start"]), "eventEnd": iso(ev["end"])}],
         }
@@ -771,9 +773,13 @@ def submit_events(app_id, event_ids):
         api("POST", "/v1/reviewSubmissionItems", {"data": {"type": "reviewSubmissionItems", "relationships": {
             "reviewSubmission": {"data": {"type": "reviewSubmissions", "id": sub["id"]}},
             "appEvent": {"data": {"type": "appEvents", "id": eid}}}}}, allow=(409,))
+    # 入れられなかったときに「出しました」と言わない
+    items = api("GET", f"/v1/reviewSubmissions/{sub['id']}/items")["data"]
+    if not items:
+        sys.exit(f"::error::審査（{sub['id']}）にイベントを入れられませんでした。上の 409 の内容を確認してください")
     api("PATCH", f"/v1/reviewSubmissions/{sub['id']}", {"data": {
-        "type": "reviewSubmissions", "id": sub["id"], "attributes": {"submitted": True}}}, allow=(409,))
-    print(f"イベント {len(event_ids)} 件を審査に出しました")
+        "type": "reviewSubmissions", "id": sub["id"], "attributes": {"submitted": True}}})
+    print(f"イベント {len(items)} 件を審査に出しました")
 
 
 def show_current(app_id):
