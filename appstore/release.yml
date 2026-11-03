@@ -281,3 +281,98 @@ screenshots:
       - appstore/screenshots/en/ipad-06.png
       - appstore/screenshots/en/ipad-07.png
       - appstore/screenshots/en/ipad-08.png
+
+# App 内イベント（App Store の「イベント」）。期間は31日まで、ストアに出すのは始まる14日前から
+# 作る・直すだけなら Actions の「App Store」を events_only で動かす。submit: true のものは、そのとき（またはバージョンと一緒に）審査に出す
+# 画像は tools/remotion の EventCard（1920×1080）と EventDetail（1080×1920）で作る。一度上げた画像は、App Store Connect で消すまで差し替えない
+events:
+  - ref: kimatsu-2026
+    badge: CHALLENGE
+    purpose: APPROPRIATE_FOR_ALL_USERS
+    publish: "2026-11-16T00:00:00+09:00"
+    start: "2026-11-20T00:00:00+09:00"
+    end: "2026-12-17T23:59:00+09:00"
+    submit: true
+    card: appstore/events/kimatsu-card.jpg
+    detail: appstore/events/kimatsu-detail.jpg
+    localizations:
+      ja:
+        name: 期末テストまで、毎日タイムラプス
+        short: 28日間、毎日撮って1年の草を埋めよう。顔はモザイクで
+        long: 期末テストまでの28日間、毎日の勉強をタイムラプスで撮ろう。顔は自動でモザイクになるので、そのまま勉強垢に載せられます。
+      en-US:
+        name: 28-Day Study Time-lapse
+        short: Film your study daily for 28 days, face hidden
+        long: Film your study every day for 28 days before finals. Your face is pixelated automatically, so you can post it as is.
+  - ref: kyotsu-2027
+    badge: CHALLENGE
+    purpose: APPROPRIATE_FOR_ALL_USERS
+    publish: "2026-12-11T00:00:00+09:00"
+    start: "2026-12-18T00:00:00+09:00"
+    end: "2027-01-16T23:59:00+09:00"
+    submit: false
+    card: appstore/events/kyotsu-card.jpg
+    detail: appstore/events/kyotsu-detail.jpg
+    localizations:
+      ja:
+        name: 共通テストまで、毎日タイムラプス
+        short: 本番までの日数を見ながら、毎日の勉強を撮って残そう
+        long: 共通テストまでの日数をホームに出して、毎日の勉強をタイムラプスで残そう。過去問の点数の伸びも、カードにして共有できます。
+      en-US:
+        name: Countdown to Exam Day
+        short: See the days left and film your study every day
+        long: Keep the exam countdown on your home screen and film your study every day. Share your past-paper progress as a card.
+  - ref: pomodoro-2027
+    badge: CHALLENGE
+    purpose: APPROPRIATE_FOR_ALL_USERS
+    publish: "2027-01-12T00:00:00+09:00"
+    start: "2027-01-19T00:00:00+09:00"
+    end: "2027-02-17T23:59:00+09:00"
+    submit: false
+    card: appstore/events/pomodoro-card.jpg
+    detail: appstore/events/pomodoro-detail.jpg
+    localizations:
+      ja:
+        name: 25分集中チャレンジ
+        short: 25分＋5分休憩を1日4回。休憩中は撮影も止まります
+        long: 25分集中して5分休む、を1日4回。休憩の間はタイマーも撮影も止まるので、タイムラプスには集中した時間だけが残ります。
+      en-US:
+        name: 25-Minute Focus Challenge
+        short: 25 on, 5 off, 4 times a day. Filming pauses too
+        long: Focus for 25 minutes, rest for 5, four times a day. Timer and filming pause on breaks, so your time-lapse is all focus.
+  - ref: shingakki-2027
+    badge: NEW_SEASON
+    purpose: ATTRACT_NEW_USERS
+    publish: "2027-03-25T00:00:00+09:00"
+    start: "2027-04-01T00:00:00+09:00"
+    end: "2027-04-30T23:59:00+09:00"
+    submit: false
+    card: appstore/events/shingakki-card.jpg
+    detail: appstore/events/shingakki-detail.jpg
+    localizations:
+      ja:
+        name: 新学期、記録をはじめよう
+        short: 今日から1年の草をつけよう。勉強した日が色で埋まります
+        long: 新学期から、勉強した日を1年の草に残そう。週に1日休んでも連続は途切れません。1年分はカードにして勉強垢に載せられます。
+      en-US:
+        name: New Term, New Streak
+        short: Start your year. Each day you study fills in
+        long: Start a new term by filling in your year of study, one day at a time. One rest day a week won’t break your streak.
+  - ref: natsu-2027
+    badge: SPECIAL_EVENT
+    purpose: APPROPRIATE_FOR_ALL_USERS
+    publish: "2027-07-13T00:00:00+09:00"
+    start: "2027-07-20T00:00:00+09:00"
+    end: "2027-08-19T23:59:00+09:00"
+    submit: false
+    card: appstore/events/natsu-card.jpg
+    detail: appstore/events/natsu-detail.jpg
+    localizations:
+      ja:
+        name: 夏休みの勉強を1本のVlogに
+        short: 毎日撮って、1か月分を60秒のVlogにまとめよう
+        long: 夏休みの毎日の勉強をタイムラプスで撮って、1か月分を60秒のVlogに。顔はモザイクのまま、BGMを付けて投稿できます。
+      en-US:
+        name: Your Summer in One Vlog
+        short: Film daily and turn the month into a 60-sec vlog
+        long: Film your summer study every day and turn the whole month into a 60-second vlog, faces pixelated, with music.

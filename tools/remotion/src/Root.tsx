@@ -1,7 +1,8 @@
 import React from 'react';
-import { Composition } from 'remotion';
+import { Composition, Still } from 'remotion';
 import { Intro, INTRO_FRAMES } from './Intro';
 import { Intro19, INTRO19_FRAMES } from './Intro19';
+import { EventArt, EventKind } from './Events';
 
 // 縦 1080×1920・30fps。言語は --props '{"lang":"en"}' で切り替える
 export const Root: React.FC = () => (
@@ -24,5 +25,8 @@ export const Root: React.FC = () => (
     height={1920}
     defaultProps={{ lang: 'ja' as const }}
   />
+  {/* App 内イベントの画像：--props '{"kind":"kyotsu"}' */}
+  <Still id="EventCard" component={EventArt} width={1920} height={1080} defaultProps={{ kind: 'kimatsu' as EventKind }} />
+  <Still id="EventDetail" component={EventArt} width={1080} height={1920} defaultProps={{ kind: 'kimatsu' as EventKind, portrait: true }} />
   </>
 );
