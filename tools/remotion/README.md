@@ -4,7 +4,8 @@
 ばねの動き、場面のつなぎ（スライド・フェード）、動画の再生、BGM の音量の出し入れを React で書く。
 
 - `src/Intro.tsx` アプリ紹介（1.8 時点）。最初に「でできること」4つの目次 → 撮る・モザイク → 試験までの日数 → 勉強仲間 → Vlog・投稿 → 終わり
-- `src/copy.ts` 文言（日本語・英語）。宣伝文句らしくしない
+- `src/Intro19.tsx` アプリ紹介（1.9 時点）。目次 → 顔のモザイク → ポモドーロ（休憩で撮影も止まる・Siri）→ 1年の草 → 親や塾に共有 → 終わり。新しい画面は Remotion の中で描く
+- `src/copy.ts`・`src/copy19.ts` 文言（日本語・英語）。宣伝文句らしくしない
 - `src/ui.tsx` 共通の見た目（方眼紙・テープ・見出し・画面の枠・吹き出し）
 
 ```sh
@@ -15,6 +16,7 @@ npm install
 ffmpeg -i ../../StudyTimerAndVideo/Resources/BGM/LofiStudy.m4a -t 40 -af "loudnorm=I=-24:TP=-3:LRA=11,treble=g=-5:f=4500,lowpass=f=9000" -ar 44100 -c:a aac -b:a 160k ../pv/out/bgm-lofi.m4a
 npx remotion render src/index.ts Intro out/studyreel-intro-ja.mp4 --props '{"lang":"ja"}' --public-dir ../pv --crf 18
 npx remotion render src/index.ts Intro out/studyreel-intro-en.mp4 --props '{"lang":"en"}' --public-dir ../pv --crf 18
+npx remotion render src/index.ts Intro19 out/studyreel-1.9-ja.mp4 --props '{"lang":"ja"}' --public-dir ../pv --crf 18
 npm run studio   # ブラウザで見ながら直す
 ```
 
