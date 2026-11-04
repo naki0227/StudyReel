@@ -894,3 +894,42 @@
 "試験日までの「今日あと何分」" = "“Minutes left today” until exam day";
 "離席 %@（1分以上カメラに映っていなかった時間）" = "Away %@ (out of the camera for over a minute)";
 "（このままだと少し足りません）" = " (a little short at this rate)";
+
+/* 1.11 振り返りの通知・1年の Vlog・書き出し・教科ごとの目標 */
+"%@・合計 %@・%d日・%d件" = "%@ · total %@ · %d days · %d sessions";
+"%d件の記録" = "%d sessions";
+"1年分のタイムラプスから、週ごとに1本ずつ選んでまとめます。" = "We’ll pick one time-lapse from each week of the year and put them together.";
+"1週間の目標" = "Weekly goals";
+"30分ずつ変えられます。0にすると目標を消します。" = "Changes in 30-minute steps. Set to 0 to remove a goal.";
+"CSV で書き出す（表計算ソフト用）" = "Export as CSV (for spreadsheets)";
+"PDF で書き出す（印刷・提出用）" = "Export as PDF (to print or hand in)";
+"StudyReel 勉強の記録" = "StudyReel study log";
+"「数学 週5時間」のように、教科ごとに目標を決めて進み具合を見られます。" = "Set goals per subject, like “Math, 5 hours a week,” and track your progress.";
+"この期間の記録はありません。" = "No sessions in this period.";
+"すべて" = "All";
+"まだ目標がありません。" = "No goals yet.";
+"よく勉強したのは%d時台" = "You studied most around %d:00";
+"タイトル" = "Title";
+"タイトル・教材" = "Title · material";
+"今年" = "This year";
+"今年の勉強" = "This year’s study";
+"今年の勉強を1分の Vlog に" = "Turn this year’s study into a 1-minute vlog";
+"今週は記録がありませんでした。来週は5分だけでも始めてみませんか。" = "No study logged this week. How about starting with just 5 minutes next week?";
+"先週より %@ 多い" = "%@ more than last week";
+"先週より %@ 少ない" = "%@ less than last week";
+"勉強時間（分）" = "Study time (min)";
+"合計 %@・%d日勉強しました" = "%@ in total over %d days";
+"教科ごとの今週の目標" = "This week’s goals by subject";
+"日付・開始時刻・勉強時間・教科・タイトル・教材・机にいた時間・メモを書き出します。" = "Exports date, start time, study time, subject, title, material, time at desk, and notes.";
+"日曜の夜に今週の振り返り" = "Weekly recap on Sunday night";
+"書き出しは Pro で使えます" = "Export is available with Pro";
+"机にいた" = "At desk";
+"机にいた時間（分）" = "Time at desk (min)";
+"記録を書き出す" = "Export records";
+"記録を書き出す（CSV・PDF）" = "Export records (CSV, PDF)";
+
+/* 1.11 Pro の一覧（続き） */
+"教科ごとの1週間の目標" = "Weekly goals by subject";
+"ウィジェット：今日の目標まであと何分" = "Widget: minutes left to today’s goal";
+"記録を CSV・PDF で書き出す" = "Export records as CSV or PDF";
+"日曜の振り返りに先週比・よく勉強した時間帯" = "Sunday recap with week-over-week and your best hours";

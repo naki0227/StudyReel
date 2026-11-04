@@ -12,6 +12,7 @@ import SwiftUI
 struct StudyReelWidgetBundle: WidgetBundle {
     var body: some Widget {
         StudyReelWidget()
+        TodayGoalWidget()
         StudyLiveActivity()
         StudyStartControl()
     }

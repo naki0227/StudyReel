@@ -252,11 +252,17 @@ struct StartView: View {
             // 記録が増えたり消えたりしたら、勉強仲間に見せる今日・今週の合計を更新する
             .onChange(of: sessions.count) {
                 BuddyCloud.shared.updateTotals(sessions)
+                updateTodayWidget()
             }
+            .onChange(of: todayGoal?.targetDuration) { updateTodayWidget() }
+            .onChange(of: storeKit.isProUnlocked) { updateTodayWidget() }
             .task {
                 BuddyCloud.shared.updateTotals(sessions)
+                updateTodayWidget()
                 // 保護者・塾に共有中の表示と、見守っている人の様子
                 await WatchCloud.shared.refresh()
+                // 日曜の夜の「今週の勉強」を、いまの記録で予約し直す
+                await StudyNotificationManager.shared.scheduleWeeklySummary(with: sessions, isPro: storeKit.isProUnlocked)
             }
             .sheet(isPresented: $showCalendar) {
                 CalendarView(subjectManager: subjectManager)
@@ -411,6 +417,11 @@ struct StartView: View {
             steps.append(CoachStep(id: "home.tools", title: L10n.string("Vlog・統計・カレンダー・設定"), message: L10n.string("左から、1週間のVlog作り、統計、カレンダー、設定です。")))
         }
         return steps
+    }
+
+    // ウィジェット「今日の目標まであと◯分」に今日の数字を渡す
+    private func updateTodayWidget() {
+        TodayWidgetData.update(todaySeconds: todayStudyTime, goalSeconds: todayGoal?.targetDuration, isPro: storeKit.isProUnlocked)
     }
 
     private func openQuest(_ action: QuestAction) {

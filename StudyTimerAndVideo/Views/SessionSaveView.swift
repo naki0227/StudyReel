@@ -247,6 +247,7 @@ struct SessionSaveView: View {
         let updatedSessions = [session] + sessions
         Task {
             await StudyNotificationManager.shared.scheduleQuietReminderIfNeeded(with: updatedSessions)
+            await StudyNotificationManager.shared.scheduleWeeklySummary(with: updatedSessions, isPro: storeKit.isProUnlocked)
         }
         dismiss()
     }

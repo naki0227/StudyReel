@@ -8,8 +8,12 @@ enum WeeklyVlogWeek: String, CaseIterable, Identifiable {
     case lastWeek
     case thisMonth
     case lastMonth
+    // 1年分（Pro）。週ごとに1本ずつ選んで、1分くらいにまとめる
+    case thisYear
 
     var isMonth: Bool { self == .thisMonth || self == .lastMonth }
+    var isYear: Bool { self == .thisYear }
+    var isPro: Bool { isYear }
 
     var id: String { rawValue }
 
@@ -19,6 +23,7 @@ enum WeeklyVlogWeek: String, CaseIterable, Identifiable {
         case .lastWeek: return L10n.string("先週")
         case .thisMonth: return L10n.string("今月")
         case .lastMonth: return L10n.string("先月")
+        case .thisYear: return L10n.string("今年")
         }
     }
 
@@ -28,10 +33,14 @@ enum WeeklyVlogWeek: String, CaseIterable, Identifiable {
         case .lastWeek: return L10n.string("先週の勉強")
         case .thisMonth: return L10n.string("今月の勉強")
         case .lastMonth: return L10n.string("先月の勉強")
+        case .thisYear: return L10n.string("今年の勉強")
         }
     }
 
     func interval(calendar: Calendar = .current, now: Date = Date()) -> DateInterval? {
+        if isYear {
+            return calendar.dateInterval(of: .year, for: now)
+        }
         if isMonth {
             guard let month = calendar.dateInterval(of: .month, for: now) else { return nil }
             if self == .thisMonth { return month }
@@ -45,7 +54,7 @@ enum WeeklyVlogWeek: String, CaseIterable, Identifiable {
         case .lastWeek:
             guard let start = calendar.date(byAdding: .day, value: -7, to: current.start) else { return nil }
             return DateInterval(start: start, end: current.start)
-        case .thisMonth, .lastMonth:
+        case .thisMonth, .lastMonth, .thisYear:
             return nil
         }
     }
@@ -110,12 +119,14 @@ enum WeeklyVlogMaker {
             .filter { interval.contains($0.date) }
             .sorted { $0.date < $1.date }
             .compactMap(WeeklyVlogClip.init(session:))
-        guard week.isMonth else { return clips }
-        // 1か月は日ごとに1本（その日いちばん長く勉強した記録）にして、60秒に収まるようにする
+        guard week.isMonth || week.isYear else { return clips }
+        // 1か月は日ごとに1本、1年は週ごとに1本（いちばん長く勉強した記録）にして、60秒に収まるようにする
         let calendar = Calendar.current
         var byDay: [Date: WeeklyVlogClip] = [:]
         for clip in clips {
-            let day = calendar.startOfDay(for: clip.date)
+            let day = week.isYear
+                ? (calendar.dateInterval(of: .weekOfYear, for: clip.date)?.start ?? calendar.startOfDay(for: clip.date))
+                : calendar.startOfDay(for: clip.date)
             if let current = byDay[day], current.studySeconds >= clip.studySeconds { continue }
             byDay[day] = clip
         }

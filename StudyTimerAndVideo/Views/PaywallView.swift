@@ -411,6 +411,11 @@ enum ProFeature {
         [
             Row(title: L10n.string("机を離れていた時間を引いた、本当の勉強時間"), free: false),
             Row(title: L10n.string("試験日までの「今日あと何分」"), free: false),
+            Row(title: L10n.string("教科ごとの1週間の目標"), free: false),
+            Row(title: L10n.string("ウィジェット：今日の目標まであと何分"), free: false),
+            Row(title: L10n.string("記録を CSV・PDF で書き出す"), free: false),
+            Row(title: L10n.string("今年の勉強を1分の Vlog に"), free: false),
+            Row(title: L10n.string("日曜の振り返りに先週比・よく勉強した時間帯"), free: false),
             Row(title: L10n.string("教科別の内訳・先週比・集中しやすい時間帯"), free: false),
             Row(title: L10n.string("ロゴなしで保存"), free: false),
             Row(title: L10n.format("勉強仲間のグループを %d つまで作れる", BuddyCloud.proOwnedLimit), free: false),
