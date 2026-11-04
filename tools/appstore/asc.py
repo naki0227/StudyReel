@@ -805,10 +805,33 @@ def show_current(app_id):
     print("::endgroup::")
 
 
+# App Store Connect の文字数の上限。dry run（PR）の段階で気づけるよう、送る前に確かめる
+LIMITS = {"notes": 4000, "whats_new": 4000, "description": 4000, "promotional_text": 170,
+          "name": 30, "subtitle": 30}
+
+
+def check_lengths(cfg):
+    problems = []
+    notes = (cfg.get("review") or {}).get("notes") or ""
+    if len(notes) > LIMITS["notes"]:
+        problems.append(f"審査メモ: {len(notes)}文字（{LIMITS['notes']}文字まで）")
+    for loc, fields in (cfg.get("localizations") or {}).items():
+        for key, limit in LIMITS.items():
+            value = (fields or {}).get(key)
+            if key != "notes" and isinstance(value, str) and len(value.rstrip("\n")) > limit:
+                problems.append(f"{loc} {key}: {len(value.rstrip(chr(10)))}文字（{limit}文字まで）")
+        keywords = (fields or {}).get("keywords")
+        if isinstance(keywords, str) and len(keywords.encode("utf-8")) > 100:
+            problems.append(f"{loc} keywords: {len(keywords.encode('utf-8'))}バイト（100バイトまで）")
+    if problems:
+        sys.exit("::error::長すぎる項目があります\n" + "\n".join(problems))
+
+
 def main():
     cfg_path = next(a for a in sys.argv[1:] if not a.startswith("--"))
     cfg = yaml.safe_load(open(cfg_path))
     root = os.path.dirname(os.path.dirname(os.path.abspath(cfg_path)))
+    check_lengths(cfg)
     if DRY:
         print("dry run: App Store Connect は読むだけで、何も変えません")
 
