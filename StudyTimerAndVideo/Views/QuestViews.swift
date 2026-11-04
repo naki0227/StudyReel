@@ -199,6 +199,7 @@ struct RewardShopView: View {
                 section(L10n.string("テーマの色"), kind: .theme)
                 section(L10n.string("顔の隠し方"), kind: .hideStyle)
                 section(L10n.string("動画の文字のフォント"), kind: .font)
+                section(L10n.string("時刻の色と飾り"), kind: .overlay)
             }
             .navigationTitle(L10n.string("交換所"))
             .navigationBarTitleDisplayMode(.inline)

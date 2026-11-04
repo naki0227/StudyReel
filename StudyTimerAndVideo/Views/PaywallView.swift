@@ -421,7 +421,7 @@ enum ProFeature {
             Row(title: L10n.format("勉強仲間のグループを %d つまで作れる", BuddyCloud.proOwnedLimit), free: false),
             Row(title: L10n.string("保護者：教科ごとの時間・4週間の推移"), free: false),
             Row(title: L10n.string("全部録画（等速）・区間ごとに速さを変えて保存"), free: false),
-            Row(title: L10n.string("動画のフォントを選ぶ"), free: false),
+            Row(title: L10n.string("時刻のフォント・色・飾り・自分で書いた数字"), free: false),
             Row(title: L10n.string("顔をスタンプで隠す"), free: false),
             Row(title: L10n.string("BGM 全4曲"), free: false),
             Row(title: L10n.string("テーマカラーを選ぶ"), free: false),

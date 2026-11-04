@@ -50,7 +50,8 @@ struct VideoReviewView: View {
     private var overlayStyle: VideoOverlayStyle {
         VideoOverlayStyle(
             font: OverlayFont.resolved(rawValue: overlayFontRaw, isPro: storeKit.isProUnlocked),
-            showsWatermark: RecordingSettings.showsWatermark(isPro: storeKit.isProUnlocked)
+            showsWatermark: RecordingSettings.showsWatermark(isPro: storeKit.isProUnlocked),
+            decor: OverlayDecor.current(isPro: storeKit.isProUnlocked)
         )
     }
 

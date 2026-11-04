@@ -130,7 +130,7 @@ enum QuestBook {
 
 // 交換所。ジェムと交換したものは、Pro でなくても使える
 struct Reward: Identifiable {
-    enum Kind { case theme, hideStyle, font }
+    enum Kind { case theme, hideStyle, font, overlay }
 
     let id: String
     let kind: Kind
@@ -159,6 +159,9 @@ enum Rewards {
         ThemeColor.allCases.filter(\.needsPro).map { Reward(id: "theme.\($0.rawValue)", kind: .theme, title: $0.title, cost: 30) }
             + [Reward(id: "hide.stamp", kind: .hideStyle, title: L10n.string("顔をスタンプで隠す"), cost: 60)]
             + OverlayFont.allCases.filter(\.needsPro).map { Reward(id: "font.\($0.rawValue)", kind: .font, title: $0.displayName, cost: 20) }
+            + OverlayColor.allCases.filter(\.needsPro).map { Reward(id: "color.\($0.rawValue)", kind: .overlay, title: L10n.format("時刻の色：%@", $0.title), cost: 20) }
+            + OverlayBadge.allCases.filter(\.needsPro).map { Reward(id: "badge.\($0.rawValue)", kind: .overlay, title: L10n.format("時刻の飾り：%@", $0.title), cost: 30) }
+            + [Reward(id: "digits", kind: .overlay, title: L10n.string("自分で書いた・撮った数字"), cost: 80)]
     }
 
     static func spentGems() -> Int {
