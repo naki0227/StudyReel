@@ -155,13 +155,27 @@ enum Rewards {
         UserDefaults.standard.set(all.sorted().joined(separator: ","), forKey: storageKey)
     }
 
+    // 型の推論が重くならないよう、種類ごとに分けて足す
     static var catalog: [Reward] {
-        ThemeColor.allCases.filter(\.needsPro).map { Reward(id: "theme.\($0.rawValue)", kind: .theme, title: $0.title, cost: 30) }
-            + [Reward(id: "hide.stamp", kind: .hideStyle, title: L10n.string("顔をスタンプで隠す"), cost: 60)]
-            + OverlayFont.allCases.filter(\.needsPro).map { Reward(id: "font.\($0.rawValue)", kind: .font, title: $0.displayName, cost: 20) }
-            + OverlayColor.allCases.filter(\.needsPro).map { Reward(id: "color.\($0.rawValue)", kind: .overlay, title: L10n.format("時刻の色：%@", $0.title), cost: 20) }
-            + OverlayBadge.allCases.filter(\.needsPro).map { Reward(id: "badge.\($0.rawValue)", kind: .overlay, title: L10n.format("時刻の飾り：%@", $0.title), cost: 30) }
-            + [Reward(id: "digits", kind: .overlay, title: L10n.string("自分で書いた・撮った数字"), cost: 80)]
+        let themes: [Reward] = ThemeColor.allCases.filter(\.needsPro).map { theme in
+            Reward(id: "theme.\(theme.rawValue)", kind: .theme, title: theme.title, cost: 30)
+        }
+        let fonts: [Reward] = OverlayFont.allCases.filter(\.needsPro).map { font in
+            Reward(id: "font.\(font.rawValue)", kind: .font, title: font.displayName, cost: 20)
+        }
+        let colors: [Reward] = OverlayColor.allCases.filter(\.needsPro).map { color in
+            Reward(id: "color.\(color.rawValue)", kind: .overlay, title: L10n.format("時刻の色：%@", color.title), cost: 20)
+        }
+        let badges: [Reward] = OverlayBadge.allCases.filter(\.needsPro).map { badge in
+            Reward(id: "badge.\(badge.rawValue)", kind: .overlay, title: L10n.format("時刻の飾り：%@", badge.title), cost: 30)
+        }
+        var all: [Reward] = themes
+        all.append(Reward(id: "hide.stamp", kind: .hideStyle, title: L10n.string("顔をスタンプで隠す"), cost: 60))
+        all.append(contentsOf: fonts)
+        all.append(contentsOf: colors)
+        all.append(contentsOf: badges)
+        all.append(Reward(id: "digits", kind: .overlay, title: L10n.string("自分で書いた・撮った数字"), cost: 80))
+        return all
     }
 
     static func spentGems() -> Int {
