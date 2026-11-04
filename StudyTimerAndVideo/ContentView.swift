@@ -40,6 +40,8 @@ struct ContentView: View {
     @State private var tickCount = 0
     @AppStorage(CoachTour.recordingKey) private var hasSeenRecordingTour = false
     @State private var showRecordingTour = false
+    // 撮影の画面を開くたびに、まだ見ていない説明を1つだけ出す
+    @State private var recordingTip: [CoachStep] = []
     @State private var lowStorageBeforeStart = false
     // ポモドーロ。終わった集中の回数・いまの集中が始まったときの勉強時間・休憩が終わる時刻
     @AppStorage(PomodoroPlan.storageKey) private var pomodoroRaw = PomodoroPlan.off.rawValue
@@ -129,8 +131,11 @@ struct ContentView: View {
         .animation(.easeOut(duration: 0.25), value: isDimmed)
         .animation(.easeOut(duration: 0.25), value: showResumeCard)
         .animation(.easeOut(duration: 0.25), value: breakEndsAt)
-        .coachTour(recordingTourSteps, isPresented: $showRecordingTour) {
-            hasSeenRecordingTour = true
+        .coachTour(recordingTip, isPresented: $showRecordingTour) {
+            CoachTips.markSeen(recordingTip.map(\.id), screen: CoachTips.recording)
+            if CoachTips.remaining(recordingTourSteps, screen: CoachTips.recording) == 0 {
+                hasSeenRecordingTour = true
+            }
         }
         .alert(videoSaved ? L10n.string("保存完了") : L10n.string("動画を保存できませんでした"), isPresented: $showSaveAlert) {
             Button(L10n.string("OK")) {
@@ -206,7 +211,10 @@ struct ContentView: View {
             }
             if !hasSeenRecordingTour && bootstrap?.autoStart != true {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                    if !isRecording { showRecordingTour = true }
+                    if !isRecording, let step = CoachTips.next(recordingTourSteps, screen: CoachTips.recording) {
+                        recordingTip = [step]
+                        showRecordingTour = true
+                    }
                 }
             }
             guard bootstrap?.autoStart == true, !didAutoStart else { return }

@@ -52,6 +52,8 @@ struct StartView: View {
     @AppStorage(CoachTour.homeKey) private var hasSeenHomeTour = false
     @AppStorage(ThemeColor.storageKey) private var themeRaw = ThemeColor.sky.rawValue
     @State private var showHomeTour = false
+    // いま照らしている1つ（ホームに来たときに、使えるようになったものを1つずつ）
+    @State private var homeTip: [CoachStep] = []
     @State private var sessionBootstrap: SessionBootstrap?
 
     var today: Date {
@@ -146,8 +148,11 @@ struct StartView: View {
             .id(theme)
             .background(ReelTheme.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
-            .coachTour(homeTourSteps, isPresented: $showHomeTour) {
-                hasSeenHomeTour = true
+            .coachTour(homeTip, isPresented: $showHomeTour) {
+                CoachTips.markSeen(homeTip.map(\.id), screen: CoachTips.home)
+                if CoachTips.remaining(homeTourSteps, screen: CoachTips.home) == 0 {
+                    hasSeenHomeTour = true
+                }
             }
             .onAppear {
                 startHomeTourIfNeeded()
@@ -155,6 +160,8 @@ struct StartView: View {
             }
             .onChange(of: hasSeenOnboarding) { startHomeTourIfNeeded() }
             .onChange(of: hasSeenHomeTour) { startHomeTourIfNeeded() }
+            // 記録が増えるたびに、使えるようになったものを1つ教える
+            .onChange(of: sessions.count) { startHomeTourIfNeeded() }
             // 録画の設定そのものを渡して開く。設定が届く前に空の画面が出て真っ暗になるのを防ぐ
             .fullScreenCover(item: $sessionBootstrap) { bootstrap in
                 ContentView(
@@ -373,22 +380,33 @@ struct StartView: View {
 
     // MARK: - 初回の案内
 
+    // 記録がいくつたまったら教えるか。最初は「始め方」だけ
     private var homeTourSteps: [CoachStep] {
-        [
-            CoachStep(id: "home.new", title: L10n.string("ここから記録を始めます"), message: L10n.string("時間と教材を選んで「撮影をはじめる」を押すだけです。")),
-            CoachStep(id: "home.today", title: L10n.string("今日の勉強時間"), message: L10n.string("タップすると、1日の目標を決められます。")),
-            CoachStep(id: "home.share", title: L10n.string("記録を共有"), message: L10n.string("今日や今週の勉強を、画像にして勉強垢やグループに送れます。")),
-            CoachStep(id: "home.materials", title: L10n.string("教材ごとに記録"), message: L10n.string("参考書を登録すると、教材ごとに時間がたまります。バーコードでも登録できます。")),
-            CoachStep(id: "home.tools", title: L10n.string("Vlog・統計・カレンダー・設定"), message: L10n.string("左から、1週間のVlog作り、統計、カレンダー、設定です。")),
-            CoachStep(id: "home.gallery", title: L10n.string("撮った記録が並びます"), message: L10n.string("タップすると動画を見返したり、メモを書き足したりできます。"))
+        let count = sessions.count
+        var steps = [
+            CoachStep(id: "home.new", title: L10n.string("ここから記録を始めます"), message: L10n.string("時間と教材を選んで「撮影をはじめる」を押すだけです。"))
         ]
+        if count >= 1 {
+            steps.append(CoachStep(id: "home.gallery", title: L10n.string("撮った記録が並びます"), message: L10n.string("タップすると動画を見返したり、メモを書き足したりできます。")))
+            steps.append(CoachStep(id: "home.today", title: L10n.string("今日の勉強時間"), message: L10n.string("タップすると、1日の目標を決められます。")))
+        }
+        if count >= 2 {
+            steps.append(CoachStep(id: "home.share", title: L10n.string("記録を共有"), message: L10n.string("今日や今週の勉強を、画像にして勉強垢やグループに送れます。")))
+        }
+        if count >= 3 {
+            steps.append(CoachStep(id: "home.materials", title: L10n.string("教材ごとに記録"), message: L10n.string("参考書を登録すると、教材ごとに時間がたまります。バーコードでも登録できます。")))
+            steps.append(CoachStep(id: "home.tools", title: L10n.string("Vlog・統計・カレンダー・設定"), message: L10n.string("左から、1週間のVlog作り、統計、カレンダー、設定です。")))
+        }
+        return steps
     }
 
     private func startHomeTourIfNeeded() {
         guard hasSeenOnboarding, !hasSeenHomeTour, !showHomeTour, SessionRecovery.pendingSession == nil else { return }
-        // 初回の案内やスプラッシュが消えてから出す
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
-            guard !hasSeenHomeTour, sessionBootstrap == nil else { return }
+        // 初回の案内やスプラッシュ、Pro の案内やレビューのお願いが消えてから出す
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            guard !hasSeenHomeTour, !showHomeTour, sessionBootstrap == nil, !showFirstVideoPaywall,
+                  let step = CoachTips.next(homeTourSteps, screen: CoachTips.home) else { return }
+            homeTip = [step]
             withAnimation(.easeOut(duration: 0.3)) {
                 showHomeTour = true
             }

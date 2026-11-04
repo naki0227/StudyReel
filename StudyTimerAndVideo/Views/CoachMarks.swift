@@ -15,6 +15,40 @@ enum CoachTour {
     static func reset() {
         UserDefaults.standard.set(false, forKey: homeKey)
         UserDefaults.standard.set(false, forKey: recordingKey)
+        CoachTips.reset()
+    }
+}
+
+// 最初に全部は説明しない。その画面に来て、使えるようになったものを1つずつ照らす
+enum CoachTips {
+    static let home = "home"
+    static let recording = "rec"
+
+    private static func key(_ screen: String) -> String { "coach_tips_seen_\(screen)" }
+
+    static func seen(_ screen: String) -> Set<String> {
+        Set(UserDefaults.standard.stringArray(forKey: key(screen)) ?? [])
+    }
+
+    static func markSeen(_ ids: [String], screen: String) {
+        let all = seen(screen).union(ids)
+        UserDefaults.standard.set(Array(all), forKey: key(screen))
+    }
+
+    // まだ見ていないもののうち、いま使えるものを先頭から1つ
+    static func next(_ steps: [CoachStep], screen: String) -> CoachStep? {
+        let done = seen(screen)
+        return steps.first { !done.contains($0.id) }
+    }
+
+    static func remaining(_ steps: [CoachStep], screen: String) -> Int {
+        let done = seen(screen)
+        return steps.filter { !done.contains($0.id) }.count
+    }
+
+    static func reset() {
+        UserDefaults.standard.removeObject(forKey: key(home))
+        UserDefaults.standard.removeObject(forKey: key(recording))
     }
 }
 
@@ -126,20 +160,25 @@ private struct CoachOverlay: View {
                 .lineSpacing(3)
 
             HStack(spacing: 6) {
-                ForEach(steps.indices, id: \.self) { item in
-                    Capsule()
-                        .fill(item == index ? ReelTheme.accentDeep : ReelTheme.line)
-                        .frame(width: item == index ? 16 : 6, height: 6)
+                // 1つだけのときは、何枚目かの印とスキップを出さない
+                if steps.count > 1 {
+                    ForEach(steps.indices, id: \.self) { item in
+                        Capsule()
+                            .fill(item == index ? ReelTheme.accentDeep : ReelTheme.line)
+                            .frame(width: item == index ? 16 : 6, height: 6)
+                    }
                 }
                 Spacer()
-                Button(L10n.string("スキップ")) { onFinish() }
-                    .font(ReelTheme.sans(13))
-                    .foregroundColor(ReelTheme.secondary)
-                    .padding(.trailing, 6)
+                if steps.count > 1 {
+                    Button(L10n.string("スキップ")) { onFinish() }
+                        .font(ReelTheme.sans(13))
+                        .foregroundColor(ReelTheme.secondary)
+                        .padding(.trailing, 6)
+                }
                 Button {
                     next()
                 } label: {
-                    Text(index == steps.count - 1 ? L10n.string("はじめる") : L10n.string("次へ"))
+                    Text(steps.count == 1 ? L10n.string("OK") : index == steps.count - 1 ? L10n.string("はじめる") : L10n.string("次へ"))
                         .font(ReelTheme.sans(14, weight: .semibold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
