@@ -48,6 +48,7 @@ struct StartView: View {
     @State private var selectedMaterialID: UUID? = MaterialSelection.lastID
     @State private var showShare = false
     @State private var showMaterials = false
+    @State private var showRewardShop = false
     @AppStorage(OnboardingView.storageKey) private var hasSeenOnboarding = false
     @AppStorage(CoachTour.homeKey) private var hasSeenHomeTour = false
     @AppStorage(ThemeColor.storageKey) private var themeRaw = ThemeColor.sky.rawValue
@@ -94,6 +95,12 @@ struct StartView: View {
                     )
                     .padding(.top, 6)
                     .padding(.bottom, DemoMode.isActive ? 16 : 10)
+
+                    // クエスト（スクショ用のデモでは出さない）。「やってみる」でその画面を開く
+                    if !DemoMode.isActive {
+                        HomeQuestCard(onAction: openQuest, onShop: { showRewardShop = true })
+                            .padding(.bottom, 10)
+                    }
 
                     // 勉強仲間（スクショ用のデモでは出さない）
                     if !DemoMode.isActive {
@@ -202,12 +209,17 @@ struct StartView: View {
             }
             .sheet(isPresented: $showWeeklyVlog) {
                 WeeklyVlogView()
+                    .onAppear { QuestBook.mark(.weeklyVlog) }
+            }
+            .sheet(isPresented: $showRewardShop) {
+                RewardShopView()
             }
             .sheet(isPresented: $showMaterials) {
                 MaterialsView()
             }
             .sheet(isPresented: $showShare) {
                 StudyShareView()
+                    .onAppear { QuestBook.mark(.share) }
             }
             .sheet(isPresented: $showGoalSetting) {
                 GoalSettingView()
@@ -398,6 +410,18 @@ struct StartView: View {
             steps.append(CoachStep(id: "home.tools", title: L10n.string("Vlog・統計・カレンダー・設定"), message: L10n.string("左から、1週間のVlog作り、統計、カレンダー、設定です。")))
         }
         return steps
+    }
+
+    private func openQuest(_ action: QuestAction) {
+        switch action {
+        case .settings: showSettings = true
+        case .dailyGoal: showGoalSetting = true
+        case .materials: showMaterials = true
+        case .newSession: showNewSession = true
+        case .share: showShare = true
+        case .weeklyVlog: showWeeklyVlog = true
+        case .buddies: showBuddies = true
+        }
     }
 
     private func startHomeTourIfNeeded() {

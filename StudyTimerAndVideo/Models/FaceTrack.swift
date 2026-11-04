@@ -10,7 +10,9 @@ enum FaceHideStyle: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var isPro: Bool { self == .stamp }
+    // もともと Pro か。交換所でジェムと交換したら、Pro でなくても使える
+    var needsPro: Bool { self == .stamp }
+    var isPro: Bool { needsPro && !Rewards.isUnlocked("hide.\(rawValue)") }
 
     var title: String {
         switch self {

@@ -24,7 +24,9 @@ enum ThemeColor: String, CaseIterable, Identifiable {
     }
 
     var id: String { rawValue }
-    var isPro: Bool { self != .sky }
+    // もともと Pro の色か。交換所でジェムと交換したら、Pro でなくても使える
+    var needsPro: Bool { self != .sky }
+    var isPro: Bool { needsPro && !Rewards.isUnlocked("theme.\(rawValue)") }
 
     var title: String {
         switch self {

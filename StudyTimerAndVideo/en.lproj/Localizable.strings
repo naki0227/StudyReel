@@ -839,3 +839,45 @@
 /* 1.11 Pro の一覧 */
 "全部録画（等速）・区間ごとに速さを変えて保存" = "Full recording (real time), saved at different speeds by section";
 "顔にモザイク（時間を選んで外せる）" = "Face mosaic (can be removed for chosen times)";
+
+/* 1.11 クエストと交換所 */
+"%@と交換しますか？" = "Exchange for %@?";
+"%dジェムで交換" = "Exchange for %d gems";
+"10回分の勉強が、1年の草に残ります。" = "Ten sessions of study, kept on your year grid.";
+"1日の目標を決める" = "Set a daily goal";
+"1週間の Vlog を作る" = "Make a weekly vlog";
+"1週間分のタイムラプスを1本にまとめます。" = "Turn a week of time-lapses into one video.";
+"1週間続いたら、習慣になり始めています。" = "A week in a row and it’s turning into a habit.";
+"30日続けて記録する" = "Study 30 days in a row";
+"3日続けて記録する" = "Study 3 days in a row";
+"50回分の積み重ねです。" = "Fifty sessions of steady work.";
+"7日続けて記録する" = "Study 7 days in a row";
+"Pro のあいだは全部使えます。交換したものは、Pro が終わっても使えます。" = "Everything is available while you have Pro. Items you exchange stay yours after Pro ends.";
+"iPhone の設定で iCloud にサインインすると残せます。" = "Sign in to iCloud in the iPhone Settings app to keep them.";
+"ここまで来たら、もう止まりません。" = "Make it this far and you won’t stop.";
+"たたむ" = "Collapse";
+"はじめの5つ" = "First five";
+"やってみる" = "Try it";
+"クエスト %d" = "Quests %d";
+"クエストはすべてクリア" = "All quests cleared";
+"クエストをクリアしたり、勉強した日1日ごとに%dジェムもらえます。交換したものは、ずっと使えます。" = "Earn gems by clearing quests, plus %d for every day you study. Items you exchange are yours to keep.";
+"ジェム %d" = "%d gems";
+"タイムラプスを1本保存する" = "Save your first time-lapse";
+"テーマの色" = "Theme colors";
+"交換ずみ" = "Owned";
+"交換所" = "Exchange";
+"今日や今週を画像にできます。" = "Turn today or this week into an image.";
+"仲間がいま勉強しているかが分かります。" = "See whether your buddies are studying right now.";
+"勉強の記録を共有する" = "Share your study record";
+"勉強仲間のグループに入る" = "Join a study buddy group";
+"動画の文字のフォント" = "Video text fonts";
+"参考書ごとに時間がたまります。" = "Time adds up for each book.";
+"教材を1つ登録する" = "Add a study material";
+"機種変更しても、記録と動画が戻せます。" = "Get your records and videos back even on a new phone.";
+"毎日の目標まで、あと何分かが分かります。" = "See how many minutes are left to your daily goal.";
+"記録を iCloud に残す" = "Back up to iCloud";
+"記録を10回つける" = "Log 10 sessions";
+"記録を50回つける" = "Log 50 sessions";
+"週に1日休んでも、続いたことになります。" = "One rest day a week won’t break it.";
+"開く" = "Expand";
+"顔はモザイクで隠せます。" = "Your face can be hidden with a mosaic.";

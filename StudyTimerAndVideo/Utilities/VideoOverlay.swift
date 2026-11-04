@@ -17,7 +17,9 @@ enum OverlayFont: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var isPro: Bool { self != .wide && self != .standard }
+    // もともと Pro のフォントか。交換所でジェムと交換したら、Pro でなくても使える
+    var needsPro: Bool { self != .wide && self != .standard }
+    var isPro: Bool { needsPro && !Rewards.isUnlocked("font.\(rawValue)") }
 
     var displayName: String {
         switch self {
