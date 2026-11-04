@@ -91,7 +91,8 @@ struct StartView: View {
                         onEdit: { editingGoal = $0 },
                         onRecordScore: { showScoreRecord = true },
                         onPapers: { showPapers = true },
-                        onShare: { sharingGoal = $0 }
+                        onShare: { sharingGoal = $0 },
+                        onPro: { showPaywall = true }
                     )
                     .padding(.top, 6)
                     .padding(.bottom, DemoMode.isActive ? 16 : 10)

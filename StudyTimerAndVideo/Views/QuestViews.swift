@@ -255,3 +255,48 @@ struct RewardShopView: View {
         }
     }
 }
+
+// 撮影中に机を離れていた時間を引いた「机にいた時間」（Pro）。Pro でなければ、見られることだけ伝える
+struct FocusTimeRow: View {
+    let duration: Int
+    let awaySeconds: Int
+    let isPro: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "chair.lounge")
+                .font(.system(size: 15, weight: .light))
+                .foregroundColor(ReelTheme.accentDeep)
+                .frame(width: 22)
+            if isPro {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.format("机にいた時間 %@", Self.text(max(0, duration - awaySeconds))))
+                        .font(ReelTheme.sans(14, weight: .medium))
+                        .foregroundColor(ReelTheme.ink)
+                    Text(awaySeconds < 60
+                         ? L10n.string("ずっと机にいました")
+                         : L10n.format("離席 %@（1分以上カメラに映っていなかった時間）", Self.text(awaySeconds)))
+                        .font(ReelTheme.sans(11))
+                        .foregroundColor(ReelTheme.secondary)
+                }
+            } else {
+                Text(L10n.string("机を離れていた時間は、Pro で見られます"))
+                    .font(ReelTheme.sans(13))
+                    .foregroundColor(ReelTheme.secondary)
+                Spacer()
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 11))
+                    .foregroundColor(ReelTheme.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+
+    static func text(_ seconds: Int) -> String {
+        let minutes = seconds / 60
+        if minutes < 60 { return L10n.format("%d分", max(minutes, 0)) }
+        return minutes % 60 == 0 ? L10n.format("%d時間", minutes / 60) : L10n.format("%d時間%d分", minutes / 60, minutes % 60)
+    }
+}

@@ -153,6 +153,8 @@ struct RecordingResult: Identifiable {
     let canvasSize: CGSize
     let sessionStart: Date
     var track: FaceTrack
+    // 机を離れていた時間（秒）。カメラで見ていなければ nil
+    var awaySeconds: Int?
 }
 
 // 全部録画を書き出すときの速さ。区間を選ばなかったところは base の速さになる（Pro）

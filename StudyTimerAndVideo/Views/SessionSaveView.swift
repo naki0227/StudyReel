@@ -5,6 +5,7 @@ import SwiftData
 struct SessionSaveView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var storeKit: StoreKitManager
 
     @Query(sort: \StudySession.date, order: .reverse) private var sessions: [StudySession]
     @ObservedObject var subjectManager: SubjectManager
@@ -143,6 +144,10 @@ struct SessionSaveView: View {
             ReelRow(systemImage: "clock", title: formattedDuration(duration)) {
                 EmptyView()
             }
+            if let away = media.awaySeconds {
+                Divider().padding(.leading, 50)
+                FocusTimeRow(duration: duration, awaySeconds: away, isPro: storeKit.isProUnlocked)
+            }
             Divider().padding(.leading, 50)
             ReelRow(systemImage: "book.closed", title: L10n.string("教科")) {
                 Menu {
@@ -232,7 +237,8 @@ struct SessionSaveView: View {
             memo: trimmedMemo.isEmpty ? nil : trimmedMemo,
             thumbnailFileName: media.thumbnailFileName,
             videoFileName: media.videoFileName,
-            materialID: materialID
+            materialID: materialID,
+            awaySeconds: media.awaySeconds
         )
         modelContext.insert(session)
         didSave = true

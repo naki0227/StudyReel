@@ -17,6 +17,12 @@ final class FaceTracker {
     private let detectionInterval = 0.2
     private let holdDuration = 1.5
 
+    // 離席：顔も上半身も1分以上続けて見えなかった時間。下を向いて顔だけ見えないときは上半身で「いる」とみなす
+    static let awayThreshold = 60.0
+    private var awaySeconds = 0.0
+    private var absentSince: Double?
+    private var lastProcessedTime: Double?
+
     func reset() {
         currentRect = nil
         isFallback = false
@@ -24,6 +30,26 @@ final class FaceTracker {
         lastSeenTime = nil
         lastDetectionTime = nil
         segment += 1
+        awaySeconds = 0
+        absentSince = nil
+        lastProcessedTime = nil
+    }
+
+    // 離席の合計（秒）。一度も映像を見ていなければ nil（カメラなしで記録したとき）
+    var awayTotal: Int? {
+        guard let lastProcessedTime else { return nil }
+        var total = awaySeconds
+        if let absentSince, lastProcessedTime - absentSince >= Self.awayThreshold {
+            total += lastProcessedTime - absentSince
+        }
+        return Int(total)
+    }
+
+    private func markPresent(at time: Double) {
+        if let absentSince, time - absentSince >= Self.awayThreshold {
+            awaySeconds += time - absentSince
+        }
+        absentSince = nil
     }
 
     // 検出したら true を返す。毎フレームは検出せず、0.2秒おきにする
@@ -31,6 +57,11 @@ final class FaceTracker {
     func process(_ pixelBuffer: CVPixelBuffer, time: Double) -> Bool {
         if let lastDetectionTime, time - lastDetectionTime < detectionInterval { return false }
         lastDetectionTime = time
+        // 一時停止やアプリを離れていた間は、離席に数えない
+        if let lastProcessedTime, time - lastProcessedTime > 5 {
+            markPresent(at: lastProcessedTime)
+        }
+        lastProcessedTime = time
 
         let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up, options: [:])
         let faceRequest = VNDetectFaceRectanglesRequest()
@@ -42,6 +73,7 @@ final class FaceTracker {
             update(rect: smoothed, fallback: false)
             lastFaceRect = rect
             lastSeenTime = time
+            markPresent(at: time)
             return true
         }
 
@@ -55,8 +87,10 @@ final class FaceTracker {
 
         if let body = bodyRequest.results?.max(by: { Self.area($0.boundingBox) < Self.area($1.boundingBox) }) {
             update(rect: Self.headFromBody(Self.topLeft(body.boundingBox)), fallback: true)
+            markPresent(at: time)
         } else {
             update(rect: Self.wideRect(around: lastFaceRect), fallback: true)
+            if absentSince == nil { absentSince = time }
         }
         return true
     }

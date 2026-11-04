@@ -16,6 +16,8 @@ class StudySession {
     var videoFileName: String?
     // 1.6 で追加。使った教材（StudyMaterial.id）
     var materialID: UUID?
+    // 1.11 で追加。撮影中に机を離れていた時間（秒）。カメラなしの記録や古い記録は nil
+    var awaySeconds: Int?
     
     @Relationship(inverse: \Tag.sessions)
     var tags: [Tag]? = []
@@ -31,7 +33,8 @@ class StudySession {
         memo: String? = nil,
         thumbnailFileName: String? = nil,
         videoFileName: String? = nil,
-        materialID: UUID? = nil
+        materialID: UUID? = nil,
+        awaySeconds: Int? = nil
     ) {
         self.id = id
         self.date = date
@@ -44,6 +47,7 @@ class StudySession {
         self.thumbnailFileName = thumbnailFileName
         self.videoFileName = videoFileName
         self.materialID = materialID
+        self.awaySeconds = awaySeconds
     }
 
     // タイトルが空なら教科名を見出しにする

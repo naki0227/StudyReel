@@ -236,3 +236,31 @@ struct GoalProgress {
         return min(Double(bestScore) / Double(target), 1)
     }
 }
+
+// 試験日までのペース（Pro）。目標の勉強時間を、残りの日で割って「今日あと何分」を出す。
+// サボった日の分は、次の日からの1日あたりに自動で上乗せされる
+struct GoalPace {
+    let perDaySeconds: Int      // 今日からの1日あたり
+    let leftTodaySeconds: Int   // 今日あと何秒
+    let daysLeft: Int           // 今日を入れた残りの日数
+    let isOnTrack: Bool         // 直近7日の平均で、1日あたりに届いているか
+
+    init?(goal: StudyGoal, sessions: [StudySession], now: Date = Date(), calendar: Calendar = .current) {
+        guard let target = goal.targetHours, target > 0, !goal.isAchieved else { return nil }
+        let left = goal.daysLeft(from: now, calendar: calendar)
+        guard left > 0 else { return nil }
+        let start = calendar.startOfDay(for: goal.createdAt)
+        let today = calendar.startOfDay(for: now)
+        let since = sessions.filter { $0.date >= start }
+        let todaySeconds = since.filter { $0.date >= today }.reduce(0) { $0 + $1.duration }
+        let beforeToday = since.filter { $0.date < today }.reduce(0) { $0 + $1.duration }
+        let remaining = max(0, target * 3600 - beforeToday)
+        // 試験の当日は数えない（前の日までに終える）
+        daysLeft = left
+        perDaySeconds = remaining / left
+        leftTodaySeconds = max(0, perDaySeconds - todaySeconds)
+        let weekAgo = calendar.date(byAdding: .day, value: -7, to: today) ?? today
+        let lastWeek = sessions.filter { $0.date >= weekAgo && $0.date < today }.reduce(0) { $0 + $1.duration }
+        isOnTrack = lastWeek / 7 >= perDaySeconds
+    }
+}

@@ -881,3 +881,16 @@
 "週に1日休んでも、続いたことになります。" = "One rest day a week won’t break it.";
 "開く" = "Expand";
 "顔はモザイクで隠せます。" = "Your face can be hidden with a mosaic.";
+
+/* 1.11 本当の勉強時間・試験日までのペース（Pro） */
+"ずっと机にいました" = "You stayed at your desk the whole time";
+"今日あと %@" = "%@ left today";
+"今日の分は達成" = "Today’s share is done";
+"机にいた時間 %@" = "At your desk: %@";
+"机を離れていた時間は、Pro で見られます" = "See time away from your desk with Pro";
+"机を離れていた時間を引いた、本当の勉強時間" = "Real study time, minus time away from your desk";
+"残り%d日・1日 %@ のペース" = "%d days left · %@ a day";
+"試験日までの1日のペースを見る" = "See your daily pace to exam day";
+"試験日までの「今日あと何分」" = "“Minutes left today” until exam day";
+"離席 %@（1分以上カメラに映っていなかった時間）" = "Away %@ (out of the camera for over a minute)";
+"（このままだと少し足りません）" = " (a little short at this rate)";

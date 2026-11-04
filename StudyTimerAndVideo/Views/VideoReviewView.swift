@@ -798,7 +798,7 @@ struct VideoReviewView: View {
         MediaStore.makeThumbnail(from: result) { thumbnail in
             try? FileManager.default.removeItem(at: result.url)
             exportProgress = nil
-            onFinish(outcome, SessionMedia(thumbnailFileName: thumbnail, videoFileName: storedVideoName))
+            onFinish(outcome, SessionMedia(thumbnailFileName: thumbnail, videoFileName: storedVideoName, awaySeconds: result.awaySeconds))
         }
     }
 

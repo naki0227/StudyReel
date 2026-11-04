@@ -108,6 +108,8 @@ struct BackupSnapshot: Codable {
         let tagNames: [String]
         // 1.6 で追加。古いバックアップにはない
         let materialID: UUID?
+        // 1.11 で追加
+        var awaySeconds: Int?
     }
 
     struct MaterialRecord: Codable {
@@ -197,7 +199,8 @@ struct BackupSnapshot: Codable {
                 thumbnailFileName: $0.thumbnailFileName,
                 videoFileName: $0.videoFileName,
                 tagNames: ($0.tags ?? []).map(\.name),
-                materialID: $0.materialID
+                materialID: $0.materialID,
+                awaySeconds: $0.awaySeconds
             )
         }
         self.tags = tags.map { TagRecord(name: $0.name, colorHex: $0.colorHex) }
@@ -300,7 +303,8 @@ struct BackupSnapshot: Codable {
                 memo: record.memo,
                 thumbnailFileName: MediaStore.videoURL(named: record.thumbnailFileName) == nil ? nil : record.thumbnailFileName,
                 videoFileName: MediaStore.videoURL(named: record.videoFileName) == nil ? nil : record.videoFileName,
-                materialID: record.materialID
+                materialID: record.materialID,
+                awaySeconds: record.awaySeconds
             )
             context.insert(session)
             session.tags = record.tagNames.compactMap { tagsByName[$0] }
