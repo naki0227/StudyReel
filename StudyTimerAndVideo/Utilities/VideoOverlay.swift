@@ -91,6 +91,7 @@ enum OverlayLayout: String, CaseIterable, Identifiable {
     case clock
     case elapsed
     case hourBlock
+    case hidden
 
     static let storageKey = "overlay_layout"
 
@@ -101,6 +102,7 @@ enum OverlayLayout: String, CaseIterable, Identifiable {
         case .clock: return L10n.string("時刻")
         case .elapsed: return L10n.string("経過時間")
         case .hourBlock: return L10n.string("1時間ごと")
+        case .hidden: return L10n.string("出さない")
         }
     }
 
@@ -119,6 +121,7 @@ struct VideoOverlayStyle {
 //  - 時刻：「09:12」（1分ごとに進む）
 //  - 経過時間：「00:12:34」（動画の進みに合わせて1秒ごとに進む）
 //  - 1時間ごと：「14:00 → 15:00 / 1時間目」
+//  - 出さない：文字なし
 // 全部録画のときは呼び出し側で30分単位に丸めて渡す
 struct OverlayText: Equatable {
     let primary: String
@@ -155,6 +158,9 @@ struct OverlayText: Equatable {
             let to = calendar.date(byAdding: .hour, value: 1, to: from) ?? from
             primary = "\(Self.hourFormatter.string(from: from)) → \(Self.hourFormatter.string(from: to))"
             secondary = L10n.format("%d時間目", block + 1)
+        case .hidden:
+            primary = ""
+            secondary = nil
         }
     }
 }
@@ -189,7 +195,10 @@ enum VideoOverlayRenderer {
             let primary = NSAttributedString(string: text.primary, attributes: primaryAttributes)
             let primaryHeight = primary.boundingRect(with: canvasSize, options: .usesLineFragmentOrigin, context: nil).height
 
-            if let secondaryText = text.secondary {
+            // 「出さない」のときは文字を描かない（透かしだけ）
+            if text.primary.isEmpty {
+                // 何もしない
+            } else if let secondaryText = text.secondary {
                 let secondaryAttributes: [NSAttributedString.Key: Any] = [
                     .font: style.font.uiFont(size: base * 0.045),
                     .foregroundColor: UIColor.white.withAlphaComponent(0.92),

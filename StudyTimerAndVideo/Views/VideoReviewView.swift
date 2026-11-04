@@ -23,6 +23,12 @@ struct VideoReviewView: View {
     @State private var showDiscardConfirm = false
     @State private var showPaywall = false
     @State private var storedVideoName: String?
+    // 時間を選んでモザイクを外すときの、選びはじめの位置
+    @State private var plainMarkStart: Double?
+    // 全部録画の速さ（Pro）
+    @State private var speedPlan = SpeedPlan()
+    @State private var speedMarkStart: Double?
+    @State private var newSegmentRate: Double = 10
 
     // 写真への保存結果（保存できたら true、保存しなかったら nil、失敗したら false）と、アプリ内に残したサムネイル・動画
     let onFinish: (Bool?, SessionMedia) -> Void
@@ -197,13 +203,14 @@ struct VideoReviewView: View {
     // MARK: - Tools
 
     enum EditTool: String, CaseIterable, Identifiable {
-        case cut, filter, mosaic, music
+        case cut, speed, filter, mosaic, music
 
         var id: String { rawValue }
 
         var title: String {
             switch self {
             case .cut: return L10n.string("カット")
+            case .speed: return L10n.string("速さ")
             case .filter: return L10n.string("フィルター")
             case .mosaic: return L10n.string("モザイク")
             case .music: return L10n.string("音楽")
@@ -213,6 +220,7 @@ struct VideoReviewView: View {
         var icon: String {
             switch self {
             case .cut: return "scissors"
+            case .speed: return "speedometer"
             case .filter: return "camera.filters"
             case .mosaic: return "face.dashed"
             case .music: return "music.note"
@@ -220,10 +228,15 @@ struct VideoReviewView: View {
         }
     }
 
+    // 速さを変えられるのは全部録画だけ（タイムラプスは撮るときに間引いてある）
+    private var availableTools: [EditTool] {
+        EditTool.allCases.filter { $0 != .speed || result.track.isRealTime }
+    }
+
     private var toolPanel: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                ForEach(EditTool.allCases) { item in
+                ForEach(availableTools) { item in
                     Button {
                         tool = item
                     } label: {
@@ -244,6 +257,7 @@ struct VideoReviewView: View {
 
             switch tool {
             case .cut: cutPanel
+            case .speed: speedPanel
             case .filter: filterPanel
             case .mosaic: mosaicPanel
             case .music: musicPanel
@@ -335,6 +349,8 @@ struct VideoReviewView: View {
                 }
                 .tint(ReelTheme.accent)
 
+                plainRangeEditor
+
                 Toggle(isOn: Binding(
                     get: { saveOption == .both },
                     set: { saveOption = $0 ? .both : .hidden }
@@ -384,6 +400,149 @@ struct VideoReviewView: View {
                     .foregroundColor(ReelTheme.secondary)
             }
         }
+    }
+
+    // 時間を選んで、その間だけモザイクを外す
+    private var plainRangeEditor: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(L10n.string("時間を選んでモザイクを外す"))
+                .font(ReelTheme.sans(14))
+                .foregroundColor(ReelTheme.ink)
+            RangeStrip(
+                duration: player.duration,
+                ranges: result.track.plainRanges,
+                pendingStart: plainMarkStart,
+                current: player.currentTime
+            )
+            .frame(height: 14)
+            rangeMarkButtons(markStart: $plainMarkStart, startTitle: L10n.string("ここから外す"), endTitle: L10n.string("ここまで外す")) { range in
+                result.track.plainRanges.append(range)
+                result.track.plainRanges.sort { $0.lowerBound < $1.lowerBound }
+                refreshLook()
+            }
+            ForEach(Array(result.track.plainRanges.enumerated()), id: \.offset) { index, range in
+                rangeRow(title: "\(timeText(range.lowerBound)) 〜 \(timeText(range.upperBound))", detail: L10n.string("モザイクなし")) {
+                    result.track.plainRanges.remove(at: index)
+                    refreshLook()
+                }
+            }
+            Text(L10n.string("再生位置を動かして「ここから」「ここまで」を押します。"))
+                .font(ReelTheme.sans(11))
+                .foregroundColor(ReelTheme.secondary)
+        }
+    }
+
+    // 全部録画を、区間ごとに等速・10倍・60倍…で書き出す（Pro）
+    private var speedPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if storeKit.isProUnlocked {
+                Text(L10n.string("全体の速さ"))
+                    .font(ReelTheme.sans(14))
+                    .foregroundColor(ReelTheme.ink)
+                Picker(L10n.string("全体の速さ"), selection: $speedPlan.base) {
+                    ForEach(SpeedPlan.rates, id: \.self) { rate in
+                        Text(SpeedPlan.title(for: rate)).tag(rate)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                Text(L10n.string("区間ごとの速さ"))
+                    .font(ReelTheme.sans(14))
+                    .foregroundColor(ReelTheme.ink)
+                RangeStrip(
+                    duration: player.duration,
+                    ranges: speedPlan.segments.map(\.range),
+                    pendingStart: speedMarkStart,
+                    current: player.currentTime
+                )
+                .frame(height: 14)
+                Picker(L10n.string("この区間の速さ"), selection: $newSegmentRate) {
+                    ForEach(SpeedPlan.rates, id: \.self) { rate in
+                        Text(SpeedPlan.title(for: rate)).tag(rate)
+                    }
+                }
+                .pickerStyle(.segmented)
+                rangeMarkButtons(markStart: $speedMarkStart, startTitle: L10n.string("ここから"), endTitle: L10n.string("ここまで")) { range in
+                    speedPlan.segments.append(SpeedSegment(range: range, rate: newSegmentRate))
+                }
+                ForEach(speedPlan.segments) { segment in
+                    rangeRow(
+                        title: "\(timeText(segment.range.lowerBound)) 〜 \(timeText(segment.range.upperBound))",
+                        detail: SpeedPlan.title(for: segment.rate)
+                    ) {
+                        speedPlan.segments.removeAll { $0.id == segment.id }
+                    }
+                }
+
+                HStack {
+                    Text(L10n.string("書き出したときの長さ"))
+                    Spacer()
+                    Text(timeText(speedPlan.outputTime(at: player.trimEnd, from: player.trimStart)))
+                        .monospacedDigit()
+                }
+                .font(ReelTheme.sans(13, weight: .medium))
+                .foregroundColor(ReelTheme.ink)
+                Text(L10n.string("プレビューは等速のままです。保存すると、選んだ速さで書き出します。"))
+                    .font(ReelTheme.sans(11))
+                    .foregroundColor(ReelTheme.secondary)
+            } else {
+                Text(L10n.string("全部録画を、区間ごとに等速や60倍などの速さで書き出せます。"))
+                    .font(ReelTheme.sans(13))
+                    .foregroundColor(ReelTheme.ink)
+                Button(L10n.string("Pro で使う")) { showPaywall = true }
+                    .font(ReelTheme.sans(14, weight: .semibold))
+                    .foregroundColor(ReelTheme.accentDeep)
+            }
+        }
+    }
+
+    // 「ここから」を押すと始まりを覚え、「ここまで」で範囲を確定する
+    private func rangeMarkButtons(
+        markStart: Binding<Double?>,
+        startTitle: String,
+        endTitle: String,
+        onAdd: @escaping (ClosedRange<Double>) -> Void
+    ) -> some View {
+        HStack(spacing: 10) {
+            if let start = markStart.wrappedValue {
+                Button {
+                    let end = player.currentTime
+                    let range = min(start, end)...max(start, end)
+                    if range.upperBound - range.lowerBound >= 0.5 { onAdd(range) }
+                    markStart.wrappedValue = nil
+                } label: {
+                    Text(verbatim: "\(endTitle)（\(timeText(start)) 〜）")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                Button(L10n.string("やめる")) { markStart.wrappedValue = nil }
+                    .buttonStyle(.bordered)
+            } else {
+                Button {
+                    player.pause()
+                    markStart.wrappedValue = player.currentTime
+                } label: {
+                    Text(startTitle).frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .font(ReelTheme.sans(13, weight: .medium))
+        .tint(ReelTheme.accentDeep)
+    }
+
+    private func rangeRow(title: String, detail: String, onDelete: @escaping () -> Void) -> some View {
+        HStack {
+            Text(title).monospacedDigit()
+            Text(detail).foregroundColor(ReelTheme.secondary)
+            Spacer()
+            Button(action: onDelete) {
+                Image(systemName: "trash").foregroundColor(ReelTheme.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .font(ReelTheme.sans(13))
+        .foregroundColor(ReelTheme.ink)
     }
 
     private var musicPanel: some View {
@@ -584,6 +743,7 @@ struct VideoReviewView: View {
         base.hidesFaces = true
         base.bgm = bgm
         base.trim = player.trimStart...player.trimEnd
+        base.speed = speedPlan
 
         var jobs: [VideoExportOptions] = []
         if saveOption != .plain { jobs.append(base) }
@@ -650,6 +810,43 @@ struct VideoReviewView: View {
             DispatchQueue.main.async {
                 completion(success)
             }
+        }
+    }
+}
+
+// MARK: - 選んだ範囲を見せる細いバー
+
+private struct RangeStrip: View {
+    let duration: Double
+    let ranges: [ClosedRange<Double>]
+    let pendingStart: Double?
+    let current: Double
+
+    var body: some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            let safeDuration = max(duration, 0.1)
+            let x = { (seconds: Double) in CGFloat(min(max(seconds / safeDuration, 0), 1)) * width }
+            ZStack(alignment: .leading) {
+                Capsule().fill(ReelTheme.line)
+                ForEach(Array(ranges.enumerated()), id: \.offset) { _, range in
+                    Rectangle()
+                        .fill(ReelTheme.accentDeep)
+                        .frame(width: max(x(range.upperBound) - x(range.lowerBound), 2))
+                        .offset(x: x(range.lowerBound))
+                }
+                if let pendingStart {
+                    Rectangle()
+                        .fill(ReelTheme.accent.opacity(0.6))
+                        .frame(width: max(abs(x(current) - x(pendingStart)), 2))
+                        .offset(x: min(x(current), x(pendingStart)))
+                }
+                Rectangle()
+                    .fill(ReelTheme.ink)
+                    .frame(width: 2)
+                    .offset(x: x(current) - 1)
+            }
+            .clipShape(Capsule())
         }
     }
 }

@@ -816,3 +816,26 @@
 "1本目のタイムラプス、おつかれさまでした。Pro なら、ロゴなしの動画や全部録画、教科ごとの先週比も使えます。" = "Nice work on your first time-lapse. With Pro you get videos without the logo, full-length recording, and week-over-week stats by subject.";
 "ファミリー共有で、お子さんも同じ Pro を使えます" = "With Family Sharing, your child gets Pro too";
 "保護者の方が Pro にすると、ファミリー共有でお子さんの iPhone でも Pro が使えます（最大6人）。" = "If a parent gets Pro, Family Sharing turns it on for your child’s iPhone too (up to 6 people).";
+
+/* 1.11 動画の編集（文字を出さない・時間でモザイクを外す・全部録画の速さ） */
+"出さない" = "None";
+"速さ" = "Speed";
+"時間を選んでモザイクを外す" = "Remove the mosaic for a time range";
+"ここから外す" = "Remove from here";
+"ここまで外す" = "Remove until here";
+"再生位置を動かして「ここから」「ここまで」を押します。" = "Move the playhead, then tap “from here” and “until here”.";
+"全体の速さ" = "Overall speed";
+"区間ごとの速さ" = "Speed by section";
+"この区間の速さ" = "Speed for this section";
+"ここから" = "From here";
+"ここまで" = "Until here";
+"書き出したときの長さ" = "Length when saved";
+"プレビューは等速のままです。保存すると、選んだ速さで書き出します。" = "The preview plays at normal speed. Saving uses the speeds you chose.";
+"全部録画を、区間ごとに等速や60倍などの速さで書き出せます。" = "Save full recordings at normal speed, 60×, and more, section by section.";
+"Pro で使う" = "Use with Pro";
+"等速" = "1×";
+"%d倍" = "%d×";
+
+/* 1.11 Pro の一覧 */
+"全部録画（等速）・区間ごとに速さを変えて保存" = "Full recording (real time), saved at different speeds by section";
+"顔にモザイク（時間を選んで外せる）" = "Face mosaic (can be removed for chosen times)";
