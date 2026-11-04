@@ -23,10 +23,12 @@ struct SettingsView: View {
     @State private var backupMessage: String?
 
     @State private var quietReminderEnabled = StudyNotificationManager.shared.isQuietReminderEnabled
+    @AppStorage(StudyNotificationManager.weeklySummaryKey) private var weeklySummaryEnabled = true
     @State private var showPaywall = false
     @State private var showWatch = false
     // Pro の色を使っている Pro でない人が、ほかの色に変えようとしたとき
     @State private var pendingTheme: ThemeColor?
+    @State private var showExport = false
     @State private var showSubjects = false
     @State private var showTags = false
 
@@ -139,6 +141,14 @@ struct SettingsView: View {
                         ReelRow(systemImage: "bell", title: L10n.string("勉強リマインダー")) {
                             Toggle("", isOn: $quietReminderEnabled).labelsHidden().tint(ReelTheme.accent)
                         }
+                        divider
+                        ReelRow(systemImage: "calendar.badge.clock", title: L10n.string("日曜の夜に今週の振り返り")) {
+                            Toggle("", isOn: $weeklySummaryEnabled).labelsHidden().tint(ReelTheme.accent)
+                        }
+                        divider
+                        Button { showExport = true } label: {
+                            ReelRow(systemImage: "square.and.arrow.up", title: L10n.string("記録を書き出す（CSV・PDF）")) { chevron }
+                        }
                     }
                     if quietReminderEnabled, let next = StudyInsights.preferredReminderDate(for: sessions) {
                         note(L10n.format("次回 %@", next.formatted(date: .abbreviated, time: .shortened)))
@@ -215,6 +225,12 @@ struct SettingsView: View {
                     Button(L10n.string("閉じる")) { dismiss() }
                         .foregroundColor(ReelTheme.ink)
                 }
+            }
+            .onChange(of: weeklySummaryEnabled) {
+                Task { await StudyNotificationManager.shared.scheduleWeeklySummary(with: sessions, isPro: storeKit.isProUnlocked) }
+            }
+            .sheet(isPresented: $showExport) {
+                StudyExportView()
             }
             .onChange(of: quietReminderEnabled) { _, enabled in
                 Task {

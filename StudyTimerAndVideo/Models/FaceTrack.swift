@@ -10,7 +10,9 @@ enum FaceHideStyle: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var isPro: Bool { self == .stamp }
+    // もともと Pro か。交換所でジェムと交換したら、Pro でなくても使える
+    var needsPro: Bool { self == .stamp }
+    var isPro: Bool { needsPro && !Rewards.isUnlocked("hide.\(rawValue)") }
 
     var title: String {
         switch self {
@@ -66,6 +68,8 @@ struct FaceTrack {
     var adjustments: [Int: FaceAdjustment] = [:]
     // 確認画面で「この場面はモザイクなし」にした区間
     var disabledSegments: Set<Int> = []
+    // 確認画面で時間を選んで「ここからここまではモザイクなし」にした範囲（動画の秒）
+    var plainRanges: [ClosedRange<Double>] = []
     // 全部録画は動画の秒と勉強時間が同じ速さで進む。タイムラプスは1フレームごとに記録してある
     var isRealTime = false
 
@@ -73,8 +77,12 @@ struct FaceTrack {
         sampleIndex(at: time).map { samples[$0].segment }
     }
 
+    func isPlain(at time: Double) -> Bool {
+        plainRanges.contains { $0.contains(time) }
+    }
+
     func rect(at time: Double) -> CGRect? {
-        guard let base = baseRect(at: time), !disabledSegments.contains(base.1) else { return nil }
+        guard !isPlain(at: time), let base = baseRect(at: time), !disabledSegments.contains(base.1) else { return nil }
         return Self.apply(adjustments[base.1] ?? FaceAdjustment(), to: base.0)
     }
 
@@ -145,4 +153,50 @@ struct RecordingResult: Identifiable {
     let canvasSize: CGSize
     let sessionStart: Date
     var track: FaceTrack
+    // 机を離れていた時間（秒）。カメラで見ていなければ nil
+    var awaySeconds: Int?
+}
+
+// 全部録画を書き出すときの速さ。区間を選ばなかったところは base の速さになる（Pro）
+struct SpeedSegment: Identifiable, Equatable {
+    let id = UUID()
+    var range: ClosedRange<Double>
+    var rate: Double
+}
+
+struct SpeedPlan: Equatable {
+    static let rates: [Double] = [1, 10, 30, 60, 120]
+
+    var base: Double = 1
+    var segments: [SpeedSegment] = []
+
+    var isIdentity: Bool { base == 1 && segments.allSatisfy { $0.rate == 1 } }
+
+    static func title(for rate: Double) -> String {
+        rate == 1 ? L10n.string("等速") : L10n.format("%d倍", Int(rate))
+    }
+
+    func rate(at time: Double) -> Double {
+        // あとから足した区間を優先する
+        segments.last { $0.range.contains(time) }?.rate ?? base
+    }
+
+    // 使う範囲 [start, time] を書き出したときの長さ（秒）。速さが変わる境目ごとに足していく
+    func outputTime(at time: Double, from start: Double) -> Double {
+        guard time > start else { return 0 }
+        var points = [start, time]
+        for segment in segments {
+            for edge in [segment.range.lowerBound, segment.range.upperBound] where edge > start && edge < time {
+                points.append(edge)
+            }
+        }
+        points.sort()
+        var total = 0.0
+        for index in 0..<(points.count - 1) {
+            let a = points[index], b = points[index + 1]
+            guard b > a else { continue }
+            total += (b - a) / max(rate(at: (a + b) / 2), 1)
+        }
+        return total
+    }
 }

@@ -48,10 +48,13 @@ struct StartView: View {
     @State private var selectedMaterialID: UUID? = MaterialSelection.lastID
     @State private var showShare = false
     @State private var showMaterials = false
+    @State private var showRewardShop = false
     @AppStorage(OnboardingView.storageKey) private var hasSeenOnboarding = false
     @AppStorage(CoachTour.homeKey) private var hasSeenHomeTour = false
     @AppStorage(ThemeColor.storageKey) private var themeRaw = ThemeColor.sky.rawValue
     @State private var showHomeTour = false
+    // いま照らしている1つ（ホームに来たときに、使えるようになったものを1つずつ）
+    @State private var homeTip: [CoachStep] = []
     @State private var sessionBootstrap: SessionBootstrap?
 
     var today: Date {
@@ -88,10 +91,17 @@ struct StartView: View {
                         onEdit: { editingGoal = $0 },
                         onRecordScore: { showScoreRecord = true },
                         onPapers: { showPapers = true },
-                        onShare: { sharingGoal = $0 }
+                        onShare: { sharingGoal = $0 },
+                        onPro: { showPaywall = true }
                     )
                     .padding(.top, 6)
                     .padding(.bottom, DemoMode.isActive ? 16 : 10)
+
+                    // クエスト（スクショ用のデモでは出さない）。「やってみる」でその画面を開く
+                    if !DemoMode.isActive {
+                        HomeQuestCard(onAction: openQuest, onShop: { showRewardShop = true })
+                            .padding(.bottom, 10)
+                    }
 
                     // 勉強仲間（スクショ用のデモでは出さない）
                     if !DemoMode.isActive {
@@ -146,8 +156,11 @@ struct StartView: View {
             .id(theme)
             .background(ReelTheme.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
-            .coachTour(homeTourSteps, isPresented: $showHomeTour) {
-                hasSeenHomeTour = true
+            .coachTour(homeTip, isPresented: $showHomeTour) {
+                CoachTips.markSeen(homeTip.map(\.id), screen: CoachTips.home)
+                if CoachTips.remaining(homeTourSteps, screen: CoachTips.home) == 0 {
+                    hasSeenHomeTour = true
+                }
             }
             .onAppear {
                 startHomeTourIfNeeded()
@@ -155,6 +168,8 @@ struct StartView: View {
             }
             .onChange(of: hasSeenOnboarding) { startHomeTourIfNeeded() }
             .onChange(of: hasSeenHomeTour) { startHomeTourIfNeeded() }
+            // 記録が増えるたびに、使えるようになったものを1つ教える
+            .onChange(of: sessions.count) { startHomeTourIfNeeded() }
             // 録画の設定そのものを渡して開く。設定が届く前に空の画面が出て真っ暗になるのを防ぐ
             .fullScreenCover(item: $sessionBootstrap) { bootstrap in
                 ContentView(
@@ -195,12 +210,17 @@ struct StartView: View {
             }
             .sheet(isPresented: $showWeeklyVlog) {
                 WeeklyVlogView()
+                    .onAppear { QuestBook.mark(.weeklyVlog) }
+            }
+            .sheet(isPresented: $showRewardShop) {
+                RewardShopView()
             }
             .sheet(isPresented: $showMaterials) {
                 MaterialsView()
             }
             .sheet(isPresented: $showShare) {
                 StudyShareView()
+                    .onAppear { QuestBook.mark(.share) }
             }
             .sheet(isPresented: $showGoalSetting) {
                 GoalSettingView()
@@ -232,11 +252,17 @@ struct StartView: View {
             // 記録が増えたり消えたりしたら、勉強仲間に見せる今日・今週の合計を更新する
             .onChange(of: sessions.count) {
                 BuddyCloud.shared.updateTotals(sessions)
+                updateTodayWidget()
             }
+            .onChange(of: todayGoal?.targetDuration) { updateTodayWidget() }
+            .onChange(of: storeKit.isProUnlocked) { updateTodayWidget() }
             .task {
                 BuddyCloud.shared.updateTotals(sessions)
+                updateTodayWidget()
                 // 保護者・塾に共有中の表示と、見守っている人の様子
                 await WatchCloud.shared.refresh()
+                // 日曜の夜の「今週の勉強」を、いまの記録で予約し直す
+                await StudyNotificationManager.shared.scheduleWeeklySummary(with: sessions, isPro: storeKit.isProUnlocked)
             }
             .sheet(isPresented: $showCalendar) {
                 CalendarView(subjectManager: subjectManager)
@@ -373,22 +399,50 @@ struct StartView: View {
 
     // MARK: - 初回の案内
 
+    // 記録がいくつたまったら教えるか。最初は「始め方」だけ
     private var homeTourSteps: [CoachStep] {
-        [
-            CoachStep(id: "home.new", title: L10n.string("ここから記録を始めます"), message: L10n.string("時間と教材を選んで「撮影をはじめる」を押すだけです。")),
-            CoachStep(id: "home.today", title: L10n.string("今日の勉強時間"), message: L10n.string("タップすると、1日の目標を決められます。")),
-            CoachStep(id: "home.share", title: L10n.string("記録を共有"), message: L10n.string("今日や今週の勉強を、画像にして勉強垢やグループに送れます。")),
-            CoachStep(id: "home.materials", title: L10n.string("教材ごとに記録"), message: L10n.string("参考書を登録すると、教材ごとに時間がたまります。バーコードでも登録できます。")),
-            CoachStep(id: "home.tools", title: L10n.string("Vlog・統計・カレンダー・設定"), message: L10n.string("左から、1週間のVlog作り、統計、カレンダー、設定です。")),
-            CoachStep(id: "home.gallery", title: L10n.string("撮った記録が並びます"), message: L10n.string("タップすると動画を見返したり、メモを書き足したりできます。"))
+        let count = sessions.count
+        var steps = [
+            CoachStep(id: "home.new", title: L10n.string("ここから記録を始めます"), message: L10n.string("時間と教材を選んで「撮影をはじめる」を押すだけです。"))
         ]
+        if count >= 1 {
+            steps.append(CoachStep(id: "home.gallery", title: L10n.string("撮った記録が並びます"), message: L10n.string("タップすると動画を見返したり、メモを書き足したりできます。")))
+            steps.append(CoachStep(id: "home.today", title: L10n.string("今日の勉強時間"), message: L10n.string("タップすると、1日の目標を決められます。")))
+        }
+        if count >= 2 {
+            steps.append(CoachStep(id: "home.share", title: L10n.string("記録を共有"), message: L10n.string("今日や今週の勉強を、画像にして勉強垢やグループに送れます。")))
+        }
+        if count >= 3 {
+            steps.append(CoachStep(id: "home.materials", title: L10n.string("教材ごとに記録"), message: L10n.string("参考書を登録すると、教材ごとに時間がたまります。バーコードでも登録できます。")))
+            steps.append(CoachStep(id: "home.tools", title: L10n.string("Vlog・統計・カレンダー・設定"), message: L10n.string("左から、1週間のVlog作り、統計、カレンダー、設定です。")))
+        }
+        return steps
+    }
+
+    // ウィジェット「今日の目標まであと◯分」に今日の数字を渡す
+    private func updateTodayWidget() {
+        TodayWidgetData.update(todaySeconds: todayStudyTime, goalSeconds: todayGoal?.targetDuration, isPro: storeKit.isProUnlocked)
+    }
+
+    private func openQuest(_ action: QuestAction) {
+        switch action {
+        case .settings: showSettings = true
+        case .dailyGoal: showGoalSetting = true
+        case .materials: showMaterials = true
+        case .newSession: showNewSession = true
+        case .share: showShare = true
+        case .weeklyVlog: showWeeklyVlog = true
+        case .buddies: showBuddies = true
+        }
     }
 
     private func startHomeTourIfNeeded() {
         guard hasSeenOnboarding, !hasSeenHomeTour, !showHomeTour, SessionRecovery.pendingSession == nil else { return }
-        // 初回の案内やスプラッシュが消えてから出す
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
-            guard !hasSeenHomeTour, sessionBootstrap == nil else { return }
+        // 初回の案内やスプラッシュ、Pro の案内やレビューのお願いが消えてから出す
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            guard !hasSeenHomeTour, !showHomeTour, sessionBootstrap == nil, !showFirstVideoPaywall,
+                  let step = CoachTips.next(homeTourSteps, screen: CoachTips.home) else { return }
+            homeTip = [step]
             withAnimation(.easeOut(duration: 0.3)) {
                 showHomeTour = true
             }

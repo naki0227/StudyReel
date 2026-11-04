@@ -314,7 +314,8 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
                 return
             }
 
-            let result = RecordingResult(url: url, canvasSize: self.canvasSize, sessionStart: self.sessionStart, track: self.track)
+            var result = RecordingResult(url: url, canvasSize: self.canvasSize, sessionStart: self.sessionStart, track: self.track)
+            result.awaySeconds = self.faceTracker.awayTotal
 
             self.writer = nil
             self.writerInput = nil

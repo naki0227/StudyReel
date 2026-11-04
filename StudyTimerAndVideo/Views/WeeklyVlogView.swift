@@ -35,7 +35,7 @@ struct WeeklyVlogView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Picker(L10n.string("週"), selection: $week) {
                         ForEach(WeeklyVlogWeek.allCases) { item in
-                            Text(item.title).tag(item)
+                            Text(item.isPro && !storeKit.isProUnlocked ? "\(item.title) Pro" : item.title).tag(item)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -261,9 +261,14 @@ struct WeeklyVlogView: View {
     // MARK: - 動作
 
     private func make() {
+        let isPro = storeKit.isProUnlocked
+        // 1年分の Vlog は Pro
+        if week.isPro && !isPro {
+            showPaywall = true
+            return
+        }
         let clips = WeeklyVlogMaker.clips(from: sessions, in: week)
         guard !clips.isEmpty else { return }
-        let isPro = storeKit.isProUnlocked
         let options = WeeklyVlogOptions(
             orientation: orientation,
             bgm: bgm.isPro && !isPro ? .none : bgm,

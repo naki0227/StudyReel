@@ -11,6 +11,8 @@ struct VideoExportOptions {
     var bgm: BGMTrack = .none
     // 素の録画の中で使う範囲（秒）。nil なら全体
     var trim: ClosedRange<Double>?
+    // 全部録画を区間ごとの速さで書き出す（Pro）。nil か等速だけなら、そのままの速さ
+    var speed: SpeedPlan?
 }
 
 // 録画した素の動画に、フィルター・モザイク（またはスタンプ）・中央の時刻・透かし・BGM を重ねて書き出す
@@ -92,9 +94,12 @@ enum VideoExporter {
         let trim = options.trim.map { max(0, $0.lowerBound)...min(fullDuration, $0.upperBound) } ?? 0...fullDuration
         let start = CMTime(seconds: trim.lowerBound, preferredTimescale: 600)
         let duration = max(trim.upperBound - trim.lowerBound, 0.001)
+        // 速さを変えるのは全部録画だけ（タイムラプスはもう間引いてあるので、等速には戻せない）
+        let speed = result.track.isRealTime ? options.speed.flatMap { $0.isIdentity ? nil : $0 } : nil
+        let outputDuration = speed.map { max($0.outputTime(at: trim.upperBound, from: trim.lowerBound), 0.001) } ?? duration
         let canvasSize = result.canvasSize
         let outputURL = FileManager.default.temporaryDirectory.appendingPathComponent("studyreel-export-\(UUID().uuidString).mov")
-        let bgmURL = options.bgm == .none ? nil : BGMRenderer.render(options.bgm, duration: duration)
+        let bgmURL = options.bgm == .none ? nil : BGMRenderer.render(options.bgm, duration: outputDuration)
         defer {
             if let bgmURL { try? FileManager.default.removeItem(at: bgmURL) }
         }
@@ -183,6 +188,9 @@ enum VideoExporter {
             let group = DispatchGroup()
             var lastProgress = 0.0
             var videoFailed = false
+            // 速くした区間は、30fps より細かいコマを捨てる
+            var lastOutputSeconds: Double?
+            let minimumFrameGap = 1.0 / 30 - 0.0001
 
             // 映像と音声は、それぞれ書き込める状態になったときに交互に流し込む
             group.enter()
@@ -199,6 +207,13 @@ enum VideoExporter {
 
                     let sourceTime = CMSampleBufferGetPresentationTimeStamp(sample)
                     let seconds = sourceTime.seconds
+                    var outputTime = CMTimeSubtract(sourceTime, start)
+                    if let speed {
+                        let outputSeconds = speed.outputTime(at: seconds, from: trim.lowerBound)
+                        if let lastOutputSeconds, outputSeconds - lastOutputSeconds < minimumFrameGap { continue }
+                        lastOutputSeconds = outputSeconds
+                        outputTime = CMTime(seconds: outputSeconds, preferredTimescale: 6000)
+                    }
                     let image = frameRenderer.render(CIImage(cvPixelBuffer: pixelBuffer), at: seconds)
 
                     var outputBuffer: CVPixelBuffer?
@@ -206,7 +221,7 @@ enum VideoExporter {
                     guard let outputBuffer else { continue }
                     context.render(image, to: outputBuffer, bounds: bounds, colorSpace: colorSpace)
 
-                    if !adaptor.append(outputBuffer, withPresentationTime: CMTimeSubtract(sourceTime, start)) {
+                    if !adaptor.append(outputBuffer, withPresentationTime: outputTime) {
                         videoFailed = true
                         reader.cancelReading()
                         videoInput.markAsFinished()

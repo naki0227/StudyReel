@@ -6,6 +6,7 @@ import AVKit
 struct SessionDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var storeKit: StoreKitManager
     @Bindable var session: StudySession
     @ObservedObject var subjectManager: SubjectManager
 
@@ -28,6 +29,11 @@ struct SessionDetailView: View {
                     Text("\(formattedDate(session.date))  \(formattedDuration(session.duration))")
                         .font(ReelTheme.sans(13))
                         .foregroundColor(ReelTheme.secondary)
+                }
+
+                if let away = session.awaySeconds {
+                    FocusTimeRow(duration: session.duration, awaySeconds: away, isPro: storeKit.isProUnlocked)
+                        .background(RoundedRectangle(cornerRadius: ReelTheme.cornerRadius, style: .continuous).fill(ReelTheme.card))
                 }
 
                 let tagNames = ([session.subject] + (session.tags ?? []).map(\.name))

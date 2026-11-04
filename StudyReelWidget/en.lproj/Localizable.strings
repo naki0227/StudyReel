@@ -20,3 +20,17 @@
 "StudyReel を開いて、タイマーと撮影を始めます。" = "Opens StudyReel and starts the timer and filming.";
 "時間" = "Duration";
 "撮影する" = "Film";
+
+/* 今日の目標のウィジェット */
+"今日の目標" = "Today’s goal";
+"今日の目標まであと何分かを、ホーム画面やロック画面に出します。" = "Shows how many minutes are left to today’s goal on your Home and Lock Screen.";
+"目標" = "Goal";
+"今日の目標は達成" = "Today’s goal done";
+"今日の目標まであと %lld 分" = "%lld min to today’s goal";
+"今日あと %lld 分" = "%lld min left today";
+"今日 %lld 分" = "Today %lld min";
+"%lld 分" = "%lld min";
+"達成" = "Done";
+"あと" = "Left";
+"Pro で使えます" = "Available with Pro";
+"アプリで1日の目標を決めてください" = "Set a daily goal in the app";

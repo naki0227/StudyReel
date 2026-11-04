@@ -58,6 +58,8 @@ struct StudyStatsView: View {
                     }
 
                     subjectSection
+
+                    SubjectGoalsSection(subjects: subjectManager.subjects, sessions: sessions) { showPaywall = true }
                 }
                 .padding(20)
                 .frame(maxWidth: 640)

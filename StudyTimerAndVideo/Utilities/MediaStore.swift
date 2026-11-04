@@ -120,6 +120,8 @@ enum MediaStore {
 struct SessionMedia {
     var thumbnailFileName: String?
     var videoFileName: String?
+    // 撮影中に机を離れていた時間（秒）。記録に残す
+    var awaySeconds: Int?
 
     func discard() {
         MediaStore.delete(thumbnailFileName, videoFileName)
