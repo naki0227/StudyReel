@@ -10,9 +10,9 @@ import ManagedSettings
 final class FocusShield: ObservableObject {
     static let shared = FocusShield()
 
-    // Apple からスクリーンタイムの機能（Family Controls）の配布の許可が下りるまでは、画面に出さない。
-    // 許可が下りたら StudyTimerAndVideo.entitlements に com.apple.developer.family-controls を足して true にする
-    static let isAvailableInBuild = false
+    // Apple からスクリーンタイムの機能（Family Controls Distribution）の許可が下りた（2026-11）。
+    // entitlements に com.apple.developer.family-controls を入れてある。困ったときは false にすれば画面から消える
+    static let isAvailableInBuild = true
 
     static let enabledKey = "focus_shield_enabled"
     private static let selectionKey = "focus_shield_selection"
