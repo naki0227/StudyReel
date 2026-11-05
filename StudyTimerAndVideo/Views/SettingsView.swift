@@ -29,6 +29,7 @@ struct SettingsView: View {
     // Pro の色を使っている Pro でない人が、ほかの色に変えようとしたとき
     @State private var pendingTheme: ThemeColor?
     @State private var showExport = false
+    @State private var showImport = false
     @State private var showSubjects = false
     @State private var showTags = false
 
@@ -149,11 +150,21 @@ struct SettingsView: View {
                         Button { showExport = true } label: {
                             ReelRow(systemImage: "square.and.arrow.up", title: L10n.string("記録を書き出す（CSV・PDF）")) { chevron }
                         }
+                        divider
+                        Button { showImport = true } label: {
+                            ReelRow(systemImage: "square.and.arrow.down", title: L10n.string("ほかのアプリの記録を取り込む")) { chevron }
+                        }
                     }
                     if quietReminderEnabled, let next = StudyInsights.preferredReminderDate(for: sessions) {
                         note(L10n.format("次回 %@", next.formatted(date: .abbreviated, time: .shortened)))
                     } else {
                         note(L10n.string("いつも勉強している時間に、1日1回だけお知らせします。"))
+                    }
+
+                    if FocusShield.isAvailableInBuild {
+                        sectionTitle(L10n.string("集中"))
+                        FocusShieldSettings()
+                        note(L10n.string("撮影しているあいだ、選んだアプリを開けなくします。撮影を終えると元に戻ります。どのアプリを選んだかは StudyReel には分かりません。"))
                     }
 
                     sectionTitle(L10n.string("iCloudバックアップ"))
@@ -231,6 +242,9 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showExport) {
                 StudyExportView()
+            }
+            .sheet(isPresented: $showImport) {
+                StudyImportView(subjectManager: subjectManager)
             }
             .onChange(of: quietReminderEnabled) { _, enabled in
                 Task {

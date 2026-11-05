@@ -976,3 +976,44 @@
 "自分の数字" = "Your own digits";
 "自分の数字を使う" = "Use your own digits";
 "黒" = "Black";
+
+/* 2.1 試験日の候補 */
+"国公立 前期 合格" = "Pass national univ. (first stage)";
+"宅建 合格" = "Pass the real estate exam (Takken)";
+"行政書士 合格" = "Pass the administrative scrivener exam";
+"次の試験日を入れました。年によって変わることがあるので、公式サイトで確かめてください。" = "We set the next exam date. Dates can change by year, so please check the official site.";
+
+/* 2.1 ほかのアプリの記録を取り込む */
+"ほかのアプリの記録を取り込む" = "Import records from other apps";
+"CSV ファイルを選ぶ" = "Choose a CSV file";
+"ほかのアプリや表計算ソフトから書き出した CSV を読み込みます。1行目に「日付」と「勉強時間（分）」などの見出しがあれば読めます。教科・開始時刻・メモの列もあれば一緒に取り込みます。" = "Reads a CSV exported from another app or a spreadsheet. It works if the first row has headers such as “Date” and “Minutes”. Subject, start time and memo columns are imported too.";
+"取り込む" = "Import";
+"読めなかった行：%d件　すでにある記録：%d件（取り込みません）" = "Unreadable rows: %d · Already recorded: %d (skipped)";
+"はじめの5件" = "First 5";
+"ファイルを開けませんでした。" = "Couldn't open the file.";
+"文字コードが読めませんでした。UTF-8 で保存し直してください。" = "Couldn't read the text encoding. Please save it again as UTF-8.";
+"取り込める記録が見つかりませんでした。" = "No records to import were found.";
+"記録が入っていないファイルでした。" = "The file has no records.";
+"「日付」と「勉強時間」の列が見つかりませんでした。1行目に見出しがあるか確かめてください。" = "Couldn't find the date and study time columns. Please check that the first row has headers.";
+"%d件の記録を取り込みました。" = "Imported %d records.";
+
+/* 2.1 SNS用の縦動画 */
+"おまかせ" = "Auto";
+"長さ" = "Length";
+"%@ · %d日連続" = "%@ · %d-day streak";
+"Vlog・SNS用の動画" = "Vlog & social video";
+"縦向き・15秒は、Instagram のストーリーズや TikTok にそのまま出せます。下に勉強時間と続いた日数が入ります。" = "Portrait at 15 seconds is ready for Instagram Stories and TikTok. Your study time and streak appear at the bottom.";
+"この期間の動画はまだありません" = "No videos for this period yet";
+
+/* 2.1 撮影中は SNS を開けなくする */
+"集中" = "Focus";
+"撮影中はSNSを開けなくする" = "Block social apps while recording";
+"開けなくするアプリ" = "Apps to block";
+"%d個" = "%d";
+"選ぶ" = "Choose";
+"スクリーンタイムの許可が必要です。iPhone の設定 → スクリーンタイムがオンになっているか確かめてください。" = "Screen Time permission is needed. Please check that Screen Time is on in Settings.";
+"撮影しているあいだ、選んだアプリを開けなくします。撮影を終えると元に戻ります。どのアプリを選んだかは StudyReel には分かりません。" = "While you record, the apps you chose can't be opened. They come back when you finish. StudyReel can't see which apps you chose.";
+
+/* 2.1 表紙を見せて教材を選ぶ */
+"表紙を見せて選ぶ" = "Show the cover to choose";
+"どの教材か分かりませんでした。表紙の題名が大きく写るように撮るか、一覧から選んでください。" = "Couldn't tell which book this is. Take the photo with the title large in frame, or choose from the list.";

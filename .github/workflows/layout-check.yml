@@ -10,6 +10,7 @@ on:
   pull_request:
     paths:
       - "StudyTimerAndVideo/Views/**"
+      - "StudyTimerAndVideoTests/**"
       - "StudyTimerAndVideo/ContentView.swift"
       - "StudyTimerAndVideo/*.lproj/**"
       - "StudyTimerAndVideo/Assets.xcassets/**"
@@ -84,7 +85,41 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tail -20
 
+      - name: Unit tests
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building \
+            -project StudyTimerAndVideo.xcodeproj \
+            -scheme StudyTimerAndVideo \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            -only-testing:StudyTimerAndVideoTests/StudyImportTests 2>&1 | grep -E "error|failed|passed|Test|✘|✔" | tail -60
+
+      - name: Crash report
+        if: failure()
+        run: |
+          # 単体テストのホストのアプリが起動直後に落ちたときに、どこで落ちたかを出す
+          for f in $(ls -t ~/Library/Logs/DiagnosticReports/StudyTimerAndVideo*.ips 2>/dev/null | head -2); do
+            echo "== $f"
+            python3 - "$f" <<'PY'
+          import json, sys
+          text = open(sys.argv[1]).read()
+          head, _, body = text.partition("\n")
+          data = json.loads(body)
+          print(json.dumps(data.get("exception"), ensure_ascii=False))
+          print(json.dumps(data.get("termination"), ensure_ascii=False)[:800])
+          images = data.get("usedImages", [])
+          for thread in data.get("threads", []):
+              if not thread.get("triggered"):
+                  continue
+              for frame in thread.get("frames", [])[:40]:
+                  image = images[frame.get("imageIndex", 0)].get("name", "?") if images else "?"
+                  print(image, frame.get("symbol", ""), frame.get("sourceFile", ""), frame.get("sourceLine", ""))
+          PY
+          done
+
       - name: Test landscape layout
+        if: always()
         run: |
           set -o pipefail
           xcodebuild test-without-building \

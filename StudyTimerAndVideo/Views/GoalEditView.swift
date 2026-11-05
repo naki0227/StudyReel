@@ -24,8 +24,8 @@ struct GoalEditView: View {
     @State private var showAchieve = false
     @State private var achievedScore = ""
     @State private var showDelete = false
-
-    private let suggestions = ["TOEIC 800点", "英検2級 合格", "共通テスト 8割", "基本情報 合格"]
+    // 候補から試験日を入れたとき、確かめてもらう一言を出す
+    @State private var presetDateNote = false
 
     private var canSave: Bool {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -50,12 +50,12 @@ struct GoalEditView: View {
                             Rectangle().fill(ReelTheme.line).frame(height: 1)
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 6) {
-                                    ForEach(suggestions, id: \.self) { item in
+                                    ForEach(ExamPreset.all) { preset in
                                         Button {
-                                            title = L10n.string(item)
-                                            applyDefaults(for: item)
+                                            title = L10n.string(preset.title)
+                                            apply(preset)
                                         } label: {
-                                            Text(L10n.string(item))
+                                            Text(L10n.string(preset.title))
                                                 .font(ReelTheme.sans(11))
                                                 .foregroundColor(ReelTheme.secondary)
                                                 .padding(.horizontal, 10)
@@ -79,6 +79,15 @@ struct GoalEditView: View {
                                 .font(ReelTheme.sans(12, weight: .medium))
                                 .foregroundColor(ReelTheme.accentDeep)
                                 .monospacedDigit()
+                        }
+                        if presetDateNote {
+                            Text(L10n.string("次の試験日を入れました。年によって変わることがあるので、公式サイトで確かめてください。"))
+                                .font(ReelTheme.sans(11))
+                                .foregroundColor(ReelTheme.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.leading, 50)
+                                .padding(.trailing, 16)
+                                .padding(.bottom, 10)
                         }
                         divider
                         row(icon: "target", title: L10n.string("点数で目指す")) {
@@ -294,14 +303,19 @@ struct GoalEditView: View {
             .accessibilityIdentifier(id)
     }
 
-    private func applyDefaults(for suggestion: String) {
-        switch suggestion {
-        case "TOEIC 800点":
-            usesScore = true; targetScore = "800"; maxScore = "990"
-        case "共通テスト 8割":
-            usesScore = true; targetScore = "720"; maxScore = "900"
-        default:
+    private func apply(_ preset: ExamPreset) {
+        if let target = preset.targetScore, let max = preset.maxScore {
+            usesScore = true
+            targetScore = String(target)
+            maxScore = String(max)
+        } else {
             usesScore = false
+        }
+        if let date = preset.nextDate() {
+            deadline = date
+            presetDateNote = true
+        } else {
+            presetDateNote = false
         }
     }
 

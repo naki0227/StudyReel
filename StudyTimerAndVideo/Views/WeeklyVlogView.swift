@@ -13,6 +13,7 @@ struct WeeklyVlogView: View {
     @State private var week: WeeklyVlogWeek = .thisWeek
     @State private var orientation: WeeklyVlogOrientation = .portrait
     @State private var bgm: BGMTrack = .lofiStudy
+    @State private var length: VlogLength = .auto
     @State private var progress: Double?
     @State private var makeTask: Task<Void, Never>?
     @State private var outputURL: URL?
@@ -27,6 +28,13 @@ struct WeeklyVlogView: View {
 
     private var totalStudy: Int {
         weekSessions.reduce(0) { $0 + $1.duration }
+    }
+
+    // 動画の下にずっと出す一言。「今日 3時間12分 · 12日連続」
+    private var caption: String {
+        let streak = StudyStreak.count(days: Set(sessions.map { Calendar.current.startOfDay(for: $0.date) }))
+        let total = "\(week.title) \(WeeklyVlogMaker.durationText(totalStudy))"
+        return streak >= 2 ? L10n.format("%@ · %d日連続", total, streak) : total
     }
 
     var body: some View {
@@ -54,7 +62,7 @@ struct WeeklyVlogView: View {
                 .padding(.vertical, 12)
             }
             .background(ReelTheme.background.ignoresSafeArea())
-            .navigationTitle(L10n.string("1週間のVlog"))
+            .navigationTitle(L10n.string("Vlog・SNS用の動画"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -74,6 +82,7 @@ struct WeeklyVlogView: View {
             .onChange(of: week) { resetOutput() }
             .onChange(of: orientation) { resetOutput() }
             .onChange(of: bgm) { resetOutput() }
+            .onChange(of: length) { resetOutput() }
             .onDisappear {
                 makeTask?.cancel()
                 resetOutput()
@@ -121,6 +130,21 @@ struct WeeklyVlogView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L10n.string("長さ"))
+                        .font(ReelTheme.sans(12))
+                        .foregroundColor(ReelTheme.secondary)
+                    Picker(L10n.string("長さ"), selection: $length) {
+                        ForEach(VlogLength.allCases) { item in
+                            Text(item.title).tag(item)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    Text(L10n.string("縦向き・15秒は、Instagram のストーリーズや TikTok にそのまま出せます。下に勉強時間と続いた日数が入ります。"))
+                        .font(ReelTheme.sans(11))
+                        .foregroundColor(ReelTheme.secondary)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -205,7 +229,7 @@ struct WeeklyVlogView: View {
             Image(systemName: "film.stack")
                 .font(.system(size: 30, weight: .light))
                 .foregroundColor(ReelTheme.accent)
-            Text(L10n.string("この週の動画はまだありません"))
+            Text(L10n.string("この期間の動画はまだありません"))
                 .font(ReelTheme.serif(18))
                 .foregroundColor(ReelTheme.ink)
             Text(L10n.string("録画した動画をアプリ内に残しておくと、ここで1本にまとめられます。"))
@@ -274,7 +298,9 @@ struct WeeklyVlogView: View {
             bgm: bgm.isPro && !isPro ? .none : bgm,
             font: OverlayFont.resolved(rawValue: overlayFontRaw, isPro: isPro),
             showsWatermark: RecordingSettings.showsWatermark(isPro: isPro),
-            headline: week.headline
+            headline: week.headline,
+            length: length.seconds,
+            caption: caption
         )
 
         progress = 0

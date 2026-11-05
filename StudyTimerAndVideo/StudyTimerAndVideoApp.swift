@@ -37,10 +37,21 @@ struct StudyTimerAndVideoApp: App {
         }
     }
     
+    private static var isUnitTestHost: Bool {
+        let environment = ProcessInfo.processInfo.environment
+        return environment["XCTestConfigurationFilePath"] != nil || environment["XCTestBundlePath"] != nil
+    }
+
     var body: some Scene {
         WindowGroup {
             ZStack {
-                StartView()
+                // 単体テストのホストとして起動したときはホームを出さない。
+                // CI のビルドは署名なしで iCloud の権限がなく、勉強仲間の CloudKit が起動直後に落ちるため
+                if Self.isUnitTestHost {
+                    Color.clear
+                } else {
+                    StartView()
+                }
                 if !hasSeenOnboarding {
                     OnboardingView {
                         withAnimation(.easeOut(duration: 0.35)) {
@@ -72,6 +83,8 @@ struct StudyTimerAndVideoApp: App {
                 }
             }
             .onAppear {
+                // 撮影中にアプリが落ちても、アプリが開けなくなったままにしない（撮影を再開すればまたかかる）
+                FocusShield.shared.stopRecording()
                 let context = container.mainContext
                 if DemoMode.isActive {
                     DemoSeeder.prepare(context: context)
