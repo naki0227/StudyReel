@@ -96,6 +96,7 @@ jobs:
             -only-testing:StudyTimerAndVideoTests/StudyImportTests 2>&1 | grep -E "error|failed|passed|Test|✘|✔" | tail -60
 
       - name: Test landscape layout
+        if: always()
         run: |
           set -o pipefail
           xcodebuild test-without-building \
