@@ -986,7 +986,7 @@
 /* 2.1 ほかのアプリの記録を取り込む */
 "ほかのアプリの記録を取り込む" = "Import records from other apps";
 "CSV ファイルを選ぶ" = "Choose a CSV file";
-"ほかのアプリや表計算ソフトから書き出した CSV を読み込みます。1行目に「日付」と「勉強時間（分）」などの見出しがあれば読めます。教科・開始時刻・メモの列もあれば一緒に取り込みます。" = "Reads a CSV exported from another app or a spreadsheet. It works if the first row has headers such as "Date" and "Minutes". Subject, start time and memo columns are imported too.";
+"ほかのアプリや表計算ソフトから書き出した CSV を読み込みます。1行目に「日付」と「勉強時間（分）」などの見出しがあれば読めます。教科・開始時刻・メモの列もあれば一緒に取り込みます。" = "Reads a CSV exported from another app or a spreadsheet. It works if the first row has headers such as “Date” and “Minutes”. Subject, start time and memo columns are imported too.";
 "取り込む" = "Import";
 "読めなかった行：%d件　すでにある記録：%d件（取り込みません）" = "Unreadable rows: %d · Already recorded: %d (skipped)";
 "はじめの5件" = "First 5";
