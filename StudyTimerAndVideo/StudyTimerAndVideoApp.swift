@@ -72,6 +72,8 @@ struct StudyTimerAndVideoApp: App {
                 }
             }
             .onAppear {
+                // 撮影中にアプリが落ちても、アプリが開けなくなったままにしない（撮影を再開すればまたかかる）
+                FocusShield.shared.stopRecording()
                 let context = container.mainContext
                 if DemoMode.isActive {
                     DemoSeeder.prepare(context: context)

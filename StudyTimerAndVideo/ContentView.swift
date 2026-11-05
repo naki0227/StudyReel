@@ -842,6 +842,8 @@ struct ContentView: View {
             isRecording: isRecordingVideo
         )
         saveRecoveryIfNeeded(force: true)
+        // 撮っている間は、選んだ SNS を開けなくする（設定でオンにしたときだけ）
+        FocusShield.shared.startRecording()
         // 勉強仲間に「いま勉強中」と見せる
         BuddyCloud.shared.studyStarted(at: startedAt, plannedSeconds: mode == .timer ? totalSeconds : nil)
     }
@@ -982,6 +984,7 @@ struct ContentView: View {
         UIApplication.shared.isIdleTimerDisabled = false
         clearWidgetTimerState()
         StudyLiveActivityController.shared.end()
+        FocusShield.shared.stopRecording()
         BuddyCloud.shared.studyEnded()
     }
 
@@ -999,6 +1002,7 @@ struct ContentView: View {
         setDimmed(false)
         clearWidgetTimerState()
         StudyLiveActivityController.shared.end()
+        FocusShield.shared.stopRecording()
         BuddyCloud.shared.studyEnded()
         finishSession()
     }

@@ -4,6 +4,8 @@ import UIKit
 
 // Vlogで使う期間（週か月）
 enum WeeklyVlogWeek: String, CaseIterable, Identifiable {
+    // 2.1 で追加。今日の記録だけで SNS 用の短い縦動画を作る
+    case today
     case thisWeek
     case lastWeek
     case thisMonth
@@ -19,6 +21,7 @@ enum WeeklyVlogWeek: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .today: return L10n.string("今日")
         case .thisWeek: return L10n.string("今週")
         case .lastWeek: return L10n.string("先週")
         case .thisMonth: return L10n.string("今月")
@@ -29,6 +32,7 @@ enum WeeklyVlogWeek: String, CaseIterable, Identifiable {
 
     var headline: String {
         switch self {
+        case .today: return L10n.string("今日の勉強")
         case .thisWeek: return L10n.string("今週の勉強")
         case .lastWeek: return L10n.string("先週の勉強")
         case .thisMonth: return L10n.string("今月の勉強")
@@ -38,6 +42,9 @@ enum WeeklyVlogWeek: String, CaseIterable, Identifiable {
     }
 
     func interval(calendar: Calendar = .current, now: Date = Date()) -> DateInterval? {
+        if self == .today {
+            return calendar.dateInterval(of: .day, for: now)
+        }
         if isYear {
             return calendar.dateInterval(of: .year, for: now)
         }
@@ -49,6 +56,8 @@ enum WeeklyVlogWeek: String, CaseIterable, Identifiable {
         }
         guard let current = calendar.dateInterval(of: .weekOfYear, for: now) else { return nil }
         switch self {
+        case .today:
+            return nil
         case .thisWeek:
             return current
         case .lastWeek:
@@ -101,6 +110,35 @@ struct WeeklyVlogOptions {
     var font: OverlayFont
     var showsWatermark: Bool
     var headline: String
+    // 2.1：SNS 用の長さ（秒）。nil なら本数に合わせて30〜60秒
+    var length: Double? = nil
+    // 2.1：ずっと下に出す一言（「今日 3時間12分 · 12日連続」など）
+    var caption: String? = nil
+}
+
+// SNS に出しやすい長さ
+enum VlogLength: String, CaseIterable, Identifiable {
+    case auto, s15, s30, s60
+
+    var id: String { rawValue }
+
+    var seconds: Double? {
+        switch self {
+        case .auto: return nil
+        case .s15: return 15
+        case .s30: return 30
+        case .s60: return 60
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .auto: return L10n.string("おまかせ")
+        case .s15: return L10n.format("%d秒", 15)
+        case .s30: return L10n.format("%d秒", 30)
+        case .s60: return L10n.format("%d秒", 60)
+        }
+    }
 }
 
 enum WeeklyVlogError: Error {
@@ -155,7 +193,7 @@ enum WeeklyVlogMaker {
             let seconds = (try? await asset.load(.duration))?.seconds ?? 0
             durations.append(seconds.isFinite ? seconds : 0)
         }
-        let plan = allocate(clips: clips, sourceDurations: durations)
+        let plan = allocate(clips: clips, sourceDurations: durations, length: options.length)
         let total = titleSeconds + plan.reduce(0, +)
 
         let silentURL = FileManager.default.temporaryDirectory.appendingPathComponent("studyreel-week-\(UUID().uuidString).mp4")
@@ -183,9 +221,9 @@ enum WeeklyVlogMaker {
     }
 
     // それぞれの動画に使う秒数。勉強時間に比べて長さを配り、1本あたり3秒はとる
-    static func allocate(clips: [WeeklyVlogClip], sourceDurations: [Double]) -> [Double] {
+    static func allocate(clips: [WeeklyVlogClip], sourceDurations: [Double], length: Double? = nil) -> [Double] {
         let count = Double(clips.count)
-        let target = min(60, max(30, count * 6))
+        let target = length ?? min(60, max(30, count * 6))
         let available = target - titleSeconds
         let minimum = min(3, available / count)
         let weights = clips.map { Double(max($0.studySeconds, 60)) }
@@ -289,6 +327,9 @@ enum WeeklyVlogMaker {
                 guard frames > 0 else { continue }
                 let overlay = textImage(canvasSize: canvasSize, options: options) { rect in
                     drawClipLabel(date: clip.date, study: clip.studySeconds, font: options.font, in: rect)
+                    if let caption = options.caption {
+                        drawCaption(caption, font: options.font, in: rect)
+                    }
                 }
                 try await writeClip(
                     clip,
@@ -514,6 +555,31 @@ enum WeeklyVlogMaker {
         let top = rect.height > rect.width ? rect.height * 0.1 : margin
         dateText.draw(at: CGPoint(x: margin, y: top))
         studyText.draw(at: CGPoint(x: margin, y: top + dateText.size().height + base * 0.008))
+    }
+
+    // 下のほうの真ん中に、角の丸い帯で一言（SNS のボタンと重ならない高さ）
+    private static func drawCaption(_ caption: String, font: OverlayFont, in rect: CGRect) {
+        let base = min(rect.width, rect.height)
+        let size = base * 0.045
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        let text = NSAttributedString(string: caption, attributes: [
+            .font: font.uiFont(size: size),
+            .foregroundColor: UIColor.white,
+            .paragraphStyle: paragraph
+        ])
+        let maxWidth = rect.width * 0.86
+        let textSize = text.boundingRect(with: CGSize(width: maxWidth, height: rect.height), options: .usesLineFragmentOrigin, context: nil).size
+        let padding = CGSize(width: size * 0.8, height: size * 0.45)
+        let box = CGRect(
+            x: (rect.width - textSize.width) / 2 - padding.width,
+            y: rect.height * (rect.height > rect.width ? 0.74 : 0.8) - padding.height,
+            width: textSize.width + padding.width * 2,
+            height: textSize.height + padding.height * 2
+        )
+        UIColor.black.withAlphaComponent(0.45).setFill()
+        UIBezierPath(roundedRect: box, cornerRadius: box.height / 2).fill()
+        text.draw(in: CGRect(x: box.minX + padding.width, y: box.minY + padding.height, width: textSize.width, height: textSize.height))
     }
 
     private static func drawWatermark(in rect: CGRect) {

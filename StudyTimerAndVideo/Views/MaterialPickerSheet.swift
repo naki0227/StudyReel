@@ -18,10 +18,29 @@ struct MaterialPickerSheet: View {
     @Query(filter: #Predicate<StudyMaterial> { $0.finishedAt == nil }, sort: \StudyMaterial.createdAt, order: .reverse)
     private var materials: [StudyMaterial]
     @State private var showAdd = false
+    @State private var showCoverCamera = false
+    @State private var isMatching = false
+    @State private var matchMessage: String?
 
     var body: some View {
         NavigationStack {
             List {
+                // 表紙をカメラに見せると、登録してある教材から選ぶ（端末の中だけで読む）
+                if CoverCameraView.isAvailable && !materials.isEmpty {
+                    Button {
+                        showCoverCamera = true
+                    } label: {
+                        HStack {
+                            Label(L10n.string("表紙を見せて選ぶ"), systemImage: "camera.viewfinder")
+                                .font(ReelTheme.sans(15))
+                                .foregroundColor(ReelTheme.accentDeep)
+                            Spacer()
+                            if isMatching { ProgressView() }
+                        }
+                    }
+                    .disabled(isMatching)
+                }
+
                 Button {
                     choose(nil)
                 } label: {
@@ -59,6 +78,16 @@ struct MaterialPickerSheet: View {
                     choose(material.id)
                 }
             }
+            .fullScreenCover(isPresented: $showCoverCamera) {
+                CoverCameraView { image in
+                    showCoverCamera = false
+                    if let image { match(image) }
+                }
+                .ignoresSafeArea()
+            }
+            .alert(matchMessage ?? "", isPresented: Binding(get: { matchMessage != nil }, set: { if !$0 { matchMessage = nil } })) {
+                Button(L10n.string("OK"), role: .cancel) {}
+            }
         }
         .tint(ReelTheme.accentDeep)
     }
@@ -88,6 +117,22 @@ struct MaterialPickerSheet: View {
             if isOn {
                 Image(systemName: "checkmark")
                     .foregroundColor(ReelTheme.accentDeep)
+            }
+        }
+    }
+
+    private func match(_ image: UIImage) {
+        let candidates = materials.map {
+            CoverMatcher.Candidate(id: $0.id, name: $0.name, cover: MediaStore.thumbnail(named: $0.coverFileName))
+        }
+        isMatching = true
+        Task {
+            let found = await CoverMatcher.match(image, in: candidates)
+            isMatching = false
+            if let found {
+                choose(found)
+            } else {
+                matchMessage = L10n.string("どの教材か分かりませんでした。表紙の題名が大きく写るように撮るか、一覧から選んでください。")
             }
         }
     }
