@@ -976,3 +976,6 @@
 "自分の数字" = "Your own digits";
 "自分の数字を使う" = "Use your own digits";
 "黒" = "Black";
+"もう一度保存する" = "Try Saving Again";
+"保存せずに閉じる" = "Close Without Saving";
+"録画は残っています。空き容量や写真へのアクセスを確認してから、もう一度お試しください。" = "Your recording is still here. Check your free storage and Photos access, then try again.";
