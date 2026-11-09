@@ -21,6 +21,7 @@ struct VideoReviewView: View {
     @GestureState private var pinchScale: CGFloat = 1
     @State private var exportProgress: Double?
     @State private var showDiscardConfirm = false
+    @State private var showExportFailed = false
     @State private var showPaywall = false
     @State private var storedVideoName: String?
     // 時間を選んでモザイクを外すときの、選びはじめの位置
@@ -113,6 +114,17 @@ struct VideoReviewView: View {
         .onChange(of: hideStyleRaw) { refreshLook() }
         .onChange(of: stamp) { refreshLook() }
         .onChange(of: bgm) { player.setBGM(bgm) }
+        .alert(L10n.string("動画を保存できませんでした"), isPresented: $showExportFailed) {
+            Button(L10n.string("もう一度保存する")) {
+                startExport()
+            }
+            Button(L10n.string("保存せずに閉じる"), role: .destructive) {
+                finish(outcome: false)
+            }
+            Button(L10n.string("戻る"), role: .cancel) {}
+        } message: {
+            Text(L10n.string("録画は残っています。空き容量や写真へのアクセスを確認してから、もう一度お試しください。"))
+        }
         .alert(L10n.string("動画を保存せずに閉じますか？"), isPresented: $showDiscardConfirm) {
             Button(L10n.string("戻る"), role: .cancel) {}
             Button(L10n.string("保存しない"), role: .destructive) {
@@ -755,11 +767,20 @@ struct VideoReviewView: View {
         }
 
         exportProgress = 0
-        runExports(jobs, index: 0, savedAll: true)
+        // 長い録画は書き出しに数分かかる。途中で画面が消えて裏に回ると書き出しが止まるので、消灯させない
+        UIApplication.shared.isIdleTimerDisabled = true
+        runExports(jobs, index: 0, savedAll: true, savedAny: false)
     }
 
-    private func runExports(_ jobs: [VideoExportOptions], index: Int, savedAll: Bool) {
+    private func runExports(_ jobs: [VideoExportOptions], index: Int, savedAll: Bool, savedAny: Bool) {
         guard index < jobs.count else {
+            UIApplication.shared.isIdleTimerDisabled = false
+            // どこにも残せなかったときは素の録画を消さずにこの画面に戻り、やり直せるようにする
+            guard savedAny else {
+                exportProgress = nil
+                showExportFailed = true
+                return
+            }
             finish(outcome: savedAll)
             return
         }
@@ -773,7 +794,7 @@ struct VideoReviewView: View {
             },
             completion: { url in
                 guard let url else {
-                    runExports(jobs, index: index + 1, savedAll: false)
+                    runExports(jobs, index: index + 1, savedAll: false, savedAny: savedAny)
                     return
                 }
                 // 端末内にも残す設定なら、最初に書き出せた動画（モザイクありを優先）をコピーしておく
@@ -783,11 +804,17 @@ struct VideoReviewView: View {
                 // 写真に保存しない設定なら、アプリ内に残せたかどうかを結果にする
                 guard RecordingSettings.savesToPhotos else {
                     try? FileManager.default.removeItem(at: url)
-                    runExports(jobs, index: index + 1, savedAll: savedAll && storedVideoName != nil)
+                    let stored = storedVideoName != nil
+                    runExports(jobs, index: index + 1, savedAll: savedAll && stored, savedAny: savedAny || stored)
                     return
                 }
                 saveToPhotos(url) { success in
-                    runExports(jobs, index: index + 1, savedAll: savedAll && success)
+                    runExports(
+                        jobs,
+                        index: index + 1,
+                        savedAll: savedAll && success,
+                        savedAny: savedAny || success || storedVideoName != nil
+                    )
                 }
             }
         )
@@ -798,6 +825,8 @@ struct VideoReviewView: View {
         player.stopAll()
         MediaStore.makeThumbnail(from: result) { thumbnail in
             try? FileManager.default.removeItem(at: result.url)
+            // 保存し終えたので、落ちたとき用の控えも片付ける
+            SessionRecovery.clearRecording()
             exportProgress = nil
             onFinish(outcome, SessionMedia(thumbnailFileName: thumbnail, videoFileName: storedVideoName, awaySeconds: result.awaySeconds))
         }

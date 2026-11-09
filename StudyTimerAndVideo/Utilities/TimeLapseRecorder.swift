@@ -331,7 +331,8 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
             input.markAsFinished()
             writer.finishWriting {
                 if writer.status == .completed {
-                    SessionRecovery.clearRecording()
+                    // 控えは消さずに書き終えた形で残す。消すのは確認画面を閉じたとき
+                    SessionRecovery.saveRecording(result)
                     DispatchQueue.main.async { completion(result) }
                 } else {
                     Self.salvage(result, completion: completion)
@@ -351,7 +352,7 @@ class TimeLapseRecorder: NSObject, ObservableObject, AVCaptureVideoDataOutputSam
                 // 撮れた分より後の顔の位置は使わない
                 var salvaged = result
                 salvaged.track.samples = result.track.samples.filter { $0.time <= duration }
-                SessionRecovery.clearRecording()
+                SessionRecovery.saveRecording(salvaged)
                 await MainActor.run { completion(salvaged) }
             } else {
                 try? FileManager.default.removeItem(at: result.url)

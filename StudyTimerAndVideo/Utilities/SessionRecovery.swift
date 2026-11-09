@@ -18,6 +18,8 @@ struct RecordingRecoveryInfo: Codable {
     var sessionStart: Date
     var isRealTime: Bool
     var samples: [FaceSample]
+    // 机を離れていた時間（秒）。書き終えたあとの控えにだけ入る。古い控えには無い
+    var awaySeconds: Int?
 }
 
 enum SessionRecovery {
@@ -37,6 +39,20 @@ enum SessionRecovery {
 
     static func saveRecording(_ info: RecordingRecoveryInfo) {
         write(info, to: recordingURL)
+    }
+
+    // 録画を書き終えたあとも、確認画面で保存し終えるまで控えを残す。
+    // 確認画面や書き出しの途中でアプリが落ちても、次に開いたとき動画ごと保存し直せるように
+    static func saveRecording(_ result: RecordingResult) {
+        saveRecording(RecordingRecoveryInfo(
+            videoPath: result.url.path,
+            canvasWidth: result.canvasSize.width,
+            canvasHeight: result.canvasSize.height,
+            sessionStart: result.sessionStart,
+            isRealTime: result.track.isRealTime,
+            samples: result.track.samples,
+            awaySeconds: result.awaySeconds
+        ))
     }
 
     static func clearSession() {
@@ -60,12 +76,14 @@ enum SessionRecovery {
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         var track = FaceTrack(samples: info.samples)
         track.isRealTime = info.isRealTime
-        return RecordingResult(
+        var result = RecordingResult(
             url: url,
             canvasSize: CGSize(width: info.canvasWidth, height: info.canvasHeight),
             sessionStart: info.sessionStart,
             track: track
         )
+        result.awaySeconds = info.awaySeconds
+        return result
     }
 
     // 保存しないと決めたときは、書きかけの動画も消す

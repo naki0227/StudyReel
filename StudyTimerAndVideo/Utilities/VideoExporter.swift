@@ -192,66 +192,82 @@ enum VideoExporter {
             var lastOutputSeconds: Double?
             let minimumFrameGap = 1.0 / 30 - 0.0001
 
-            // 映像と音声は、それぞれ書き込める状態になったときに交互に流し込む
+            // 映像と音声は、それぞれ書き込める状態になったときに交互に流し込む。
+            // 終わりの合図（markAsFinished と leave）は一度だけにする。二度 leave すると落ちる
+            var videoDone = false
+            let finishVideo = {
+                guard !videoDone else { return }
+                videoDone = true
+                videoInput.markAsFinished()
+                group.leave()
+            }
             group.enter()
             let videoQueue = DispatchQueue(label: "com.studyTimer.export.video")
             videoInput.requestMediaDataWhenReady(on: videoQueue) {
-                while videoInput.isReadyForMoreMediaData {
-                    guard let sample = readerOutput.copyNextSampleBuffer() else {
-                        videoInput.markAsFinished()
-                        group.leave()
-                        return
-                    }
-                    guard let pixelBuffer = CMSampleBufferGetImageBuffer(sample),
-                          let pool = adaptor.pixelBufferPool else { continue }
+                while !videoDone && videoInput.isReadyForMoreMediaData {
+                    // 1コマごとに後始末する。まとめて後回しにすると、長い録画ではメモリが増え続けて落ちる
+                    let keepGoing: Bool = autoreleasepool {
+                        guard let sample = readerOutput.copyNextSampleBuffer() else {
+                            finishVideo()
+                            return false
+                        }
+                        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sample),
+                              let pool = adaptor.pixelBufferPool else { return true }
 
-                    let sourceTime = CMSampleBufferGetPresentationTimeStamp(sample)
-                    let seconds = sourceTime.seconds
-                    var outputTime = CMTimeSubtract(sourceTime, start)
-                    if let speed {
-                        let outputSeconds = speed.outputTime(at: seconds, from: trim.lowerBound)
-                        if let lastOutputSeconds, outputSeconds - lastOutputSeconds < minimumFrameGap { continue }
-                        lastOutputSeconds = outputSeconds
-                        outputTime = CMTime(seconds: outputSeconds, preferredTimescale: 6000)
-                    }
-                    let image = frameRenderer.render(CIImage(cvPixelBuffer: pixelBuffer), at: seconds)
+                        let sourceTime = CMSampleBufferGetPresentationTimeStamp(sample)
+                        let seconds = sourceTime.seconds
+                        var outputTime = CMTimeSubtract(sourceTime, start)
+                        if let speed {
+                            let outputSeconds = speed.outputTime(at: seconds, from: trim.lowerBound)
+                            if let lastOutputSeconds, outputSeconds - lastOutputSeconds < minimumFrameGap { return true }
+                            lastOutputSeconds = outputSeconds
+                            outputTime = CMTime(seconds: outputSeconds, preferredTimescale: 6000)
+                        }
+                        let image = frameRenderer.render(CIImage(cvPixelBuffer: pixelBuffer), at: seconds)
 
-                    var outputBuffer: CVPixelBuffer?
-                    CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &outputBuffer)
-                    guard let outputBuffer else { continue }
-                    context.render(image, to: outputBuffer, bounds: bounds, colorSpace: colorSpace)
+                        var outputBuffer: CVPixelBuffer?
+                        CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &outputBuffer)
+                        guard let outputBuffer else { return true }
+                        context.render(image, to: outputBuffer, bounds: bounds, colorSpace: colorSpace)
 
-                    if !adaptor.append(outputBuffer, withPresentationTime: outputTime) {
-                        videoFailed = true
-                        reader.cancelReading()
-                        videoInput.markAsFinished()
-                        group.leave()
-                        return
-                    }
+                        if !adaptor.append(outputBuffer, withPresentationTime: outputTime) {
+                            videoFailed = true
+                            reader.cancelReading()
+                            finishVideo()
+                            return false
+                        }
 
-                    let value = min(1, (seconds - trim.lowerBound) / duration)
-                    if value - lastProgress >= 0.01 {
-                        lastProgress = value
-                        progress(value)
+                        let value = min(1, (seconds - trim.lowerBound) / duration)
+                        if value - lastProgress >= 0.01 {
+                            lastProgress = value
+                            progress(value)
+                        }
+                        return true
                     }
+                    if !keepGoing { return }
                 }
             }
 
             if let audioInput, let audioOutput {
+                var audioDone = false
+                let finishAudio = {
+                    guard !audioDone else { return }
+                    audioDone = true
+                    audioInput.markAsFinished()
+                    group.leave()
+                }
                 group.enter()
                 let audioQueue = DispatchQueue(label: "com.studyTimer.export.audio")
                 audioInput.requestMediaDataWhenReady(on: audioQueue) {
-                    while audioInput.isReadyForMoreMediaData {
-                        guard let sample = audioOutput.copyNextSampleBuffer() else {
-                            audioInput.markAsFinished()
-                            group.leave()
-                            return
+                    while !audioDone && audioInput.isReadyForMoreMediaData {
+                        let keepGoing: Bool = autoreleasepool {
+                            guard let sample = audioOutput.copyNextSampleBuffer(), audioInput.append(sample) else {
+                                finishAudio()
+                                return false
+                            }
+                            return true
                         }
-                        if !audioInput.append(sample) {
-                            audioInput.markAsFinished()
-                            group.leave()
-                            return
-                        }
+                        if !keepGoing { return }
                     }
                 }
             }
