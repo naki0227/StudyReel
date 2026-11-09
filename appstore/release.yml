@@ -6,8 +6,8 @@
 # アプリのプライバシー（データの収集）と年齢区分は API で変えられないので、App Store Connect の画面で設定する。
 
 app: com.ni.StudyTimerAndVideo
-version: "2.0"
-build: 233            # "latest" にすると、このバージョンで最後に上げたビルド
+version: "2.0.1"
+build: 234            # "latest" にすると、このバージョンで最後に上げたビルド
 release: manual       # manual: 承認されたら自分で公開 / after_approval: 承認されたらすぐ公開
 submit_for_review: true    # true にしてマージすると、反映したあと審査に出す
 withdraw_to_update: true   # 審査待ちのときにスクリーンショットかビルドが変わっていたら、取り下げて差し替えてから出し直す
@@ -63,23 +63,16 @@ localizations:
       プライバシーポリシー: https://enludus.com/products/studyreel-privacy
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
-      2.0 の大型アップデートです。
-      ・動画の編集：真ん中の時刻を消す／時刻の色・飾り・置き場所・大きさを変える／自分で書いた・撮った数字で時刻を出す
-      ・時間を選んでモザイクを外せるように。全部録画は区間ごとに速さを変えて書き出せます（Pro）
-      ・クエストとジェム：クリアや勉強した日にジェムがたまり、交換所でテーマの色やフォントなどと交換できます
-      ・机にいた時間（Pro）：カメラに映っていなかった時間を引いた、本当の勉強時間が分かります
-      ・試験日までのペース、教科ごとの週の目標、日曜の振り返り通知、1年の Vlog（Pro）
-      ・記録を CSV・PDF で書き出し（Pro）、今日の目標ウィジェット
-      ・使い方の案内は、使えるようになったときに1つずつ出すようにしました
+      不具合を直しました。
+      ・動画を保存しているときにアプリが終了し、動画が消えてしまうことがある不具合を直しました。特に長い録画で起きやすくなっていました
+      ・保存の途中でアプリが終了しても、次に開いたときに動画ごと保存し直せるようにしました
+      ・保存できなかったときは録画を消さずに残し、もう一度保存できるようにしました
   ko:
     whats_new: |
-      2.0 대규모 업데이트예요.
-      • 영상 편집: 가운데 시각 숨기기, 시각의 색·장식·위치·크기 변경, 직접 쓰거나 찍은 숫자로 시각 표시
-      • 원하는 구간만 모자이크를 끌 수 있어요. 전체 녹화는 구간별 속도로 내보낼 수 있어요(Pro)
-      • 퀘스트와 젬: 퀘스트를 깨거나 공부한 날마다 젬이 쌓이고, 교환소에서 테마 컬러·폰트 등과 바꿀 수 있어요
-      • 책상에 있던 시간(Pro): 카메라에 안 보인 시간을 뺀 진짜 공부 시간
-      • 시험일까지의 페이스, 과목별 주간 목표, 일요일 돌아보기 알림, 1년 브이로그(Pro)
-      • 기록을 CSV·PDF로 내보내기(Pro), 오늘 목표 위젯
+      버그를 고쳤어요.
+      • 동영상을 저장하는 도중 앱이 종료되어 동영상이 사라지는 문제를 고쳤어요. 특히 긴 녹화에서 일어나기 쉬웠어요
+      • 저장 중에 앱이 종료되어도, 다음에 열었을 때 동영상까지 다시 저장할 수 있어요
+      • 저장하지 못했을 때는 녹화를 지우지 않고 남겨 두어, 다시 저장할 수 있어요
     name: StudyReel - 공부 타임랩스 기록
     subtitle: 얼굴 모자이크 스터디 브이로그
     keywords: 공부,타이머,타임랩스,스터디윗미,공스타그램,수험생,자격증,캠스터디
@@ -112,13 +105,10 @@ localizations:
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
   zh-Hans:
     whats_new: |
-      2.0 大型更新。
-      • 视频编辑：隐藏中间的时间，更改时间的颜色、装饰、位置和大小，用自己手写或拍摄的数字显示时间
-      • 可以选择时间段取消打码。完整录制可以按区间设置速度导出（Pro）
-      • 任务和宝石：完成任务或每天学习都能获得宝石，可在兑换处换主题色、字体等
-      • 在桌前的时间（Pro）：扣除不在镜头里的时间，看到真正的学习时间
-      • 到考试日的进度、各科每周目标、周日回顾通知、年度Vlog（Pro）
-      • 将记录导出为 CSV、PDF（Pro），今日目标小组件
+      修复了问题。
+      • 修复了保存视频时应用退出、视频丢失的问题。这在较长的录像中尤其容易发生
+      • 即使保存过程中应用退出，下次打开时也能连同视频重新保存
+      • 无法保存时不会删除录像，可以再次保存
     name: StudyReel - 学习延时摄影记录
     subtitle: 自动打码的学习打卡Vlog
     keywords: 学习,自习,计时器,延时,打卡,专注,考试,倒计时,番茄钟,备考,考研,陪伴
@@ -151,13 +141,10 @@ localizations:
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
   zh-Hant:
     whats_new: |
-      2.0 大型更新。
-      • 影片編輯：隱藏中間的時間，更改時間的顏色、裝飾、位置和大小，用自己手寫或拍攝的數字顯示時間
-      • 可以選擇時間段取消馬賽克。完整錄影可以依區間設定速度匯出（Pro）
-      • 任務和寶石：完成任務或每天讀書都能獲得寶石，可在兌換處換主題色、字體等
-      • 在桌前的時間（Pro）：扣除不在鏡頭裡的時間，看到真正的讀書時間
-      • 到考試日的進度、各科每週目標、週日回顧通知、年度Vlog（Pro）
-      • 將紀錄匯出為 CSV、PDF（Pro），今日目標小工具
+      修正了問題。
+      • 修正了儲存影片時 App 結束、影片遺失的問題。這在較長的錄影中特別容易發生
+      • 即使儲存途中 App 結束，下次開啟時也能連同影片重新儲存
+      • 無法儲存時不會刪除錄影，可以再次儲存
     name: StudyReel - 讀書縮時記錄
     subtitle: 臉部自動馬賽克的讀書Vlog
     keywords: 讀書,自習,計時器,縮時,讀書帳,專注,考試,倒數,番茄鐘,學測,國考,陪讀
@@ -226,13 +213,10 @@ localizations:
       Privacy Policy: https://enludus.com/products/studyreel-privacy
     privacy_policy_url: https://enludus.com/products/studyreel-privacy
     whats_new: |
-      StudyReel 2.0 is a big update.
-      • Video editing: hide the clock, change its color, badge, position and size, or show the time in digits you drew or photographed
-      • Turn off the mosaic for chosen time ranges, and export full-length recordings with a different speed per section (Pro)
-      • Quests and gems: earn gems from quests and every study day, then trade them for theme colors, fonts and more
-      • Time at your desk (Pro): see your real study time, minus the time you were away from the camera
-      • Exam pace, weekly goals per subject, a Sunday recap notification and a yearly vlog (Pro)
-      • Export your records as CSV or PDF (Pro), plus a Today goal widget
+      Bug fixes.
+      • Fixed an issue where the app could close while saving a video and the video was lost. It was most likely with long recordings
+      • If the app closes while saving, you can now save the video again the next time you open the app
+      • If a video can't be saved, the recording is kept so you can try again
 
 review:
   demo_account_required: false
