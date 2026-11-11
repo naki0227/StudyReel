@@ -2,6 +2,7 @@ import React from 'react';
 import { Composition, Still } from 'remotion';
 import { Intro, INTRO_FRAMES } from './Intro';
 import { Intro19, INTRO19_FRAMES } from './Intro19';
+import { Intro20, INTRO20_FRAMES } from './Intro20';
 import { EventArt, EventKind } from './Events';
 import { Short, ShortKind, shortFrames } from './Shorts';
 
@@ -21,6 +22,15 @@ export const Root: React.FC = () => (
     id="Intro19"
     component={Intro19}
     durationInFrames={INTRO19_FRAMES}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{ lang: 'ja' as const }}
+  />
+  <Composition
+    id="Intro20"
+    component={Intro20}
+    durationInFrames={INTRO20_FRAMES}
     fps={30}
     width={1080}
     height={1920}
